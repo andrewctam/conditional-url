@@ -1,17 +1,27 @@
 <script setup lang="ts">
 
-import { onMounted, ref } from 'vue'
+import { onBeforeMount, ref } from 'vue'
 
-const short = ref("");
+onBeforeMount(() => {
+    const short = window.location.pathname.slice(1);
+    const data = JSON.stringify({
+        "Language": window.navigator.language
+    })
 
-onMounted(() => {
-    short.value = window.location.pathname.slice(1);
 })
+
+const utc = () => {
+    const date = new Date();
+    var jan = new Date(date.getFullYear(), 0, 1);
+    var jul = new Date(date.getFullYear(), 6, 1);
+    return Math.max(jan.getTimezoneOffset(), jul.getTimezoneOffset());
+}
+
 
 </script>
 
 <template>
     <div>
-        <h1>{{short}}</h1>
+        Redirecting...
     </div>
 </template>

@@ -1,9 +1,13 @@
-export const Operators = ["=", "!=", ">", ">=", "<", "<="]
-export const Variables = ["Location", "Local Time", "Unix Time", "Timezone", "Device", "OS"]
+export const Operators = ["=", "!=", ">", ">=", "<", "<=", "Contains"]
+export const Variables = ["Language", "URL Parameter", "Time", "Time Zone", "OS", "Browser"]
 
 export type Condition = {
     variable: typeof Variables[number],
     operator: typeof Operators[number],
-    value: string
+    value: string,
+    param?: string
 }
 
+
+export const operatingSystems = ["Windows", "MacOS", "Linux", "Android", "iOS"];
+export const browsers = ["Chrome", "Firefox", "Safari", "Edge", "Opera", "Internet Explorer"];

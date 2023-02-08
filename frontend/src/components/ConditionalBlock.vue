@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { Condition } from "../types"
-import ConditionMenu from './ConditionMenu.vue'
+import AddConditionMenu from './AddConditionMenu.vue'
 import ConditionDisplay from './ConditionDisplay.vue'
 
 
@@ -9,6 +9,7 @@ const props = defineProps<{
     id: number,
     first: boolean,
     last: boolean,
+    and: boolean,
     conditions: Condition[]
 }>()
 
@@ -17,7 +18,7 @@ const showConditionMenu = ref(false)
 
 const msg = computed(() => {
     if (props.first && props.last) {
-        return "";
+        return "Always";
     } else if (props.last) {
         return "Else";
     } else if (props.first) {
@@ -46,13 +47,14 @@ const emit = defineEmits<{
     (event: 'delete', id: number): void,
     (event: 'updateUrl', id: number, url: string): void
     (event: 'addCondition', id: number, condition: Condition): void,
-    (event: 'removeCondition', id: number, conId: number): void
+    (event: 'removeCondition', id: number, conId: number): void,
+    (event: 'toggleAnd', id: number): void
 }>()
 </script>
 
 <template>
-    <div class = "bg-gray-500/20 border border-black/20 my-4 mx-8 p-2 relative rounded cursor-move">
-        <button v-if="!onlyOne" @click = "$emit('delete', props.id)" class = "absolute top-0 right-2 text-lg text-red-400">
+    <div class = "bg-black/20 border border-black/20 my-4 mx-8 p-2 relative rounded cursor-move">
+        <button v-if="!onlyOne" @click = "$emit('delete', props.id)" class = "absolute top-0 right-2 text-lg text-red-300">
             × 
         </button>
 
@@ -68,19 +70,27 @@ const emit = defineEmits<{
                         @delete = "emit('removeCondition', props.id, i)"
                     />
 
-                    <span v-if="i != conditions.length - 1" class = "text-green-100 font-light"> and</span>
+                    <span 
+                        v-if="i != conditions.length - 1" 
+                        @click="emit('toggleAnd', props.id)"
+                        class = "font-light cursor-pointer"
+                        :class = "props.and ? 'text-green-300' : 'text-purple-300'"
+                        > 
+                        {{props.and ? " and" : " or"}}
+                    </span>
                 </div>
 
-                <span @click="showConditionMenu = !showConditionMenu" class = "font-bold cursor-pointer text-green-200 my-auto relative">
-                    +
+                <span @click="showConditionMenu = !showConditionMenu" class = "cursor-pointer my-auto relative text-green-200">
+                    {{showConditionMenu ? "×" : "+"}}
                 </span>
 
-                <ConditionMenu 
+                <AddConditionMenu 
                     v-if="showConditionMenu"
                     @addCondition = "addCondition"
                 />
-
             </div>
+
+            <div v-else-if="props.conditions.length > 0" class="text-white/25"> Conditions Unused...</div>
         </div>
 
         <div class="flex mt-1">

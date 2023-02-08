@@ -14,8 +14,5 @@ const props = defineProps<{
         <ul v-else-if="props.variable === 'Time Zone'">
             <li>UTC Offset (+8, -5, 0, etc.)</li>
         </ul>
-        <ul v-else-if="props.variable === 'Language'">
-            <li>List of language codes: </li>
-        </ul>
     </div>
 </template>

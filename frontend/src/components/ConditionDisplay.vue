@@ -13,6 +13,6 @@ const emit = defineEmits<{
 
 <template>
     <span @click="$emit('delete', props.id)" class = "cursor-pointer my-auto p-0 m-0 text-red-400">× </span>
-    <span class="text-white font-light text-sm">{{ `${props.condition.variable} ${props.condition.param} ${props.condition.operator} ${props.condition.value}`}}</span>
+    <span class="text-white font-light text-sm">{{ `${props.condition.variable} ${(props.condition.param)??""} ${props.condition.operator} ${props.condition.value}`}}</span>
 </template>
 

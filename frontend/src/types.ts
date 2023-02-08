@@ -1,5 +1,5 @@
 export const Operators = ["=", "!=", ">", ">=", "<", "<=", "Contains"]
-export const Variables = ["Language", "URL Parameter", "Time", "Time Zone", "OS", "Browser"]
+export const Variables = ["Language", "Time", "Time Zone", "OS", "Browser", "URL Parameter"]
 
 export type Condition = {
     variable: typeof Variables[number],
@@ -8,6 +8,8 @@ export type Condition = {
     param?: string
 }
 
+export const reserved = ["docs"]
 
 export const operatingSystems = ["Windows", "MacOS", "Linux", "Android", "iOS"];
-export const browsers = ["Chrome", "Firefox", "Safari", "Edge", "Opera", "Internet Explorer"];
+export const browsers = ["Chrome", "Firefox", "Safari", "Edge", "Opera"];
+export const languages = ["English", "Spanish", "French", "German", "Italian", "Portuguese", "Russian", "Chinese", "Japanese", "Korean", "Hindi"]

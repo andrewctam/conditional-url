@@ -1,9 +1,10 @@
 <script setup lang='ts'>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 import ConditionalBlock from './ConditionalBlock.vue'
 import draggable from 'vuedraggable'
 import { Condition } from '../types'
+import { clear } from 'console'
 
 
 interface Conditional {
@@ -14,7 +15,9 @@ interface Conditional {
 }
 
 const short = ref("");
-
+const i = ref(2);
+const error = ref("");
+const responseUrl = ref("");
 const conditionals: Ref<Conditional[]> = ref([
     { 
         id: 0,
@@ -29,8 +32,14 @@ const conditionals: Ref<Conditional[]> = ref([
         conditions: []
     }
 ]);
-const i = ref(2);
 
+const updateError = (msg: string) => {
+    setTimeout(() => {
+        error.value = "";
+    }, 2000);
+
+    error.value = msg;
+}
 const newConditional = () => {
     conditionals.value.push({
         id: i.value++,
@@ -85,24 +94,35 @@ const toggleAnd = (id: number) => {
     })
 }
 
-const createConditionalUrl = () => {
-    if (short.value == "") {
-        short.value = Math.random().toString(36).substring(2, 8);
-    }
-
+const createConditionalUrl = async () => {
+    //verify
     for (let i = 0; i < conditionals.value.length; i++) {
         const c = conditionals.value[i];
         if (c.url == "") {
-            alert("Please enter a URL for each conditional.");
+            updateError(`Please enter a URL for conditional #${i + 1}.`);
             return;
         }
+
         if (c.conditions.length == 0 && i != conditionals.value.length - 1) {
-            alert("Please enter at least one condition for each conditional.");
+            updateError(`Please enter at least one condition for conditional #${i + 1}.`);
             return;
+        }
+
+        for (let j = 0; j < c.conditions.length; j++) {
+            const condition = c.conditions[j];
+            if (condition.value === "") {
+                updateError(`Please enter a value for condition #${j + 1} in conditional #${i + 1}.`);
+                return;
+            } else if (/[^a-zA-Z0-9]/.test(condition.value)) {
+                updateError(`Condition #${j + 1} in conditional #${i + 1} can only contain letters and numbers.`);
+                return;
+            }
+
+
         }
     }
 
-    //remove id
+    //remove id, remove any conditions in else
     let trimmed = conditionals.value.map((c, i) => {
         return {
             url: c.url,
@@ -111,12 +131,56 @@ const createConditionalUrl = () => {
         }
     })
 
+    if (short.value !== "" && !/[a-zA-z0-9]/.test(short.value)) {
+        updateError("Short URL can only contain letters and numbers");
+        return;
+    }
 
-    const str = JSON.stringify(trimmed)
-
-    console.log(str);
-    
+    const url = import.meta.env.VITE_CREATE_SHORT_LAMBDA;
+    const response = await fetch(url, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+            short: short.value === "" ? Math.random().toString(36).substring(2, 8) : short.value,
+            conditionals: JSON.stringify(trimmed)
+        })
+    }).then((res) => {
+        console.log(res)
+        if (res.status === 409) {
+            updateError("URL already exists. Please enter a different short URL.")
+            return null;
+        } else if (res.status === 400) {
+            updateError("Problem with conditionals. Please check your inputs and try again.")
+            return null;
+        } else {
+            return res.json();
+        }
+    });
+    console.log(response)
+    if (response) {
+        responseUrl.value = response;
+    }
 }
+
+const selectText = (event: MouseEvent) => {
+    if (event.target) {
+        const target = event.target as HTMLInputElement;
+        if (target.tagName == "INPUT") {
+            target.select();
+        }
+    }
+}
+
+const domain = computed(() => {
+    if (import.meta.env.PROD) {
+        return import.meta.env.VITE_PROD_URL;
+    } else {
+        return import.meta.env.VITE_DEV_URL;
+    }
+})
+
 </script>
 
 <template>
@@ -132,10 +196,17 @@ const createConditionalUrl = () => {
         </p>
     </div>
 
-    <div class = "lg:w-1/2 md:w-3/4 w-[95%] bg-black/10 pt-2 my-8 mx-auto border border-black/20 rounded-xl text-center relative">
+    <div v-if="responseUrl !== ''" class = "text-center font-light border border-black/25 w-fit mx-auto p-6 mt-8 rounded bg-black/10">
+        <p class = "text-lg">Your Conditional URL was successfully created!</p>
+        <input readonly type="text" 
+            class = "w-80 text-slate-600 bg-white/50 text-center border border-black rounded px-2 py-1 mt-4" 
+            :value="`${domain}/${responseUrl}`" 
+            @click="selectText"/>
+    </div>
+    <div v-else class = "lg:w-1/2 md:w-3/4 w-[95%] bg-black/10 pt-2 my-8 mx-auto border border-black/20 rounded-xl text-center relative">
         <div class = "mx-auto mt-2">
-            <span class = "text-black font-extralight text-lg">conditional-url.web.app/</span>
-            <input v-model = "short" type = "text" class = "text-gray-600 font-extralight w-[148px] bg-white/20 focus:outline-none placeholder:text-black/50 placeholder:text-center" placeholder="(optional custom url)"/>
+            <span class = "text-gray-600 font-extralight text-xl">{{`${domain}/`}}</span>
+            <input v-model = "short" type = "text" class = "text-gray-600 text-xl font-extralight w-[175px] bg-white/10 focus:outline-none placeholder:text-black/50 placeholder:text-center" placeholder="(optional custom url)"/>
         </div>
 
 
@@ -157,13 +228,17 @@ const createConditionalUrl = () => {
             </template>
         </draggable>
 
-        <div @click = "newConditional" class = "mx-8 py-1 cursor-pointer text-center rounded bg-black/20 border border-black/20 text-green-100 text-sm font-light ">
+        <div @click = "newConditional" class = "mx-8 p-2 cursor-pointer text-center rounded bg-black/20 border border-black/20 text-green-100 hover:text-green-200 text-sm font-light hover:bg-black/30">
             Add Block
         </div>
 
-        <button @click = "createConditionalUrl" class = "w-full px-4 py-2 mt-8 rounded-b-xl bg-black/20 border-t border-t-black/10 text-white font-light mx-auto">
+        <button @click = "createConditionalUrl" class = "w-full px-4 py-2 mt-12 rounded-b-xl bg-black/5 border-t border-t-black/10 text-green-100 hover:text-green-200 font-light mx-auto hover:bg-black/20">
             Create Conditional URL
         </button>
+
+        <div v-if = "error" class = "fixed top-4 left-4 px-4 py-1 bg-red-100 rounded text-red-500 border border-black/25 text-center font-light">
+            {{error}}
+        </div>
     </div>
 
     

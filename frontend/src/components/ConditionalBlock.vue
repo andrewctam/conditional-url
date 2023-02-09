@@ -53,12 +53,12 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <div class = "bg-black/20 border border-black/20 my-4 mx-8 p-2 relative rounded cursor-move">
-        <button v-if="!onlyOne" @click = "$emit('delete', props.id)" class = "absolute top-0 right-2 text-lg text-red-300">
+    <div class = "bg-black/20 hover:bg-black/25 border border-black/20 my-4 mx-8 p-2 relative rounded cursor-move">
+        <button v-if="!onlyOne" @click = "$emit('delete', props.id)" class = "absolute top-0 right-2 text-lg text-red-300 hover:text-red-500">
             × 
         </button>
 
-        <div class = "flex items-left">
+        <div class = "flex">
             <span class = "font-light text-white mr-1 h-fit">{{msg}}</span>
 
             <div v-if="!onlyOne && !props.last" class = "relative text-left">
@@ -73,14 +73,14 @@ const emit = defineEmits<{
                     <span 
                         v-if="i != conditions.length - 1" 
                         @click="emit('toggleAnd', props.id)"
-                        class = "font-light cursor-pointer"
+                        class = "font-light cursor-pointer text-sm"
                         :class = "props.and ? 'text-green-300' : 'text-purple-300'"
                         > 
                         {{props.and ? " and" : " or"}}
                     </span>
                 </div>
 
-                <span @click="showConditionMenu = !showConditionMenu" class = "cursor-pointer my-auto relative text-green-200">
+                <span @click="showConditionMenu = !showConditionMenu" class = "cursor-pointer my-auto relative text-green-200 hover:text-green-300">
                     {{showConditionMenu ? "×" : "+"}}
                 </span>
 
@@ -90,12 +90,12 @@ const emit = defineEmits<{
                 />
             </div>
 
-            <div v-else-if="props.conditions.length > 0" class="text-white/25"> Conditions Unused...</div>
+            <div v-else-if="props.conditions.length > 0" class="text-white/25 italic"> Unused Conditions...</div>
         </div>
 
         <div class="flex mt-1">
             <p class = "my-auto mr-1 font-light text-white"> Redirect to</p>
-            <input @change="handleUpdateUrl" type = "text" class = "flex-grow pl-1 text-white bg-transparent bg-gradient-to-r from-white/10 focus:outline-none placeholder:text-white/50" placeholder="URL"/>
+            <input @change="handleUpdateUrl" type = "text" class = "flex-grow pl-1 text-white bg-white/10 focus:outline-none placeholder:text-white/50" placeholder="URL"/>
         </div>
     </div>
     

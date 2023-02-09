@@ -1,10 +1,8 @@
 <script setup lang="ts">
 
-import { onBeforeMount, ref } from 'vue'
+import { onBeforeMount } from 'vue'
 
-onBeforeMount(() => {
-    console.log(window.navigator)
-    
+onBeforeMount(async () => {    
     const userAgent = window.navigator.userAgent;
     let browser = "Other"
     if (userAgent.includes("Chrome")) {
@@ -33,10 +31,9 @@ onBeforeMount(() => {
     }
 
     const date = new Date();
-    let offset = Math.max( //account for DST
+    let offset = -1/60 * Math.max( //account for DST
                         new Date(date.getFullYear(), 0, 1).getTimezoneOffset(),  //time in January
                         new Date(date.getFullYear(), 6, 1).getTimezoneOffset()) //time in July
-    offset = -offset / 60;
 
     let timezone = offset.toString();
     if (offset > 0)
@@ -67,27 +64,35 @@ onBeforeMount(() => {
     else if (langCode.includes("hi"))
         language = "Hindi"
 
-    
+    const url = import.meta.env.VITE_DETERMINE_URL_LAMBDA;
+    const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            "short": window.location.pathname.slice(1),
+            "data": {
+                "Language": language,
+                "Browser": browser,
+                "OS": operatingSystem,
+                "Time": `${date.getHours()}:${date.getMinutes()}`,
+                'Time Zone': timezone
+            }
+        })
+    }).then(response => response.json())
 
-    
-
-    const data = {
-        "short": window.location.pathname.slice(1),
-        "Language": language,
-        "Browser": browser,
-        "OS": operatingSystem,
-        "Time": `${date.getHours()}:${date.getMinutes()}`,
-        'Time Zone': timezone
+    console.log(response)
+    try {
+        const url = new URL(response);
+        window.location.href = url.href;
+    } catch (e) {
+        console.log(e);
     }
-    console.log(data)
 
+    alert(response)
+    
 })
-
-const utc = () => {
-    const date = new Date();
-   
-}
-
 
 </script>
 

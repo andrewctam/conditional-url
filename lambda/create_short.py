@@ -17,7 +17,7 @@ def lambda_handler(event, context):
     try:
         client.get_item(TableName='urls', Key={'short': {'S': short}})['Item']
         return {
-            'statusCode': 400,
+            'statusCode': 409,
             'body': json.dumps('Short URL already exists')
         }
     except:
@@ -25,5 +25,5 @@ def lambda_handler(event, context):
     
         return {
             'statusCode': 200,
-            'body': json.dumps("conditional-url.web.app/" + short)
+            'body': json.dumps(short)
         }

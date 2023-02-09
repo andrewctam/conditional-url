@@ -4,7 +4,6 @@ import type { Ref } from 'vue'
 import ConditionalBlock from './ConditionalBlock.vue'
 import draggable from 'vuedraggable'
 import { Condition } from '../types'
-import { clear } from 'console'
 
 
 interface Conditional {
@@ -15,23 +14,24 @@ interface Conditional {
 }
 
 const short = ref("");
-const i = ref(2);
-const error = ref("");
-const responseUrl = ref("");
+const i = ref(0); //used for temp id, removed before uploading
 const conditionals: Ref<Conditional[]> = ref([
     { 
-        id: 0,
+        id: i.value++,
         url: "",
         and: true,
         conditions: []
     },
     { 
-        id: 1,
+        id: i.value++,
         url: "",
         and: true,
         conditions: []
     }
 ]);
+const error = ref("");
+const responseUrl = ref("");
+
 
 const updateError = (msg: string) => {
     setTimeout(() => {
@@ -99,26 +99,27 @@ const createConditionalUrl = async () => {
     for (let i = 0; i < conditionals.value.length; i++) {
         const c = conditionals.value[i];
         if (c.url == "") {
-            updateError(`Please enter a URL for conditional #${i + 1}.`);
+            updateError(`Please enter a URL for block #${i + 1}`);
             return;
         }
 
         if (c.conditions.length == 0 && i != conditionals.value.length - 1) {
-            updateError(`Please enter at least one condition for conditional #${i + 1}.`);
+            updateError(`Please enter at least one condition for block #${i + 1}`);
             return;
         }
 
         for (let j = 0; j < c.conditions.length; j++) {
             const condition = c.conditions[j];
             if (condition.value === "") {
-                updateError(`Please enter a value for condition #${j + 1} in conditional #${i + 1}.`);
+                updateError(`Please enter a value for condition #${j + 1} in block #${i + 1}`);
                 return;
-            } else if (/[^a-zA-Z0-9]/.test(condition.value)) {
-                updateError(`Condition #${j + 1} in conditional #${i + 1} can only contain letters and numbers.`);
+            } else if (condition.variable !== "Time" && /[^a-zA-Z0-9]/.test(condition.value)) {
+                updateError(`Condition #${j + 1} in block #${i + 1} can only contain letters and numbers`);
+                return;
+            } else if (condition.variable === "Time" && !/^[0-9]{2}:[0-9]{2}$/.test(condition.value)) {
+                updateError(`Condition #${j + 1} in block #${i + 1} must be in the format HH:MM`);
                 return;
             }
-
-
         }
     }
 
@@ -184,6 +185,10 @@ const domain = computed(() => {
 </script>
 
 <template>
+    <div v-if = "error" class = "fixed top-4 left-4 px-4 py-1 bg-red-100 rounded text-red-500 border border-black/25 text-center font-light">
+        {{error}}
+    </div>
+
     <div class = "w-fit mt-16 mx-auto text-center px-4">
         <a href = "./">
             <h1 class="text-black text-5xl font-extralight">
@@ -191,7 +196,7 @@ const domain = computed(() => {
             </h1>
         </a>
 
-        <p class = "font-light mt-2">
+        <p class = "font-light text-gray-600 mt-2 select-none">
             Create a shortened URL that conditionally redirects visitors to different URLs.
         </p>
     </div>
@@ -203,10 +208,10 @@ const domain = computed(() => {
             :value="`${domain}/${responseUrl}`" 
             @click="selectText"/>
     </div>
-    <div v-else class = "lg:w-1/2 md:w-3/4 w-[95%] bg-black/10 pt-2 my-8 mx-auto border border-black/20 rounded-xl text-center relative">
-        <div class = "mx-auto mt-2">
-            <span class = "text-gray-600 font-extralight text-xl">{{`${domain}/`}}</span>
-            <input v-model = "short" type = "text" class = "text-gray-600 text-xl font-extralight w-[175px] bg-white/10 focus:outline-none placeholder:text-black/50 placeholder:text-center" placeholder="(optional custom url)"/>
+    <div v-else class = "lg:w-1/2 md:w-3/4 w-[95%] bg-black/5 my-8 mx-auto border border-black/20 rounded-xl text-center relative">
+        <div class = "mx-auto mt-4">
+            <span class = "text-black font-extralight text-xl">{{`${domain}/`}}</span>
+            <input v-model = "short" type = "text" class = "text-black text-xl font-extralight w-[125px] bg-white/25 focus:outline-none  placeholder:text-xs placeholder:text-gray-600/75 placeholder:text-center" placeholder="optional custom url"/>
         </div>
 
 
@@ -228,17 +233,14 @@ const domain = computed(() => {
             </template>
         </draggable>
 
-        <div @click = "newConditional" class = "mx-8 p-2 cursor-pointer text-center rounded bg-black/20 border border-black/20 text-green-100 hover:text-green-200 text-sm font-light hover:bg-black/30">
+        <div @click = "newConditional" class = "mx-8 p-2 cursor-pointer text-center rounded bg-black/10 border border-black/20 text-green-100 hover:text-green-200 text-sm font-light hover:bg-black/30 select-none">
             Add Block
         </div>
 
-        <button @click = "createConditionalUrl" class = "w-full px-4 py-2 mt-12 rounded-b-xl bg-black/5 border-t border-t-black/10 text-green-100 hover:text-green-200 font-light mx-auto hover:bg-black/20">
+        <button @click = "createConditionalUrl" class = "w-full px-4 py-2 mt-12 rounded-b-xl bg-black/20 border-t border-t-black/10 text-white font-light mx-auto hover:bg-black/30 select-none">
             Create Conditional URL
         </button>
 
-        <div v-if = "error" class = "fixed top-4 left-4 px-4 py-1 bg-red-100 rounded text-red-500 border border-black/25 text-center font-light">
-            {{error}}
-        </div>
     </div>
 
     

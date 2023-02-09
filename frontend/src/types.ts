@@ -8,8 +8,6 @@ export type Condition = {
     param?: string
 }
 
-export const reserved = ["docs"]
-
 export const operatingSystems = ["Windows", "MacOS", "Linux", "Android", "iOS"];
 export const browsers = ["Chrome", "Firefox", "Safari", "Edge", "Opera"];
 //+ 12 to -12

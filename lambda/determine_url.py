@@ -15,7 +15,7 @@ def determine_url(conditionals: dict, data: dict) -> str:
         #if AND, start as true and break on first false. 
         #if OR, start as false and break on first true.
         valid = conditional["and"] 
-
+        print(data)
         for condition in conditions:
             if (condition["variable"] == "URL Parameter"):
                 variable = data["params"][condition["param"]]
@@ -68,6 +68,8 @@ def lambda_handler(event, context):
     payload = json.loads(body)
     short = payload["short"]
     data = payload["data"]
+
+    data["params"] = json.loads(data["params"])
     
     try:
         conditionals = client.get_item(TableName='urls', Key={'short': {'S': short}})['Item']['conditionals']['S']

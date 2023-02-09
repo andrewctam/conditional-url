@@ -53,8 +53,8 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <div class = "bg-black/20 hover:bg-black/25 border border-black/20 my-4 mx-8 p-2 relative rounded cursor-move">
-        <button v-if="!onlyOne" @click = "$emit('delete', props.id)" class = "absolute top-0 right-2 text-lg text-red-300 hover:text-red-500">
+    <div class = "bg-black/10 hover:bg-black/25 border border-black/20 my-4 mx-8 p-2 relative rounded cursor-move select-none">
+        <button v-if="!onlyOne" @click = "$emit('delete', props.id)" class = "absolute top-0 right-2 text-lg text-red-400 hover:text-red-500">
             × 
         </button>
 

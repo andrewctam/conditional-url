@@ -63,6 +63,8 @@ onBeforeMount(async () => {
         language = "Korean"
     else if (langCode.includes("hi"))
         language = "Hindi"
+    
+    const params = Object.fromEntries(new URLSearchParams(window.location.search));
 
     const url = import.meta.env.VITE_DETERMINE_URL_LAMBDA;
     const response = await fetch(url, {
@@ -77,7 +79,8 @@ onBeforeMount(async () => {
                 "Browser": browser,
                 "OS": operatingSystem,
                 "Time": `${date.getHours()}:${date.getMinutes()}`,
-                'Time Zone': timezone
+                'Time Zone': timezone,
+                "params": JSON.stringify(params)
             }
         })
     }).then(response => response.json())
@@ -88,17 +91,15 @@ onBeforeMount(async () => {
         window.location.href = url.href;
     } catch (e) {
         console.log(e);
+        window.location.href = "https://conditionalurl.web.app"
     }
-
-    alert(response)
     
 })
 
 </script>
 
 <template>
-    <div class = "text-center font-extralight mt-4">
-        Redirecting...
+    <div class = "bg-white w-screen h-screen">
     </div>
 
 

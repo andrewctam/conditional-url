@@ -105,7 +105,7 @@ const checkAndCreate = () => {
 
 
             <button type="submit" class = "hover:bg-green-100/75 bg-green-100/50 border border-black/50 rounded h-8 py-1 px-2 text-sm font-light">
-                Create
+                Add
             </button>
         </form>
 

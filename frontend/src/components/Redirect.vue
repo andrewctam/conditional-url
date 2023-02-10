@@ -87,8 +87,10 @@ onBeforeMount(async () => {
 
     console.log(response)
     try {
-        const url = new URL(response);
-        window.location.href = url.href;
+        if (!response.startsWith("http://") && !response.startsWith("https://"))
+            throw new Error("Invalid URL")
+
+        window.location.href = response;
     } catch (e) {
         console.log(e);
         window.location.href = "https://conditionalurl.web.app"

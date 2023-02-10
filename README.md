@@ -5,7 +5,8 @@
 
 ![Conditional URL](demo.png)
 
-## Technologies
+## Languages and Technologies
+- [Python 3](https://www.python.org/downloads/)
 - [AWS Lambda](https://aws.amazon.com/lambda/)
 - [AWS DynamoDB](https://aws.amazon.com/dynamodb/)
 - [TypeScript](https://www.typescriptlang.org/download)
@@ -19,10 +20,8 @@ git clone https://github.com/tamandrew/conditional-url.git
 ```
 - Set up a [DynamoDB table](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GettingStarted.NodeJs.html) named `urls`
 - [Add the two lambda functions](https://docs.aws.amazon.com/lambda/latest/dg/getting-started.html) in `/lambda` to your AWS account.
-- Set up the [Lambda functions URLS](https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html), and enable [CORS](https://docs.aws.amazon.com/lambda/latest/dg/urls-configuration.html#urls-cors). 
-- Replace the function URLS to `frontend/.env.template`, and rename the file to `.env`. 
-
-
+- Set up the [Lambda functions URLs](https://docs.aws.amazon.com/lambda/latest/dg/lambda-urls.html), and enable [CORS](https://docs.aws.amazon.com/lambda/latest/dg/urls-configuration.html#urls-cors). 
+- Replace the function URLs in `frontend/.env.template`, and rename the file to `.env`. 
 
 ## Running the frontend
 In `/frontend`, install npm dependencies and run `npm run dev`

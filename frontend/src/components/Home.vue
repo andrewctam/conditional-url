@@ -102,7 +102,17 @@ const createConditionalUrl = async () => {
             updateError(`Please enter a URL for block #${i + 1}`);
             return;
         }
+        
+        if (!c.url.startsWith("http://") && !c.url.startsWith("https://")) {
+            updateError(`URL #${i + 1} should start with http:// or https://`);
+            return;
+        }
 
+        if (c.url.startsWith(`https://${import.meta.env.VITE_PROD_URL}`)) {
+            updateError(`Can not shorten a link to this site`);
+            return;
+        }
+        
         if (c.conditions.length == 0 && i != conditionals.value.length - 1) {
             updateError(`Please enter at least one condition for block #${i + 1}`);
             return;
@@ -110,15 +120,19 @@ const createConditionalUrl = async () => {
 
         for (let j = 0; j < c.conditions.length; j++) {
             const condition = c.conditions[j];
-            if (condition.value === "") {
+            if (condition.value === "" && condition.variable !== "URL Parameter") { //url param value can be empty
                 updateError(`Please enter a value for condition #${j + 1} in block #${i + 1}`);
                 return;
-            } else if (condition.variable !== "Time" && /[^a-zA-Z0-9]/.test(condition.value)) {
-                updateError(`Condition #${j + 1} in block #${i + 1} can only contain letters and numbers`);
-                return;
-            } else if (condition.variable === "Time" && !/^[0-9]{2}:[0-9]{2}$/.test(condition.value)) {
-                updateError(`Condition #${j + 1} in block #${i + 1} must be in the format HH:MM`);
-                return;
+            } else if (condition.variable === "URL Parameter") {
+                if (!condition.param) {
+                    updateError(`Please enter a URL Parameter for condition #${j + 1} in block #${i + 1}`);
+                    return;
+                }
+
+                if (!/^[a-zA-Z0-9]*$/.test(condition.param)) {
+                    updateError(`URL Parameter for condition #${j + 1} in block #${i + 1} can only contain letters and numbers`);
+                    return;
+                }
             }
         }
     }
@@ -132,7 +146,7 @@ const createConditionalUrl = async () => {
         }
     })
 
-    if (short.value !== "" && !/[a-zA-z0-9]/.test(short.value)) {
+    if (short.value !== "" && !/^[a-zA-Z0-9]*$/.test(short.value)) {
         updateError("Short URL can only contain letters and numbers");
         return;
     }
@@ -211,7 +225,7 @@ const domain = computed(() => {
     <div v-else class = "lg:w-1/2 md:w-3/4 w-[95%] bg-black/5 my-8 mx-auto border border-black/20 rounded-xl text-center relative">
         <div class = "mx-auto mt-4">
             <span class = "text-black font-extralight text-xl">{{`${domain}/`}}</span>
-            <input v-model = "short" type = "text" class = "text-black text-xl font-extralight w-[125px] bg-white/25 focus:outline-none  placeholder:text-xs placeholder:text-gray-600/75 placeholder:text-center" placeholder="optional custom url"/>
+            <input v-model = "short" type = "text" class = "text-black text-xl font-extralight w-[125px] bg-white/25 focus:outline-none placeholder:text-sm placeholder:text-gray-600/75 placeholder:text-center" placeholder="optional custom url"/>
         </div>
 
 

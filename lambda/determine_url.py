@@ -1,10 +1,38 @@
+
 import json
 import base64
 import boto3
 
 client = boto3.client('dynamodb')
 
-def determine_url(conditionals: dict, data: dict) -> str:
+def lambda_handler(event, context):        
+    body = event["body"]
+    if (event["isBase64Encoded"]):
+        body = str(base64.b64decode(body))
+
+    payload = json.loads(body)
+    short = payload["short"]
+    data = payload["data"]
+
+    data["params"] = json.loads(data["params"])
+    
+    try:
+        conditionals = client.get_item(TableName='urls', Key={'short': {'S': short}})['Item']['conditionals']['S']
+        conditionals = json.loads(conditionals)
+    except:
+        return {
+            'statusCode': 404,
+            'body': json.dumps('Short URL does not exist')
+        }
+
+    url = determine_url(conditionals, data)
+    return {
+        'statusCode': 200,
+        'body': json.dumps(url)
+    }
+
+
+def determine_url(conditionals: list, data: dict) -> str:
     for i, conditional in enumerate(conditionals):
         #else statement
         if i == len(conditionals) - 1:
@@ -18,7 +46,10 @@ def determine_url(conditionals: dict, data: dict) -> str:
         print(data)
         for condition in conditions:
             if (condition["variable"] == "URL Parameter"):
-                variable = data["params"][condition["param"]]
+                if (condition["param"] not in data["params"]):
+                    variable = None
+                else:
+                    variable = data["params"][condition["param"]]
             else:
                 variable = data[condition["variable"]]
             
@@ -59,29 +90,3 @@ def determine_url(conditionals: dict, data: dict) -> str:
         else:
             return conditional["url"]
             
-            
-def lambda_handler(event, context):        
-    body = event["body"]
-    if (event["isBase64Encoded"]):
-        body = str(base64.b64decode(body))
-
-    payload = json.loads(body)
-    short = payload["short"]
-    data = payload["data"]
-
-    data["params"] = json.loads(data["params"])
-    
-    try:
-        conditionals = client.get_item(TableName='urls', Key={'short': {'S': short}})['Item']['conditionals']['S']
-        conditionals = json.loads(conditionals)
-    except:
-        return {
-            'statusCode': 404,
-            'body': json.dumps('Short URL does not exist')
-        }
-
-    url = determine_url(conditionals, data)
-    return {
-        'statusCode': 200,
-        'body': json.dumps(url)
-    }

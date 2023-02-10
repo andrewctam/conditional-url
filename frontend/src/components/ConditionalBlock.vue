@@ -54,7 +54,7 @@ const emit = defineEmits<{
 
 <template>
     <div class = "bg-black/10 hover:bg-black/25 border border-black/20 my-4 mx-8 p-2 relative rounded cursor-move select-none">
-        <button v-if="!onlyOne" @click = "$emit('delete', props.id)" class = "absolute top-0 right-2 text-lg text-red-400 hover:text-red-500">
+        <button tabindex="-1" v-if="!onlyOne" @click = "$emit('delete', props.id)" class = "absolute top-0 right-2 text-lg text-red-400 hover:text-red-500">
             × 
         </button>
 
@@ -95,7 +95,7 @@ const emit = defineEmits<{
 
         <div class="flex mt-1">
             <p class = "my-auto mr-1 font-light text-white"> Redirect to</p>
-            <input @change="handleUpdateUrl" type = "text" class = "flex-grow pl-1 text-white bg-white/10 focus:outline-none placeholder:text-white/50" placeholder="URL"/>
+            <input @change="handleUpdateUrl" type = "text" class = "flex-grow pl-1 text-white bg-white/10 focus:outline-none placeholder:text-white/50" placeholder="https://example.com"/>
         </div>
     </div>
     

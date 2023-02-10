@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
-import { Condition, Operators, Variables, browsers, operatingSystems, timezones, languages } from '../types'
+import { Condition, Operators, Variables, browsers, operatingSystems, timezones, languages } from '../../types'
 import Guide from './Guide.vue'
 export type Operator = typeof Operators[number]
 export type Variable = typeof Variables[number]
@@ -81,8 +81,8 @@ const checkAndCreate = () => {
 </script>
 
 <template>
-    <div class = "p-2 ml-3 mb-1 w-fit bg-black/10 rounded-xl rounded-tl-none cursor-default text-center">
-        <div v-if = "error" class = "fixed top-4 left-4 px-4 py-1 bg-red-100 border border-black/25 rounded text-red-500 text-center font-light">
+    <div class = "p-2 ml-3 mb-1 w-fit bg-white/5 rounded-xl rounded-tl-none cursor-default text-center">
+        <div v-if = "error" class = "fixed top-4 left-4 px-4 py-1 bg-red-100 border border-black/25 rounded text-black text-center font-light">
             {{error}}
         </div>
 

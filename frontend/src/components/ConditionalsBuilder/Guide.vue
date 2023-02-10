@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Variables } from '../types';
+import { Variables } from '../../types';
 const props = defineProps<{
     variable: typeof Variables[number]
 }>()

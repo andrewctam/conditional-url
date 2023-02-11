@@ -20,13 +20,13 @@ git clone https://github.com/tamandrew/conditional-url.git
 - Set up [Azure Functions Core Tools](https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local?tabs=windows%2Ccsharp%2Cbash) and [Cosmos DB](https://learn.microsoft.com/en-us/azure/cosmos-db/nosql/quickstart-portal).
 - Set up environmental variables:
     - In `/frontend`, rename `.env.template` to `.env` and change the URLs if desired.
-    - In `/functions`, rename `.env.template` to `.env` and add your Cosmos DB details.
+    - In `/functions`, rename `.env.template` to `.env` and add your Cosmos DB details, and a JWT Secret.
 
 
-- To start Azure Functions Core Tools, run `func start` in `/functions`
+- To start Azure Functions Core Tools, run `npm start` in `/functions`
 ```
 cd functions
-func start
+npm start
 ```
 - To start the frontend, in `/frontend` install npm dependencies and run `npm run dev`
 ```

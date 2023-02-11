@@ -22,7 +22,7 @@ export const timezones = ["-12", "-11", "-10", "-9:30", "-9", "-8", "-7", "-6", 
 export const languages = ["English", "Spanish", "French", "German", "Italian", "Portuguese", "Russian", "Chinese", "Japanese", "Korean", "Hindi"]
 
 export const enum AccountAction {
-    None, SignIn, SignUp
+    None, SignIn, SignUp, ViewURLs
 }
 
 export interface Data {

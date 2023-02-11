@@ -70,10 +70,18 @@ const signUp = async () => {
             username: usernameInput.value,
             password: passwordInput.value
         })
-    }).then((res) => res.json());
-
-    console.log(response);
-    
+    }).then((res) => {
+        if (res.status == 200) 
+            return res.json();
+        else
+            return null;
+    });
+    console.log(response)
+    if (response) {
+        emit('updateUser', response.username, response.accessToken);
+    } else {
+        updateError("Username already taken")
+    }
 }
 
 
@@ -83,9 +91,13 @@ const signIn = async () => {
         updateError("Username cannot be empty");
         return;
     }
+    if (passwordInput.value.length === 0) {
+        updateError("Password cannot be empty");
+        return;
+    }
 
     if (!/^[a-zA-Z0-9]*$/.test(usernameInput.value) || passwordInput.value.length < 8) {
-        updateError("Failed to sign in.");
+        updateError("Failed to login. Verify your username and password");
         return;
     }
     let url;
@@ -104,9 +116,21 @@ const signIn = async () => {
             username: usernameInput.value,
             password: passwordInput.value
         })
-    }).then((res) => res.json());
+    }).then((res) => {
+        if (res.status == 200) 
+            return res.json();
+        else
+            return null;
+    });
+    console.log(response)
+    if (response) {
+        emit('updateUser', response.username, response.accessToken);
+    } else {
+        updateError("Failed to login. Verify your username and password")
+    }
 
-    console.log(response);
+    
+
     
 }
 
@@ -119,7 +143,8 @@ const handleSubmit = () => {
 }
 
 const emit = defineEmits<{
-    (event: 'close'): void
+    (event: 'close'): void,
+    (event: 'updateUser', username: string, accessToken: string) : void
 }>();
 
 

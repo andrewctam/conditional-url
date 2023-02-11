@@ -1,12 +1,13 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import { CosmosClient } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
-
+import * as jwt from 'jsonwebtoken';
 import type { Conditional } from "../types";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const short = req.body.short;
     const conditionals = req.body.conditionals;
+    console.log(req.headers)
 
     if (short === "" || !/^[a-zA-Z0-9]*$/.test(short) || short.startsWith("http")) {
         context.res = {
@@ -59,6 +60,23 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const client = new CosmosClient({ endpoint, key });
     const container = client.database("conditionalurl").container("urls");
 
+    if (req.headers.authorization !== "") {
+        const userContainer = client.database("conditionalurl").container("users");
+        const accessToken = req.headers.authorization.split(" ")[1];
+        const tokenUsername = jwt.decode(accessToken).username;
+
+        const { resource } = await container.item(tokenUsername, tokenUsername).read();
+        if (resource === undefined || jwt.verify(accessToken, resource.password) === undefined) {
+            context.res = {
+                status: 401,
+                body: JSON.stringify("User not found")
+            };
+            return;
+        }
+        
+
+
+    }
     try {
         await container.items.create({
             id: short,

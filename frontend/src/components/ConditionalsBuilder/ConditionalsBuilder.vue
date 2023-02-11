@@ -1,10 +1,9 @@
 <script setup lang='ts'>
-import { computed, ref } from 'vue'
+import { computed, ref, inject } from 'vue'
 import type { Ref } from 'vue'
 import ConditionalBlock from './ConditionalBlock.vue'
 import draggable from 'vuedraggable'
 import { Condition, Conditional } from '../../types'
-
 
 
 const short = ref("");
@@ -25,6 +24,9 @@ const conditionals: Ref<Conditional[]> = ref([
 ]);
 const error = ref("");
 const responseUrl = ref("");
+
+const accessToken: Ref<string> | undefined = inject('accessToken')
+
 
 const updateError = (msg: string) => {
     setTimeout(() => {
@@ -151,10 +153,13 @@ const createConditionalUrl = async () => {
         url = `${import.meta.env.VITE_DEV_API_URL}/api/createUrl`;
     }
     
+    const authHeader = accessToken && accessToken.value ? `Bearer ${accessToken.value}` : "";
+
     const response = await fetch(url, {
         method: "POST",
         headers: {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            "Authorization": authHeader
         },
         body: JSON.stringify({
             short: short.value === "" ? Math.random().toString(36).substring(2, 8) : short.value,
@@ -234,11 +239,11 @@ const domain = computed(() => {
             </template>
         </draggable>
 
-        <div @click = "newConditional" class = "mx-8 p-2 cursor-pointer text-center rounded bg-white/5 border border-black/20 text-green-100 hover:text-green-200 text-sm font-light hover:bg-black/30 select-none">
+        <div @click = "newConditional" class = "mx-2 p-2 cursor-pointer text-center rounded bg-white/5 border border-black/20 text-green-100 hover:text-green-200 text-sm font-light hover:bg-black/30 select-none">
             Add Block
         </div>
 
-        <button @click = "createConditionalUrl" class = "w-full px-4 py-2 mt-12 rounded-b-xl bg-black/10 border-t border-t-black/10 text-white font-light mx-auto hover:bg-black/30 hover:text-green-100 select-none">
+        <button @click = "createConditionalUrl" class = "w-full px-4 py-2 mt-6 rounded-b-xl bg-black/10 border-t border-t-black/10 text-white font-light mx-auto hover:bg-black/30 hover:text-green-100 select-none">
             Create Conditional URL
         </button>
 

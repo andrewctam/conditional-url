@@ -1,6 +1,7 @@
 <script setup lang="ts">
 
 import { onBeforeMount } from 'vue'
+import type { Data } from "../types"
 
 onBeforeMount(async () => {    
     const userAgent = window.navigator.userAgent;
@@ -65,8 +66,22 @@ onBeforeMount(async () => {
         language = "Hindi"
     
     const params = Object.fromEntries(new URLSearchParams(window.location.search));
+    const data: Data = {
+        "Language": language,
+        "Browser": browser,
+        "OS": operatingSystem,
+        "Time": `${date.getHours()}:${date.getMinutes()}`,
+        'Time Zone': timezone,
+        "params": JSON.stringify(params)
+    }
 
-    const url = import.meta.env.VITE_DETERMINE_URL_LAMBDA;
+    let url;
+    if (import.meta.env.PROD) {
+        url = `${import.meta.env.VITE_PROD_API_URL}/api/determineUrl`;
+    } else {
+        url = `${import.meta.env.VITE_DEV_API_URL}/api/determineUrl`;
+    }
+
     const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -74,14 +89,7 @@ onBeforeMount(async () => {
         },
         body: JSON.stringify({
             "short": window.location.pathname.slice(1),
-            "data": {
-                "Language": language,
-                "Browser": browser,
-                "OS": operatingSystem,
-                "Time": `${date.getHours()}:${date.getMinutes()}`,
-                'Time Zone': timezone,
-                "params": JSON.stringify(params)
-            }
+            "data": JSON.stringify(data)
         })
     }).then(response => response.json())
 

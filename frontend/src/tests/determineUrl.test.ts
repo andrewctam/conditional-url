@@ -1,18 +1,10 @@
 import { expect, test } from 'vitest'
 import { fetch } from 'cross-fetch'
-
-interface Data {
-    Language: string;
-    Browser: string;
-    OS: string;
-    Time: string;
-    'Time Zone': string;
-    params: string;
-}
+import type { Data } from '../types'
 
 
 async function fetchURL(data: Data) {
-    const url = import.meta.env.VITE_DETERMINE_URL_LAMBDA;
+    const url = `${import.meta.env.VITE_DEV_API_URL}/api/determineUrl`;
 
     const response = await fetch(url, {
         method: 'POST',
@@ -21,9 +13,10 @@ async function fetchURL(data: Data) {
         },
         body: JSON.stringify({
             "short": "Testing",
-            "data": data
+            "data": JSON.stringify(data)
         })
     }).then((response) => {
+        console.log(response)
         return response.json()
     }).catch((error) => {
         console.log(error)

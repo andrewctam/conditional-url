@@ -3,15 +3,9 @@ import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 import ConditionalBlock from './ConditionalBlock.vue'
 import draggable from 'vuedraggable'
-import { Condition } from '../../types'
+import { Condition, Conditional } from '../../types'
 
 
-interface Conditional {
-    id: number,
-    url: string,
-    and: boolean
-    conditions: Condition[]
-}
 
 const short = ref("");
 const i = ref(0); //used for temp id, removed before uploading
@@ -150,7 +144,13 @@ const createConditionalUrl = async () => {
         return;
     }
 
-    const url = import.meta.env.VITE_CREATE_SHORT_LAMBDA;
+    let url;
+    if (import.meta.env.PROD) {
+        url = `${import.meta.env.VITE_PROD_API_URL}/api/createUrl`;
+    } else {
+        url = `${import.meta.env.VITE_DEV_API_URL}/api/createUrl`;
+    }
+    
     const response = await fetch(url, {
         method: "POST",
         headers: {
@@ -202,10 +202,10 @@ const domain = computed(() => {
         {{error}}
     </div>
 
-   <div v-if="responseUrl !== ''" class = "text-center font-light border border-black/25 w-fit mx-auto p-6 mt-8 rounded bg-black/10">
+   <div v-if="responseUrl !== ''" class = "text-center text-white font-light border border-black/25 w-fit mx-auto p-6 mt-8 rounded bg-black/10">
         <p class = "text-lg">Your Conditional URL was successfully created!</p>
         <input readonly type="text" 
-            class = "w-80 text-slate-600 bg-white/50 text-center border border-black rounded px-2 py-1 mt-4" 
+            class = "w-80 text-black bg-white/90 text-center border border-black rounded px-2 py-1 mt-4" 
             :value="`${domain}/${responseUrl}`" 
             @click="selectText"/>
     </div>

@@ -95,7 +95,7 @@ const emit = defineEmits<{
 
         <div class="flex mt-1">
             <p class = "my-auto mr-1 font-light text-white"> Redirect to</p>
-            <input @change="handleUpdateUrl" type = "text" class = "flex-grow pl-1 text-white bg-white/10 focus:outline-none placeholder:text-white/50" placeholder="https://example.com"/>
+            <input @change="handleUpdateUrl" type = "text" class = "flex-grow pl-1 text-white font-light bg-white/10 focus:outline-none placeholder:text-white/50" placeholder="https://example.com"/>
         </div>
     </div>
     

@@ -60,9 +60,21 @@ const checkAndCreate = () => {
         return;
     }
 
-    if (selectedVariable.value === "URL Parameter" && param.value === "") {
-        updateError("Please enter a parameter name");
-        return;
+    if (selectedVariable.value === "URL Parameter") {
+        if (param.value === "") {
+            updateError("Please enter a parameter name");
+            return;
+        }
+
+        if (!/^[a-zA-Z0-9]*$/.test(param.value)) {
+            updateError("Parameter name can only contain letters and numbers");
+            return;
+        }
+
+        if (!/^[a-zA-Z0-9]*$/.test(value.value)) {
+            updateError("Parameter value can only contain letters and numbers");
+            return;
+        }
     }
 
     if (selectedVariable.value === "Time" && !value.value.match(/^\d{2}:\d{2}$/)) {

@@ -31,7 +31,7 @@ const toggleAccountPopup = (type: AccountAction) => {
         </p>
 
         <p class = "font-light text-gray-200 mt-1 select-none relative">
-            Track analytics and modify your conditions later with a free account:
+            Track analytics and modify your URLs later with a free account:
             <span class = "cursor-pointer font-semibold relative" :class="accountAction === AccountAction.SignIn ? 'text-red-200' : 'text-blue-200'">
                 <span @click="toggleAccountPopup(AccountAction.SignIn)">Sign In</span>
                 <AccountPopup 

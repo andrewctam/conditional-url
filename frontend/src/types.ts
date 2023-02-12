@@ -9,7 +9,6 @@ export type Condition = {
 }
 
 export interface Conditional {
-    id: number,
     url: string,
     and: boolean
     conditions: Condition[]

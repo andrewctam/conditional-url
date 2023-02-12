@@ -7,7 +7,6 @@ import type { Conditional } from "../types";
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const short = req.body.short;
     const conditionals = req.body.conditionals;
-    console.log(req.headers)
 
     if (short === "" || !/^[a-zA-Z0-9]*$/.test(short) || short.startsWith("http")) {
         context.res = {
@@ -18,7 +17,6 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     } 
 
     const parsedConditionals: Conditional[] = JSON.parse(conditionals);
-    console.log(parsedConditionals)
     for (let i = 0; i < parsedConditionals.length; i++) {
         const c = parsedConditionals[i];
         if (c.url == "" ||
@@ -53,68 +51,56 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         }
     }
 
+    if (req.headers.authorization === "") {
+        context.res = {
+            status: 401,
+            body: JSON.stringify("No token provided")
+        };
+        return;
+    }
+    
+    const accessToken = req.headers.authorization.split(" ")[1];
+    
     dotenv.config();
+    const payload = jwt.verify(accessToken, process.env.JWT_SECRET);
+    if (payload === undefined || payload.username === undefined) {
+        context.res = {
+            status: 401,
+            body: JSON.stringify("Invalid token")
+        };
+        return;
+    }
+
     const key = process.env["COSMOS_KEY"];
     const endpoint = process.env["COSMOS_ENDPOINT"];
     
     const client = new CosmosClient({ endpoint, key });
     const container = client.database("conditionalurl").container("urls");
 
-    let owner = ""
-    if (req.headers.authorization !== "") {
-        const userContainer = client.database("conditionalurl").container("users");
-        const accessToken = req.headers.authorization.split(" ")[1];
+    const { resource } = await container.item(short, short).read();
 
-        const payload = jwt.verify(accessToken, process.env.JWT_SECRET);
-        if (payload === undefined || payload.username === undefined) {
-            context.res = {
-                status: 401,
-                body: JSON.stringify("Invalid token")
-            };
-            return;
-        }
-        owner = payload.username;
-
-        const { resource } = await userContainer.item(payload.username, payload.username).read();
-        if (resource === undefined) {
-            context.res = {
-                status: 401,
-                body: JSON.stringify("User not found")
-            };
-            return;
-        }
-
-        resource.urls.push(short);
-        resource.urlCount++;
-
-        try {
-            await userContainer.item(payload.username, payload.username).replace(resource);
-        } catch (error) {
-            context.res = {
-                status: 500,
-                body: JSON.stringify("Error saving short URL")
-            };
-            return;
-        }
+    if (resource === undefined) {
+        context.res = {
+            status: 404,
+            body: JSON.stringify("Short URL not found")
+        };
+        return;
     }
 
-    try {
-        await container.items.create({
-            id: short,
-            short,
-            conditionals,
-            owner
-        });
+    if (resource.owner !== payload.username) {
+        context.res = {
+            status: 401,
+            body: JSON.stringify("You do not own this URL")
+        };
+        return;
+    }
 
-        context.res = {
-            status: 200, 
-            body: JSON.stringify(short)
-        }
-    } catch (error) {
-        context.res = {
-            status: 409,
-            body: JSON.stringify("Short URL already exists")
-        }
+    resource.conditionals = conditionals;
+    await container.item(short, short).replace(resource);
+
+    context.res = {
+        status: 200,
+        body: JSON.stringify(short)
     }
 
 

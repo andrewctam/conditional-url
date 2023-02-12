@@ -6,11 +6,12 @@ import ConditionDisplay from './ConditionDisplay.vue'
 
 
 const props = defineProps<{
-    id: number,
+    i: number,
     first: boolean,
     last: boolean,
     and: boolean,
-    conditions: Condition[]
+    conditions: Condition[],
+    url: string
 }>()
 
 
@@ -32,13 +33,13 @@ const onlyOne = computed(() => {
 })
 
 const handleUpdateUrl = (e: Event) => {
-    emit('updateUrl', props.id, (e.target as HTMLInputElement).value);
+    emit('updateUrl', props.i, (e.target as HTMLInputElement).value);
 }
 
 
 const addCondition = (condition: Condition) => {
     showConditionMenu.value = false;
-    emit('addCondition', props.id, condition);
+    emit('addCondition', props.i, condition);
 }
 
 
@@ -54,7 +55,7 @@ const emit = defineEmits<{
 
 <template>
     <div class = "bg-white/5 hover:bg-black/10 border border-black/20 my-4 mx-2 p-3 relative rounded cursor-move select-none">
-        <button tabindex="-1" v-if="!onlyOne" @click = "$emit('delete', props.id)" class = "absolute top-0 right-2 text-lg text-red-400 hover:text-red-500">
+        <button tabindex="-1" v-if="!onlyOne" @click = "$emit('delete', props.i)" class = "absolute top-0 right-2 text-lg text-red-400 hover:text-red-500">
             × 
         </button>
 
@@ -67,12 +68,12 @@ const emit = defineEmits<{
                         :key = "i"
                         :id = "i"
                         :condition = "condition"
-                        @delete = "emit('removeCondition', props.id, i)"
+                        @delete = "emit('removeCondition', props.i, i)"
                     />
 
                     <span 
                         v-if="i != conditions.length - 1" 
-                        @click="emit('toggleAnd', props.id)"
+                        @click="emit('toggleAnd', props.i)"
                         class = "font-light cursor-pointer text-sm"
                         :class = "props.and ? 'text-green-300' : 'text-purple-300'"
                         > 
@@ -95,7 +96,10 @@ const emit = defineEmits<{
 
         <div class="flex mt-1">
             <p class = "my-auto mr-1 font-light text-white"> Redirect to</p>
-            <input @change="handleUpdateUrl" type = "text" class = "flex-grow pl-1 text-white font-light bg-white/10 focus:outline-none placeholder:text-white/50" placeholder="https://example.com"/>
+            <input 
+                :value="props.url" 
+                @input="handleUpdateUrl" 
+                type = "text" class = "flex-grow pl-1 text-white font-light bg-white/10 focus:outline-none placeholder:text-white/50" placeholder="https://example.com"/>
         </div>
     </div>
     

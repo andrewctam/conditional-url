@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import ConditionalsBuilder from './ConditionalsBuilder/ConditionalsBuilder.vue'
+import ConditionalsBuilder from './URLBuilder.vue'
 import AccountPopup from './Account/AccountPopup.vue'
 import AccountURLs from './Account/AccountURLs.vue'
 import { ref, provide, onBeforeMount } from 'vue'
@@ -102,10 +102,13 @@ onBeforeMount(() => {
             </div>
         </p>
     </div>
+    
 
     <AccountURLs 
         v-if="accountAction === AccountAction.ViewURLs" 
         @close="accountAction = AccountAction.None" />
+
+    
 
     <ConditionalsBuilder v-else />
 

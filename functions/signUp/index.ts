@@ -28,7 +28,10 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         await container.items.create({
             id: username,
             username,
-            hashedPassword: hashedPassword
+            hashedPassword: hashedPassword,
+            urls: [],
+            urlCount: 0
+
         });
 
         const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '1h' });

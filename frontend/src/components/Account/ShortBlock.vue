@@ -11,7 +11,8 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <div @click = '$emit("select")' class = "bg-white/5 hover:bg-black/10 text-white border font-light border-black/20 my-4 mx-8 p-3 relative rounded select-none cursor-pointer break-words">
+    <div @click = '$emit("select")' 
+        class = "bg-white/5 hover:bg-black/10 mx-8 p-2 text-white font-light border border-black/20 rounded cursor-pointer break-words">
         {{ `/${props.short}` }}
     </div>
 

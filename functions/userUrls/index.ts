@@ -59,12 +59,21 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             page = 0;
     }
 
+    const sort = req.query.sort;
+    console.log(sort)
+    let urls = resource.urls;
+
+    if (sort === "Newest") {
+        urls = urls.reverse();
+    }    
+
+    
     context.res = {
         status: 200,
         body: JSON.stringify({
             page: page,
             pageCount: Math.ceil(resource.urls.length / 10),
-            paginatedUrls: resource.urls.slice(page * 10, (page + 1) + 10)
+            paginatedUrls: urls.slice(page * 10, (page + 1) * 10)
         })
     };
 

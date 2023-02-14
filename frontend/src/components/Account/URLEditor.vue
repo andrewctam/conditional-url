@@ -10,6 +10,7 @@ const props = defineProps<{
 
 const conditionals: Ref<Conditional[]> = ref([]);
 const error = ref("");
+const doneLoading = ref(false);
 const accessToken: Ref<string> | undefined = inject('accessToken')
 const changesMade = ref(false);
 const refresh: undefined | (() => Promise<boolean>) = inject('refresh');
@@ -43,6 +44,7 @@ onMounted(async () => {
         conditionals.value = JSON.parse(response);
     }
     
+    doneLoading.value = true;
 })
 
 const updateError = (msg: string) => {
@@ -163,7 +165,7 @@ const updateConditionalUrl = async () => {
         {{error}}
     </div>
 
-    <div class = "w-[90%] bg-black/10 my-8 mx-auto border border-black/25 rounded-xl text-center relative">
+    <div v-if="doneLoading" class = "w-[90%] bg-black/10 my-8 mx-auto border border-black/25 rounded-xl text-center relative">
         <ConditionalsEditor 
             :conditionals="conditionals"
             @update-conditionals="(updated) => {

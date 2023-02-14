@@ -78,7 +78,7 @@ const signUp = async () => {
     });
     console.log(response)
     if (response) {
-        emit('updateUser', response.username, response.accessToken);
+        emit('updateUser', response.username, response.accessToken, response.refreshToken);
     } else {
         updateError("Username already taken")
     }
@@ -124,7 +124,7 @@ const signIn = async () => {
     });
     console.log(response)
     if (response) {
-        emit('updateUser', response.username, response.accessToken);
+        emit('updateUser', response.username, response.accessToken, response.refreshToken);
     } else {
         updateError("Failed to login. Verify your username and password")
     }
@@ -144,7 +144,7 @@ const handleSubmit = () => {
 
 const emit = defineEmits<{
     (event: 'close'): void,
-    (event: 'updateUser', username: string, accessToken: string) : void
+    (event: 'updateUser', username: string, accessToken: string, refreshToken: string) : void
 }>();
 
 

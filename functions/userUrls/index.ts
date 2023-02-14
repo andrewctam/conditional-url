@@ -15,7 +15,19 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const accessToken = req.headers.authorization.split(" ")[1];
     
     dotenv.config();
-    const payload = jwt.verify(accessToken, process.env.JWT_SECRET);
+
+    let payload;
+    try {
+        payload = jwt.verify(accessToken, process.env.JWT_SECRET);
+    } catch (e) {
+        context.res = {
+            status: 401,
+            body: JSON.stringify("Invalid token") 
+        };
+        return;
+    }
+
+
     if (payload === undefined || payload.username === undefined) {
         context.res = {
             status: 401,

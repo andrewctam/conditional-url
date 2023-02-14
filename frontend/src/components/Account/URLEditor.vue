@@ -11,6 +11,8 @@ const props = defineProps<{
 const conditionals: Ref<Conditional[]> = ref([]);
 const error = ref("");
 const accessToken: Ref<string> | undefined = inject('accessToken')
+const changesMade = ref(false);
+const refresh: undefined | (() => Promise<boolean>) = inject('refresh');
 
 onMounted(async () => {
     if (!accessToken || !accessToken.value)
@@ -128,6 +130,8 @@ const updateConditionalUrl = async () => {
         console.log(res)
         if (res.status === 200) {
             return res.json();
+        } else if (res.status === 401) { 
+            return -1;
         } else if (res.status === 409) {
             updateError("URL already exists. Please enter a different short URL.")
             return null;
@@ -140,7 +144,12 @@ const updateConditionalUrl = async () => {
         }
     });
 
-    if (response) {
+    if (response === -1) {
+        if (refresh !== undefined && await refresh()) {
+            await updateConditionalUrl();
+        }
+        return;
+    } else if (response) {
         updateError("Updated successfully");
     }
 }
@@ -155,17 +164,20 @@ const updateConditionalUrl = async () => {
     </div>
 
     <div class = "w-[90%] bg-black/10 my-8 mx-auto border border-black/25 rounded-xl text-center relative">
-        <div class = "mx-auto mt-4 text-white font-extralight text-xl">
-            Edit Conditions
-        </div>
-
         <ConditionalsEditor 
             :conditionals="conditionals"
-            @update-conditionals="(updated) => conditionals = updated"
+            @update-conditionals="(updated) => {
+                conditionals = updated;
+                changesMade = true;
+            }"
         />
 
-        <button @click = "updateConditionalUrl" class = "w-full px-4 py-2 mt-6 rounded-b-xl bg-black/10 border-t border-t-black/10 text-white font-light mx-auto hover:bg-black/30 hover:text-green-100 select-none">
-            Update
+        <button 
+            :disabled="!changesMade" 
+            @click = "updateConditionalUrl" 
+            class = "w-full px-4 py-2 mt-6 rounded-b-xl bg-black/10 border-t border-t-black/10 text-white font-light mx-auto select-none 
+                            hover:bg-black/30 hover:text-green-100 disabled:bg-black/5 disabled:text-gray-500 disabled:hover:bg-black/5">
+            Save Changes
         </button>
 
     </div>

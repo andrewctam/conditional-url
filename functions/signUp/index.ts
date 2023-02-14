@@ -1,5 +1,5 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 import { CosmosClient } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
@@ -25,22 +25,25 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const hashedPassword = await bcrypt.hash(password, 10);
     
     try {
+        const accessToken = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '15m' });
+        const refreshToken = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '7d' });
+        
         await container.items.create({
             id: username,
             username,
             hashedPassword: hashedPassword,
             urls: [],
-            urlCount: 0
-
+            urlCount: 0,
+            refreshToken: refreshToken
         });
 
-        const token = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
         context.res = {
             status: 200,
             body: JSON.stringify({
                 username: username,
-                accessToken: token
+                accessToken: accessToken,
+                refreshToken: refreshToken
             })
         }
 

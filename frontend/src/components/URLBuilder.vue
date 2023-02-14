@@ -20,7 +20,8 @@ const conditionals: Ref<Conditional[]> = ref([
 const error = ref("");
 const responseUrl = ref("");
 
-const accessToken: Ref<string> | undefined = inject('accessToken')
+const accessToken: Ref<string> | undefined = inject('accessToken');
+const refresh: undefined | (() => Promise<boolean>) = inject('refresh');
 
 const updateError = (msg: string) => {
     setTimeout(() => {
@@ -110,7 +111,9 @@ const createConditionalUrl = async () => {
         console.log(res)
         if (res.status === 200) {
             return res.json();
-        } if (res.status === 409) {
+        } else if (res.status === 401) {
+            return -1;
+        } else if (res.status === 409) {
             updateError("URL already exists. Please enter a different short URL.")
             return null;
         } else if (res.status === 400) {
@@ -126,10 +129,15 @@ const createConditionalUrl = async () => {
         return null;
     });
     
-    console.log(response)
-    if (response) {
+    if (response === -1) {
+        if (refresh && await refresh()) {
+            await createConditionalUrl();
+        }
+        return;
+    } else if (response) {
         responseUrl.value = response;
     }
+    
 }
 
 const selectText = (event: MouseEvent) => {
@@ -185,7 +193,7 @@ const domain = computed(() => {
             Make Another URL
         </button>
     </div>
-    <div v-else class = "lg:w-1/2 md:w-3/4 w-[95%] bg-black/10 my-8 mx-auto border border-black/25 rounded-xl text-center relative">
+    <div v-else class = "xl:w-1/2 lg:w-2/3 md:w-5/6 w-[95%] bg-black/10 my-8 mx-auto border border-black/25 rounded-xl text-center relative">
         <div class = "mx-auto mt-4">
             <span class = "text-white font-extralight text-xl">{{`${domain}/`}}</span>
             <input v-model = "short" type = "text" class = "text-white text-xl font-extralight w-[165px] bg-white/10 focus:outline-none placeholder:text-white/50 placeholder:text-center" placeholder="optional custom url"/>

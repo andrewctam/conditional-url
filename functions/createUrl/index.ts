@@ -65,7 +65,17 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         const userContainer = client.database("conditionalurl").container("users");
         const accessToken = req.headers.authorization.split(" ")[1];
 
-        const payload = jwt.verify(accessToken, process.env.JWT_SECRET);
+        let payload;
+        try {
+            payload = jwt.verify(accessToken, process.env.JWT_SECRET);
+        } catch (error) {
+            context.res = {
+                status: 401,
+                body: JSON.stringify("Invalid token")
+            };
+            return;
+        }
+
         if (payload === undefined || payload.username === undefined) {
             context.res = {
                 status: 401,
@@ -78,7 +88,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         const { resource } = await userContainer.item(payload.username, payload.username).read();
         if (resource === undefined) {
             context.res = {
-                status: 401,
+                status: 400,
                 body: JSON.stringify("User not found")
             };
             return;

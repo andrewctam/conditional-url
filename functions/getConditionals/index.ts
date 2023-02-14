@@ -15,7 +15,17 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const accessToken = req.headers.authorization.split(" ")[1];
     
     dotenv.config();
-    const payload = jwt.verify(accessToken, process.env.JWT_SECRET);
+    let payload;
+    try {
+        payload = jwt.verify(accessToken, process.env.JWT_SECRET);
+    } catch (e) {
+        context.res = {
+            status: 401,
+            body: JSON.stringify("Invalid token")
+        };
+        return;
+    }
+
     if (payload === undefined || payload.username === undefined) {
         context.res = {
             status: 401,
@@ -33,7 +43,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     
     if (short === undefined || short === "") {
         context.res = {
-            status: 401,
+            status: 400,
             body: JSON.stringify("No short URL provided")
         };
         return;
@@ -44,7 +54,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     if (resource === undefined) {
         context.res = {
-            status: 404,
+            status: 400,
             body: JSON.stringify("Short URL not found")
         };
         return;
@@ -52,7 +62,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     if (resource.owner !== payload.username) {
         context.res = {
-            status: 401,
+            status: 400,
             body: JSON.stringify("You do not own this URL")
         };
         return;

@@ -11,7 +11,8 @@ export type Condition = {
 export interface Conditional {
     url: string,
     and: boolean
-    conditions: Condition[]
+    conditions: Condition[],
+    redirects?: number
 }
 
 

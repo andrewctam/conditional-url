@@ -11,9 +11,19 @@ const props = defineProps<{
 const conditionals: Ref<Conditional[]> = ref([]);
 const error = ref("");
 const doneLoading = ref(false);
+const redirectsNonZero = ref(false);
 const accessToken: Ref<string> | undefined = inject('accessToken')
 const changesMade = ref(false);
 const refresh: undefined | (() => Promise<boolean>) = inject('refresh');
+
+
+const updateError = (msg: string) => {
+    setTimeout(() => {
+        error.value = "";
+    }, 2000);
+
+    error.value = msg;
+}
 
 onMounted(async () => {
     if (!accessToken || !accessToken.value)
@@ -39,21 +49,22 @@ onMounted(async () => {
             return null;
         }
     });
-
+    console.log(response)
     if (response) {
-        conditionals.value = JSON.parse(response);
+        conditionals.value = JSON.parse(response.conditionals);
+    }
+
+    for (let i = 0; i < response.redirects.length; i++) {
+        if (response.redirects[i] !== 0) {
+            redirectsNonZero.value = true;
+        }
+
+        conditionals.value[i].redirects = response.redirects[i];
     }
     
     doneLoading.value = true;
 })
 
-const updateError = (msg: string) => {
-    setTimeout(() => {
-        error.value = "";
-    }, 2000);
-
-    error.value = msg;
-}
 
 const updateConditionalUrl = async () => {
     if (!accessToken || !accessToken.value)
@@ -101,7 +112,7 @@ const updateConditionalUrl = async () => {
         }
     }
 
-    //remove id, remove any conditions in else
+    //remove analytics and remove any conditions in else
     let trimmed = conditionals.value.map((c, i) => {
         return {
             url: c.url,
@@ -153,7 +164,9 @@ const updateConditionalUrl = async () => {
         return;
     } else if (response) {
         updateError("Updated successfully");
+        redirectsNonZero.value = true;
     }
+
 }
 
 
@@ -165,7 +178,12 @@ const updateConditionalUrl = async () => {
         {{error}}
     </div>
 
+    
     <div v-if="doneLoading" class = "w-[90%] bg-black/10 my-8 mx-auto border border-black/25 rounded-xl text-center relative">
+        <div v-if="redirectsNonZero" class="text-red-200 mt-2 font-light">
+            WARNING: Saving changes will clear analytics
+        </div>
+
         <ConditionalsEditor 
             :conditionals="conditionals"
             @update-conditionals="(updated) => {
@@ -173,7 +191,7 @@ const updateConditionalUrl = async () => {
                 changesMade = true;
             }"
         />
-
+        
         <button 
             :disabled="!changesMade" 
             @click = "updateConditionalUrl" 
@@ -181,7 +199,7 @@ const updateConditionalUrl = async () => {
                             hover:bg-black/30 hover:text-green-100 disabled:bg-black/5 disabled:text-gray-500 disabled:hover:bg-black/5">
             Save Changes
         </button>
-
     </div>
+
 </template>
 

@@ -35,14 +35,15 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         }
         
         const conditionals = JSON.parse(resource.conditionals);
-        const url = determineUrl(conditionals, data)
+        const [url, i] = determineUrl(conditionals, data)
+
+        resource.redirects[i]++;
+        await container.item(short, short).replace(resource);
 
         context.res = {
             status: 200,
             body: JSON.stringify(url)
         }
-
-
     }
 
 };
@@ -56,7 +57,7 @@ const determineUrl = (conditionals: Conditional[], data: Data) => {
 
         //else statement
         if (i === conditionals.length - 1) {
-            return conditional.url;
+            return [conditional.url, conditionals.length - 1];
         }
         
         const conditions: Condition[] = conditional.conditions;
@@ -120,7 +121,7 @@ const determineUrl = (conditionals: Conditional[], data: Data) => {
         if (!valid)
             continue
         else
-            return conditional.url
+            return [conditional.url, i]
     }
 }
 

@@ -113,7 +113,8 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             id: short,
             short,
             conditionals,
-            owner
+            owner,
+            redirects: new Array(parsedConditionals.length).fill(0)
         });
 
         context.res = {

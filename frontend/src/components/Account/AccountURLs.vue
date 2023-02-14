@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onBeforeMount, inject } from 'vue'
+import { ref, computed, onBeforeMount, inject, watch } from 'vue'
 import type { Ref } from 'vue'
 import ShortBlock from './ShortBlock.vue';
 import URLEditor from './URLEditor.vue';
@@ -39,11 +39,12 @@ const domain = computed(() => {
 
 const fetchUrls = async (direction: Direction) => {
     if (!accessToken || !accessToken.value)
-        return;
-
+    return;
+    
     if (page.value + direction < 0 || page.value + direction >= pageCount.value)
-        return;
-
+    return;
+    
+    doneLoading.value = false;
     let url;
     if (import.meta.env.PROD) {
         url = `${import.meta.env.VITE_PROD_API_URL}/api/userUrls?page=${page.value + direction}&sort=${sorting.value}`;
@@ -95,10 +96,16 @@ const hasPrev = computed(() => {
     return page.value - 1 >= 0;
 })
 
+watch(sorting, async (oldSorting, newSorting) => {
+    if (oldSorting !== newSorting)
+        await fetchUrls(Direction.Same);
+})
+
+
 </script>
 
 <template>
-    <div class="xl:w-1/2 lg:w-2/3 md:w-5/6 w-[95%]bg-black/10 my-8 pb-10 mx-auto border border-black/25 rounded-xl text-center relative">
+    <div class="xl:w-1/2 lg:w-2/3 md:w-5/6 w-[95%] bg-black/10 my-8 pb-10 mx-auto border border-black/25 rounded-xl text-center relative">
         <div v-if='selected === ""'>
             <span @click='$emit("close")' class="absolute top-1 left-2 text-xl text-white hover:text-red-200 cursor-pointer ">
                 ←
@@ -109,13 +116,13 @@ const hasPrev = computed(() => {
             </div>
 
             <div v-if="doneLoading && shortUrls.length > 0" class="mt-1 mb-4">
-                <span @click="sorting=Sorting.Newest; fetchUrls(Direction.Same)" class="cursor-pointer" :class="sorting===Sorting.Newest ? 'text-blue-200' : 'text-white'" >
+                <span @click="sorting=Sorting.Newest" class="cursor-pointer select-none" :class="sorting===Sorting.Newest ? 'text-blue-200' : 'text-white'" >
                     Newest
                 </span>
                 <span class="text-white text-xl">
                     •
                 </span>
-                <span @click="sorting=Sorting.Oldest; fetchUrls(Direction.Same)" class="cursor-pointer" :class="sorting===Sorting.Oldest ? 'text-blue-200' : 'text-white'" >
+                <span @click="sorting=Sorting.Oldest" class="cursor-pointer select-none" :class="sorting===Sorting.Oldest ? 'text-blue-200' : 'text-white'" >
                     Oldest
                 </span>
             </div>
@@ -129,16 +136,26 @@ const hasPrev = computed(() => {
                     Create your first!
                 </span>
             </p>
-            <ul v-else v-for="short in shortUrls" :key="short" class="my-3">
-                <ShortBlock :short="short" @select="selected = short" />
+            <ul v-else v-for="(short, i) in shortUrls" :key="short" class="my-3">
+                <ShortBlock 
+                    :short="short" 
+                    :i = "i + page * 10"
+                    @select="selected = short" />
             </ul>
 
-            <div v-if="hasPrev" @click="fetchUrls(Direction.Prev)" class = "absolute bottom-1 left-4 text-white hover:text-red-200 cursor-pointer font-light">
-                Back
-            </div>
+            <div class="absolute left-0 right-0 bottom-1 mx-auto">
+                <span v-if="hasPrev" @click="fetchUrls(Direction.Prev)" class = "text-white hover:text-red-200 cursor-pointer font-light select-none">
+                    ←
+                </span>
 
-            <div v-if="hasNext" @click="fetchUrls(Direction.Next)" class = "absolute bottom-1 right-4 text-white hover:text-green-200 cursor-pointer font-light">
-                Next
+                <span v-if="pageCount > 1" class = "text-white font-light mx-2">
+                    {{`Page ${page + 1} of ${pageCount}`}}
+                </span>
+                
+                <span v-if="hasNext" @click="fetchUrls(Direction.Next)" class = "text-white hover:text-green-200 cursor-pointer font-light select-none">
+                    →
+                </span>
+
             </div>
         </div>
 

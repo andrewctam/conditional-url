@@ -12,6 +12,7 @@ const props = defineProps<{
     and: boolean,
     conditions: Condition[],
     url: string
+    redirects: number
 }>()
 
 
@@ -55,9 +56,17 @@ const emit = defineEmits<{
 
 <template>
     <div class = "bg-white/5 hover:bg-black/10 border border-black/20 my-4 mx-2 p-3 relative rounded cursor-move select-none">
+      
+        
+
         <button tabindex="-1" v-if="!onlyOne" @click = "$emit('delete', props.i)" class = "absolute top-0 right-2 text-lg text-red-400 hover:text-red-500">
+            
+
             × 
         </button>
+
+       
+
 
         <div class = "flex">
             <span class = "font-light text-white mr-1 h-fit">{{msg}}</span>
@@ -85,6 +94,7 @@ const emit = defineEmits<{
                     {{showConditionMenu ? "×" : "+"}}
                 </span>
 
+
                 <AddConditionMenu 
                     v-if="showConditionMenu"
                     @addCondition = "addCondition"
@@ -94,7 +104,10 @@ const emit = defineEmits<{
             <div v-else-if="props.conditions.length > 0" class="text-white/25 italic"> Unused Conditions...</div>
         </div>
 
-        <div class="flex mt-1">
+        <div class="flex mt-1 relative">
+            <span v-if="redirects !== undefined" class = "text-green-200 text-xs font-light absolute -top-4 right-0">
+                {{  `${props.redirects} click${props.redirects === 1 ? "" : "s"}` }}
+            </span>
             <p class = "my-auto mr-1 font-light text-white"> Redirect to</p>
             <input 
                 :value="props.url" 

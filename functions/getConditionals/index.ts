@@ -70,7 +70,10 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     context.res = {
         status: 200,
-        body: JSON.stringify(resource.conditionals)
+        body: JSON.stringify({
+            conditionals: resource.conditionals,
+            redirects: resource.redirects
+        })
     }
 };
 

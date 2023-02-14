@@ -74,7 +74,7 @@ const createConditionalUrl = async () => {
         }
     }
 
-    //remove id, remove any conditions in else
+    //remove analytics and remove any conditions in else
     let trimmed = conditionals.value.map((c, i) => {
         return {
             url: c.url,
@@ -189,7 +189,7 @@ const domain = computed(() => {
             :value="`${domain}/${responseUrl}`" 
             @click="selectText"/>
 
-        <button @click='reset' class="mt-8 mx-auto hover:text-green-200 cursor-pointer block border border-black/20 rounded px-3 py-2 bg-green-200/30">
+        <button @click='reset' class="mt-8 mx-auto hover:text-green-200 cursor-pointer block border border-black/20 rounded px-3 py-2 bg-black/10">
             Make Another URL
         </button>
     </div>

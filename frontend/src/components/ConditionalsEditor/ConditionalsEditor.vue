@@ -99,6 +99,7 @@ const toggleAnd = (i: number) => {
                 :last = "index === conditionals.length - 1"
                 :conditions="element.conditions"
                 :url="element.url"
+                :redirects="element.redirects"
                 @delete = "deleteConditional"
                 @updateUrl = "updateUrl"
                 @addCondition = "addCondition"

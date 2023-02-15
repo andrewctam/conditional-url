@@ -1,6 +1,4 @@
 <script setup lang='ts'>
-import { computed, ref, inject } from 'vue'
-import type { Ref } from 'vue'
 import ConditionalBlock from './ConditionalBlock.vue'
 import draggable from 'vuedraggable'
 import { Condition, Conditional } from '../../types'

@@ -1,24 +1,17 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue';
-import { AccountAction } from '../../types';
+import { ref, computed, inject } from 'vue';
+import { AccountAction, updateMsgKey } from '../../types';
 
 const props = defineProps<{
     accountAction: AccountAction
 }>();
 
-const error = ref("");
+
 const usernameInput = ref('');
 const passwordInput = ref('');
 const passwordConfirmInput = ref('');
 
-const updateError = (msg: string) => {
-    setTimeout(() => {
-        error.value = "";
-    }, 2000);
-
-    error.value = msg;
-}
-
+const updateMsg = inject(updateMsgKey) as (msg: string, err?: boolean) => void;
 const type = computed(() => {
     if (props.accountAction === AccountAction.SignIn) {
         return 'Sign In';
@@ -31,26 +24,26 @@ const type = computed(() => {
 
 const signUp = async () => {
     if (usernameInput.value === "") {
-        updateError("Username cannot be empty");
+        updateMsg("Username cannot be empty", true);
         return;
     }
 
     if (!/^[a-zA-Z0-9]*$/.test(usernameInput.value)) {
-        updateError("Username can only contain letters and numbers");
+        updateMsg("Username can only contain letters and numbers", true);
         return;
     }
 
     if (passwordInput.value.length < 8) {
-        updateError("Password is too short");
+        updateMsg("Password is too short", true);
         return;
     }
     if (passwordConfirmInput.value.length === 0) {
-        updateError("Please confirm your password");
+        updateMsg("Please confirm your password", true);
         return;
     }
 
     if (passwordInput.value !== passwordConfirmInput.value) {
-        updateError("Passwords do not match");
+        updateMsg("Passwords do not match", true);
         return;
     }
 
@@ -80,7 +73,7 @@ const signUp = async () => {
     if (response) {
         emit('updateUser', response.username, response.accessToken, response.refreshToken);
     } else {
-        updateError("Username already taken")
+        updateMsg("Username already taken", true)
     }
 }
 
@@ -88,16 +81,16 @@ const signUp = async () => {
 
 const signIn = async () => {
     if (usernameInput.value === "") {
-        updateError("Username cannot be empty");
+        updateMsg("Username cannot be empty", true);
         return;
     }
     if (passwordInput.value.length === 0) {
-        updateError("Password cannot be empty");
+        updateMsg("Password cannot be empty", true);
         return;
     }
 
     if (!/^[a-zA-Z0-9]*$/.test(usernameInput.value) || passwordInput.value.length < 8) {
-        updateError("Failed to login. Verify your username and password");
+        updateMsg("Failed to login. Verify your username and password", true);
         return;
     }
     let url;
@@ -126,7 +119,7 @@ const signIn = async () => {
     if (response) {
         emit('updateUser', response.username, response.accessToken, response.refreshToken);
     } else {
-        updateError("Failed to login. Verify your username and password")
+        updateMsg("Failed to login. Verify your username and password", true)
     }
 
     
@@ -151,10 +144,6 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <div v-if = "error" class = "fixed top-4 left-4 px-4 py-1 bg-red-100 border border-black/25 rounded text-black text-center font-light">
-        {{error}}
-    </div>
-
     <div class = "bg-black/80 border border-white/10 shadow-md rounded-lg sm:rounded-tr-none z-20 pt-6 p-10
                         sm:absolute sm:left-auto sm:right-2 sm:top-6 sm:w-fit sm:h-fit
                         fixed w-[97.5%] left-[1.25%] right-[1.25%] top-[22vh] h-[50vh]">

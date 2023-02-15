@@ -5,7 +5,6 @@ import * as dotenv from 'dotenv';
 
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
-    console.log(req.body)
     const short = req.body.short;
     const data = JSON.parse(req.body.data);
 
@@ -24,7 +23,6 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         const container = client.database("conditionalurl").container("urls");
 
         const { resource } = await container.item(short, short).read();
-        console.log(resource)
 
         if (resource === undefined) {
             context.res = {

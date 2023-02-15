@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { onMounted, ref, inject } from 'vue'
 import type { Ref } from 'vue'
-import { Conditional } from '../../types'
+import { accessTokenKey, Conditional, refreshTokensKey, updateMsgKey } from '../../types'
 import ConditionalsEditor from '../ConditionalsEditor/ConditionalsEditor.vue';
 
 const props = defineProps<{
@@ -9,23 +9,20 @@ const props = defineProps<{
 }>();
 
 const conditionals: Ref<Conditional[]> = ref([]);
-const error = ref("");
+
 const doneLoading = ref(false);
 const redirectsNonZero = ref(false);
-const accessToken: Ref<string> | undefined = inject('accessToken')
 const changesMade = ref(false);
-const refresh: undefined | (() => Promise<boolean>) = inject('refresh');
 
-
-const updateError = (msg: string) => {
-    setTimeout(() => {
-        error.value = "";
-    }, 2000);
-
-    error.value = msg;
-}
+const accessToken = inject(accessTokenKey)
+const refresh = inject(refreshTokensKey) as () => Promise<boolean>
+const updateMsg = inject(updateMsgKey) as (msg: string, err?: boolean) => void
 
 onMounted(async () => {
+    await getConditionals();
+});
+
+const getConditionals = async () => {
     if (!accessToken || !accessToken.value)
         return;
 
@@ -45,12 +42,19 @@ onMounted(async () => {
     }).then((res) => {
         if (res.status === 200) {
             return res.json();
+        } else if (res.status=== 401) {
+            return -1;
         } else {
             return null;
         }
     });
-    console.log(response)
-    if (response) {
+    if (response === -1) {
+        if (await refresh()) {
+            await getConditionals();
+        } else {
+            doneLoading.value = true;
+        }
+    } else if (response) {
         conditionals.value = JSON.parse(response.conditionals);
     }
 
@@ -63,7 +67,7 @@ onMounted(async () => {
     }
     
     doneLoading.value = true;
-})
+}
 
 
 const updateConditionalUrl = async () => {
@@ -74,38 +78,38 @@ const updateConditionalUrl = async () => {
     for (let i = 0; i < conditionals.value.length; i++) {
         const c = conditionals.value[i];
         if (c.url == "") {
-            updateError(`Please enter a URL for block #${i + 1}`);
+            updateMsg(`Please enter a URL for block #${i + 1}`, true);
             return;
         }
         
         if (!c.url.startsWith("http://") && !c.url.startsWith("https://")) {
-            updateError(`URL #${i + 1} should start with http:// or https://`);
+            updateMsg(`URL #${i + 1} should start with http:// or https://`, true);
             return;
         }
 
         if (c.url.startsWith(`https://${import.meta.env.VITE_PROD_URL}`)) {
-            updateError(`Can not shorten a link to this site`);
+            updateMsg(`Can not shorten a link to this site`, true);
             return;
         }
         
         if (c.conditions.length == 0 && i != conditionals.value.length - 1) {
-            updateError(`Please enter at least one condition for block #${i + 1}`);
+            updateMsg(`Please enter at least one condition for block #${i + 1}`, true);
             return;
         }
 
         for (let j = 0; j < c.conditions.length; j++) {
             const condition = c.conditions[j];
             if (condition.value === "" && condition.variable !== "URL Parameter") { //url param value can be empty
-                updateError(`Please enter a value for condition #${j + 1} in block #${i + 1}`);
+                updateMsg(`Please enter a value for condition #${j + 1} in block #${i + 1}`, true);
                 return;
             } else if (condition.variable === "URL Parameter") {
                 if (!condition.param) {
-                    updateError(`Please enter a URL Parameter for condition #${j + 1} in block #${i + 1}`);
+                    updateMsg(`Please enter a URL Parameter for condition #${j + 1} in block #${i + 1}`, true);
                     return;
                 }
 
                 if (!/^[a-zA-Z0-9]*$/.test(condition.param)) {
-                    updateError(`URL Parameter for condition #${j + 1} in block #${i + 1} can only contain letters and numbers`);
+                    updateMsg(`URL Parameter for condition #${j + 1} in block #${i + 1} can only contain letters and numbers`, true);
                     return;
                 }
             }
@@ -140,31 +144,35 @@ const updateConditionalUrl = async () => {
             conditionals: JSON.stringify(trimmed)
         })
     }).then((res) => {
-        console.log(res)
         if (res.status === 200) {
             return res.json();
         } else if (res.status === 401) { 
             return -1;
         } else if (res.status === 409) {
-            updateError("URL already exists. Please enter a different short URL.")
+            updateMsg("URL already exists. Please enter a different short URL.", true)
             return null;
         } else if (res.status === 400) {
-            updateError("Problem with conditionals. Please check your inputs and try again.")
+            updateMsg("Problem with conditionals. Please check your inputs and try again.", true)
             return null;
         } else {
-            updateError("Something went wrong. Please try again later.")
+            updateMsg("Something went wrong. Please try again later.", true)
             return null;
         }
     });
 
     if (response === -1) {
-        if (refresh !== undefined && await refresh()) {
+        if (await refresh()) {
             await updateConditionalUrl();
         }
         return;
     } else if (response) {
-        updateError("Updated successfully");
-        redirectsNonZero.value = true;
+        updateMsg("Updated successfully");
+        redirectsNonZero.value = false;
+        conditionals.value = conditionals.value.map(c => {
+            c.redirects = 0;
+            return c;
+        })
+
     }
 
 }
@@ -173,17 +181,8 @@ const updateConditionalUrl = async () => {
 
 </script>
 
-<template>
-    <div v-if = "error" class = "fixed top-4 left-4 px-4 py-1 bg-red-100 border border-black/25 rounded text-black text-center font-light">
-        {{error}}
-    </div>
-
-    
+<template>    
     <div v-if="doneLoading" class = "w-[90%] bg-black/10 my-8 mx-auto border border-black/25 rounded-xl text-center relative">
-        <div v-if="redirectsNonZero" class="text-red-200 mt-2 font-light">
-            WARNING: Saving changes will clear analytics
-        </div>
-
         <ConditionalsEditor 
             :conditionals="conditionals"
             @update-conditionals="(updated) => {
@@ -199,6 +198,9 @@ const updateConditionalUrl = async () => {
                             hover:bg-black/30 hover:text-green-100 disabled:bg-black/5 disabled:text-gray-500 disabled:hover:bg-black/5">
             Save Changes
         </button>
+        <div v-if="changesMade && redirectsNonZero" class="text-red-200 my-2 font-light text-xs">
+            WARNING: Saving changes will clear analytics
+        </div>
     </div>
 
 </template>

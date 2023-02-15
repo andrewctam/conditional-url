@@ -7,7 +7,6 @@ import type { Conditional } from "../types";
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const short = req.body.short;
     const conditionals = req.body.conditionals;
-    console.log(req.headers)
 
     if (short === "" || !/^[a-zA-Z0-9]*$/.test(short) || short.startsWith("http")) {
         context.res = {
@@ -18,7 +17,6 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     } 
 
     const parsedConditionals: Conditional[] = JSON.parse(conditionals);
-    console.log(parsedConditionals)
     for (let i = 0; i < parsedConditionals.length; i++) {
         const c = parsedConditionals[i];
         if (c.url == "" ||

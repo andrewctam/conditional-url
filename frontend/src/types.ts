@@ -1,3 +1,6 @@
+import { InjectionKey } from "vue";
+import type { Ref } from "vue";
+
 export const Operators = ["=", "!=", ">", ">=", "<", "<=", "Contains"]
 export const Variables = ["Language", "Time", "Time Zone", "OS", "Browser", "URL Parameter"]
 
@@ -22,7 +25,7 @@ export const timezones = ["-12", "-11", "-10", "-9:30", "-9", "-8", "-7", "-6", 
 export const languages = ["English", "Spanish", "French", "German", "Italian", "Portuguese", "Russian", "Chinese", "Japanese", "Korean", "Hindi"]
 
 export const enum AccountAction {
-    None, SignIn, SignUp, ViewURLs, Settings
+    CreateURL, SignIn, SignUp, ViewURLs, Settings
 }
 
 export interface Data {
@@ -33,3 +36,9 @@ export interface Data {
     'Time Zone': string,
     "params": string
 }
+
+export const usernameKey: InjectionKey<Ref<string>> = Symbol('username')
+export const accessTokenKey: InjectionKey<Ref<string>> = Symbol('accessToken')
+export const refreshTokensKey: InjectionKey<() => Promise<boolean>> = Symbol('refreshToken')
+export const updateMsgKey: InjectionKey<(str: string, err?: boolean ) => void> = Symbol('updateMsg')
+

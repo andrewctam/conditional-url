@@ -12,7 +12,7 @@ const props = defineProps<{
     and: boolean,
     conditions: Condition[],
     url: string
-    redirects: number
+    redirects?: number
 }>()
 
 
@@ -106,7 +106,7 @@ const emit = defineEmits<{
 
         <div class="flex mt-1 relative">
             <span v-if="redirects !== undefined" class = "text-green-200 text-xs font-light absolute -top-4 right-0">
-                {{  `${props.redirects} click${props.redirects === 1 ? "" : "s"}` }}
+                {{  `${props.redirects} redirect${props.redirects === 1 ? "" : "s"}` }}
             </span>
             <p class = "my-auto mr-1 font-light text-white"> Redirect to</p>
             <input 

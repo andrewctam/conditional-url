@@ -3,6 +3,7 @@ import { ref, computed, onBeforeMount, inject, watch } from 'vue'
 import type { Ref } from 'vue'
 import ShortBlock from './ShortBlock.vue';
 import URLEditor from './URLEditor.vue';
+import { accessTokenKey, refreshTokensKey } from '../../types';
 
 const enum Sorting {
     "Newest" = "Newest",
@@ -18,15 +19,15 @@ const sorting = ref(Sorting.Newest);
 const page = ref(0);
 const pageCount = ref(1);
 const doneLoading = ref(false);
-const shortUrls: Ref<string[]> = ref([]);
-const refresh: undefined | (() => Promise<boolean>) = inject('refresh');
+const shortUrls: Ref<string[]> = ref([]); 
+const refresh = inject(refreshTokensKey) as () => Promise<boolean>
 
 const emit = defineEmits<{
     (event: 'close'): void
 }>();
 
 const selected = ref("");
-const accessToken: Ref<string> | undefined = inject('accessToken')
+const accessToken = inject(accessTokenKey)
 
 const domain = computed(() => {
     if (import.meta.env.PROD) {
@@ -39,10 +40,10 @@ const domain = computed(() => {
 
 const fetchUrls = async (direction: Direction) => {
     if (!accessToken || !accessToken.value)
-    return;
+        return;
     
     if (page.value + direction < 0 || page.value + direction >= pageCount.value)
-    return;
+        return;
     
     doneLoading.value = false;
     let url;
@@ -70,7 +71,7 @@ const fetchUrls = async (direction: Direction) => {
     });
 
     if (response === -1) {
-        if (refresh && await refresh()) {
+        if (await refresh()) {
             await fetchUrls(direction);
         }
         return;
@@ -84,9 +85,6 @@ const fetchUrls = async (direction: Direction) => {
     page.value += direction;
 }
 
-onBeforeMount(async () => {
-    await fetchUrls(Direction.Same);
-})
 
 const hasNext = computed(() => {
     return page.value + 1 < pageCount.value;
@@ -94,6 +92,10 @@ const hasNext = computed(() => {
 
 const hasPrev = computed(() => {
     return page.value - 1 >= 0;
+})
+
+onBeforeMount(async () => {
+    await fetchUrls(Direction.Same);
 })
 
 watch(sorting, async (oldSorting, newSorting) => {
@@ -107,10 +109,6 @@ watch(sorting, async (oldSorting, newSorting) => {
 <template>
     <div class="xl:w-1/2 lg:w-2/3 md:w-5/6 w-[95%] bg-black/10 my-8 pb-10 mx-auto border border-black/25 rounded-xl text-center relative">
         <div v-if='selected === ""'>
-            <span @click='$emit("close")' class="absolute top-1 left-2 text-xl text-white hover:text-red-200 cursor-pointer ">
-                ←
-            </span>
-
             <div class="mx-auto mt-4 text-white font-extralight md:text-2xl text-lg">
                 Your URLs
             </div>
@@ -155,7 +153,6 @@ watch(sorting, async (oldSorting, newSorting) => {
                 <span v-if="hasNext" @click="fetchUrls(Direction.Next)" class = "text-white hover:text-green-200 cursor-pointer font-light select-none">
                     →
                 </span>
-
             </div>
         </div>
 

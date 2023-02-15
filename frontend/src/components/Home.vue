@@ -4,22 +4,15 @@ import AccountPopup from './Account/AccountPopup.vue'
 import AccountURLs from './Account/AccountURLs.vue'
 import { ref, provide, onBeforeMount } from 'vue'
 import type { Ref } from 'vue'
-import { AccountAction } from '../types'
+import { AccountAction, usernameKey, accessTokenKey, refreshTokensKey, updateMsgKey } from '../types'
 import jwt_decode from 'jwt-decode'
-const accountAction: Ref<AccountAction> = ref(AccountAction.None)
+import AccountSettings from './Account/settings/AccountSettings.vue'
 
-const toggleAccountAction = (type: AccountAction) => {
-    if (accountAction.value !== type) {
-        accountAction.value = type
-    } else {
-        accountAction.value = AccountAction.None
-    }
-}
+const accountAction: Ref<AccountAction> = ref(AccountAction.CreateURL)
+
+
 const username = ref('')
-provide('username', username)
-
 const accessToken = ref('')
-provide('accessToken', accessToken)
 
 const updateUser = (user: string, access: string, refresh: string ) => {
     username.value = user
@@ -41,7 +34,7 @@ const updateUser = (user: string, access: string, refresh: string ) => {
         localStorage.setItem('refreshToken', refresh)
 
     if (user === "" || access === "" || refresh === "") {
-        accountAction.value = AccountAction.None
+        accountAction.value = AccountAction.CreateURL
     }
 }
 
@@ -103,10 +96,51 @@ const refreshTokens = async () => {
         return false
     }
 }
-provide('refresh', refreshTokens)
+
+const msg = ref('')
+const error = ref(false)
+const errorTimeout = ref<NodeJS.Timeout | null>(null)
+const updateMsg = (str: string, err?: boolean) => {
+    if (errorTimeout.value !== null) {
+        clearTimeout(errorTimeout.value);
+    }
+
+    errorTimeout.value = setTimeout(() => {
+        msg.value = "";
+    }, 2000);
+
+    msg.value = str;
+
+    if (err !== undefined) {
+        error.value = err;
+    } else {
+        error.value = false
+    }
+}
+
+const toggleAccountAction = (action: AccountAction) => {
+    if (accountAction.value === action) {
+        accountAction.value = AccountAction.CreateURL
+    } else {
+        accountAction.value = action
+    }
+}
+
+
+provide(usernameKey, username);
+provide(accessTokenKey, accessToken)
+provide(refreshTokensKey, refreshTokens)
+provide(updateMsgKey, updateMsg)
+
 </script>
 
 <template>
+    <div v-if = "msg" 
+        class = "fixed top-4 left-4 px-4 py-1 border border-black/25 rounded text-black text-center font-light"
+        :class="error ? 'bg-red-100' : 'bg-blue-100'">
+        {{msg}}
+    </div>
+
     <div class = "w-fit mt-12 mx-auto text-center px-4">
         <a href = "./">
             <h1 class="text-white text-5xl font-extralight">
@@ -115,20 +149,25 @@ provide('refresh', refreshTokens)
         </a>
 
 
-        <p v-if='username !== ""' class = "font-light text-gray-200 mt-2 select-none relative">
+        <div v-if='username !== ""' class = "font-light text-gray-200 mt-2 select-none relative">
             <p>Welcome {{username}}!</p>
-            <span class = "cursor-pointer font-semibold relative text-blue-200 hover:text-blue-300">
-                <span @click="toggleAccountAction(AccountAction.ViewURLs)">{{ accountAction === AccountAction.ViewURLs ? "Create New URL" : "Your URLs"}}</span>
+            <span class = "cursor-pointer font-semibold relative hover:text-blue-300" :class='accountAction === AccountAction.CreateURL ? "text-blue-300" : "text-blue-200"'>
+                <span @click="accountAction = AccountAction.CreateURL">{{"Create URL"}}</span>
             </span>
             <span class="font-bold mx-1">•</span>
-            <span class = "cursor-pointer font-semibold relative text-blue-200 hover:text-blue-300">
-                <span @click="toggleAccountAction(AccountAction.Settings)">{{ accountAction === AccountAction.Settings ? "Create New URL" : "Account Settings"}}</span>
+            <span class = "cursor-pointer font-semibold relative hover:text-blue-300" :class='accountAction === AccountAction.ViewURLs ? "text-blue-300" : "text-blue-200"'>
+                <span @click="accountAction = AccountAction.ViewURLs">{{"Your URLs"}}</span>
+            </span>
+            <span class="font-bold mx-1">•</span>
+            <span class = "cursor-pointer font-semibold relative hover:text-blue-300" :class='accountAction === AccountAction.Settings ? "text-blue-300" : "text-blue-200"'>
+                <span @click="accountAction = AccountAction.Settings">{{ "Account Settings"}}</span>
             </span>
             <span class="font-bold mx-1">•</span>
             <span class = "cursor-pointer font-semibold relative text-blue-200 hover:text-red-200">
                 <span @click="updateUser('', '', '')">Sign Out</span>
             </span>
-        </p>
+        </div>
+
         <div v-else>
             <p class = "font-light text-gray-200 mt-2 select-none">
                 Create a shortened URL that conditionally redirects visitors to different URLs
@@ -143,7 +182,7 @@ provide('refresh', refreshTokens)
                     <AccountPopup 
                         v-if="accountAction === AccountAction.SignIn" 
                         :accountAction="AccountAction.SignIn" 
-                        @close="accountAction = AccountAction.None"
+                        @close="accountAction = AccountAction.CreateURL"
                         @updateUser="updateUser"
                         />
                 </div>
@@ -156,7 +195,7 @@ provide('refresh', refreshTokens)
                     <AccountPopup 
                         v-if="accountAction === AccountAction.SignUp" 
                         :accountAction="AccountAction.SignUp" 
-                        @close="accountAction = AccountAction.None"
+                        @close="accountAction = AccountAction.CreateURL"
                         @updateUser="updateUser"
                         />
                 </div>
@@ -165,16 +204,9 @@ provide('refresh', refreshTokens)
     </div>
     
 
-    <AccountURLs 
-        v-if="accountAction === AccountAction.ViewURLs" 
-        @close="accountAction = AccountAction.None" />
-
-
+    <AccountURLs v-if="accountAction === AccountAction.ViewURLs" @close="accountAction=AccountAction.CreateURL"/>
+    <AccountSettings v-else-if="accountAction === AccountAction.Settings" @signout="updateUser('', '', '')"/>
     <ConditionalsBuilder v-else />
-
-    
-
-    
 
     
 </template>

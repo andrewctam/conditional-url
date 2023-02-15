@@ -43,42 +43,30 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const userContainer = client.database("conditionalurl").container("users");
     
     const { resource } = await userContainer.item(payload.username, payload.username).read();
-    if (resource === undefined) {
-        context.res = {
-            status: 401,
-            body: JSON.stringify("User not found")
-        };
-        return;
+    resource.urls = [];
+    resource.urlCount = 0;
+
+    const urlsContainer = client.database("conditionalurl").container("urls");
+
+    const { resources } = await urlsContainer.items.query({
+        query: "SELECT * FROM c WHERE c.owner = @username",
+        parameters: [
+            {
+                name: "@username",
+                value: payload.username
+            }
+        ]
+    }).fetchAll();
+    for (const resource of resources) {
+        await urlsContainer.item(resource.short, resource.short).delete();
     }
 
-    const pageParam = req.query.page;
-    let page = 0;
-    if (pageParam !== undefined) {
-        page = parseInt(pageParam);
-        if (isNaN(page))
-            page = 0;
-    }
+    await userContainer.item(payload.username, payload.username).replace(resource);
 
-    const sort = req.query.sort;
-    let urls = resource.urls;
-
-    if (sort === "Newest") {
-        urls = urls.reverse();
-    }    
-
-    
     context.res = {
         status: 200,
-        body: JSON.stringify({
-            page: page,
-            pageCount: Math.ceil(resource.urls.length / 10),
-            paginatedUrls: urls.slice(page * 10, (page + 1) * 10)
-        })
-    };
-
-      
-
-
+        body: JSON.stringify("All URLs deleted")
+    }
 
 };
 

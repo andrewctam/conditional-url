@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { computed, ref, inject } from 'vue'
 import type { Ref } from 'vue'
-import { Conditional } from '../types'
+import { accessTokenKey, Conditional, refreshTokensKey, updateMsgKey } from '../types'
 import ConditionalsEditor from './ConditionalsEditor/ConditionalsEditor.vue'
 
 const short = ref("");
@@ -20,54 +20,47 @@ const conditionals: Ref<Conditional[]> = ref([
 const error = ref("");
 const responseUrl = ref("");
 
-const accessToken: Ref<string> | undefined = inject('accessToken');
-const refresh: undefined | (() => Promise<boolean>) = inject('refresh');
-
-const updateError = (msg: string) => {
-    setTimeout(() => {
-        error.value = "";
-    }, 2000);
-
-    error.value = msg;
-}
+const accessToken = inject(accessTokenKey)
+const refresh = inject(refreshTokensKey) as () => Promise<boolean>
+const updateMsg = inject(updateMsgKey) as (msg: string) => void
 
 const createConditionalUrl = async () => {
     //verify
     for (let i = 0; i < conditionals.value.length; i++) {
         const c = conditionals.value[i];
         if (c.url == "") {
-            updateError(`Please enter a URL for block #${i + 1}`);
+            updateMsg(`Please enter a URL for block #${i + 1}`);
             return;
         }
         
         if (!c.url.startsWith("http://") && !c.url.startsWith("https://")) {
-            updateError(`URL #${i + 1} should start with http:// or https://`);
+            updateMsg(`URL #${i + 1} should start with http:// or https://`);
             return;
         }
 
         if (c.url.startsWith(`https://${import.meta.env.VITE_PROD_URL}`)) {
-            updateError(`Can not shorten a link to this site`);
+            updateMsg(`Can not shorten a link to this site`);
             return;
         }
         
         if (c.conditions.length == 0 && i != conditionals.value.length - 1) {
-            updateError(`Please enter at least one condition for block #${i + 1}`);
+            updateMsg(`Please enter at least one condition for block #${i + 1}`);
             return;
         }
 
         for (let j = 0; j < c.conditions.length; j++) {
             const condition = c.conditions[j];
             if (condition.value === "" && condition.variable !== "URL Parameter") { //url param value can be empty
-                updateError(`Please enter a value for condition #${j + 1} in block #${i + 1}`);
+                updateMsg(`Please enter a value for condition #${j + 1} in block #${i + 1}`);
                 return;
             } else if (condition.variable === "URL Parameter") {
                 if (!condition.param) {
-                    updateError(`Please enter a URL Parameter for condition #${j + 1} in block #${i + 1}`);
+                    updateMsg(`Please enter a URL Parameter for condition #${j + 1} in block #${i + 1}`);
                     return;
                 }
 
                 if (!/^[a-zA-Z0-9]*$/.test(condition.param)) {
-                    updateError(`URL Parameter for condition #${j + 1} in block #${i + 1} can only contain letters and numbers`);
+                    updateMsg(`URL Parameter for condition #${j + 1} in block #${i + 1} can only contain letters and numbers`);
                     return;
                 }
             }
@@ -84,7 +77,7 @@ const createConditionalUrl = async () => {
     })
 
     if (short.value !== "" && !/^[a-zA-Z0-9]*$/.test(short.value)) {
-        updateError("Short URL can only contain letters and numbers");
+        updateMsg("Short URL can only contain letters and numbers");
         return;
     }
 
@@ -114,23 +107,23 @@ const createConditionalUrl = async () => {
         } else if (res.status === 401) {
             return -1;
         } else if (res.status === 409) {
-            updateError("URL already exists. Please enter a different short URL.")
+            updateMsg("URL already exists. Please enter a different short URL.")
             return null;
         } else if (res.status === 400) {
-            updateError("Problem with conditionals. Please check your inputs and try again.")
+            updateMsg("Problem with conditionals. Please check your inputs and try again.")
             return null;
         } else {
-            updateError("Error creating URL.")
+            updateMsg("Error creating URL.")
             return null;
         }
     }).catch((err) => {
         console.log(err)
-        updateError("Error creating URL.")
+        updateMsg("Error creating URL.")
         return null;
     });
     
     if (response === -1) {
-        if (refresh && await refresh()) {
+        if (await refresh()) {
             await createConditionalUrl();
         }
         return;
@@ -178,10 +171,6 @@ const domain = computed(() => {
 </script>
 
 <template>
-    <div v-if = "error" class = "fixed top-4 left-4 px-4 py-1 bg-red-100 border border-black/25 rounded text-black text-center font-light">
-        {{error}}
-    </div>
-
    <div v-if="responseUrl !== ''" class = "text-center text-white font-light border border-black/25 w-fit mx-auto p-6 mt-8 rounded bg-black/10">
         <p class = "text-lg">Your Conditional URL was successfully created!</p>
         <input readonly type="text" 

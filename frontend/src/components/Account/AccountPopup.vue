@@ -69,7 +69,6 @@ const signUp = async () => {
         else
             return null;
     });
-    console.log(response)
     if (response) {
         emit('updateUser', response.username, response.accessToken, response.refreshToken);
     } else {
@@ -115,7 +114,6 @@ const signIn = async () => {
         else
             return null;
     });
-    console.log(response)
     if (response) {
         emit('updateUser', response.username, response.accessToken, response.refreshToken);
     } else {

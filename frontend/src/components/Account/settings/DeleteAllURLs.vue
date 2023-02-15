@@ -9,7 +9,7 @@ const updateMsg = inject(updateMsgKey) as (msg: string, err?: boolean) => void
 const emit = defineEmits<
     (event: 'close') => void
 >();
-const deleteAllURLs = async () => {
+const deleteAllURLs = async (retry: boolean = true) => {
     if (!accessToken || !accessToken.value)
         return;
         let url;
@@ -36,8 +36,8 @@ const deleteAllURLs = async () => {
     });
 
     if (response === -1) {
-        if (await refresh()) {
-            await deleteAllURLs();
+        if (retry && await refresh()) {
+            await deleteAllURLs(false);
         } else {
             updateMsg("Error with tokens", true);
         }
@@ -60,7 +60,7 @@ const deleteAllURLs = async () => {
     <button @click="$emit('close')" class = "rounded px-4 py-1 mr-4 border border-black bg-red-800/50 font-light text-white mt-8"> 
         Cancel
     </button>
-    <button @click="deleteAllURLs" class = "rounded px-4 py-1 border border-black bg-transparent font-light text-white mt-8"> 
+    <button @click="deleteAllURLs()" class = "rounded px-4 py-1 border border-black bg-transparent font-light text-white mt-8"> 
         Confirm
     </button>
 </template>

@@ -56,16 +56,17 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const endpoint = process.env["COSMOS_ENDPOINT"];
     
     const client = new CosmosClient({ endpoint, key });
-    const container = client.database("conditionalurl").container("urls");
 
     let owner = ""
     if (req.headers.authorization !== "") {
-        const userContainer = client.database("conditionalurl").container("users");
         const accessToken = req.headers.authorization.split(" ")[1];
 
         let payload;
         try {
             payload = jwt.verify(accessToken, process.env.JWT_SECRET);
+            if (payload === undefined || payload.username === undefined) {
+                throw new Error("Invalid token");
+            }
         } catch (error) {
             context.res = {
                 status: 401,
@@ -74,46 +75,50 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             return;
         }
 
-        if (payload === undefined || payload.username === undefined) {
-            context.res = {
-                status: 401,
-                body: JSON.stringify("Invalid token")
-            };
-            return;
-        }
         owner = payload.username;
-
-        const { resource } = await userContainer.item(payload.username, payload.username).read();
-        if (resource === undefined) {
-            context.res = {
-                status: 400,
-                body: JSON.stringify("User not found")
-            };
-            return;
-        }
-
-        resource.urls.push(short);
-        resource.urlCount++;
-
-        try {
-            await userContainer.item(payload.username, payload.username).replace(resource);
-        } catch (error) {
-            context.res = {
-                status: 500,
-                body: JSON.stringify("Error saving short URL")
-            };
-            return;
-        }
     }
+    
 
     try {
-        await container.items.create({
-            id: short,
-            short,
-            conditionals,
-            owner,
-            redirects: new Array(parsedConditionals.length).fill(0)
-        });
+        const urlsContainer = client.database("conditionalurl").container("urls");
+
+        if (owner) {
+            const userContainer = client.database("conditionalurl").container("users");
+            const { resource } = await userContainer.item(owner, owner).read();
+            if (resource === undefined) {
+                context.res = {
+                    status: 400,
+                    body: JSON.stringify("User not found")
+                };
+                return;
+            }
+
+            resource.urls.push(short);
+            resource.urlCount++;
+
+
+            await urlsContainer.items.create({
+                id: short,
+                short,
+                conditionals,
+                owner: owner,
+                redirects: new Array(parsedConditionals.length).fill(0)
+            });   
+
+            await userContainer.item(owner, owner).replace(resource);
+            
+            
+        } else {
+            await urlsContainer.items.create({
+                id: short,
+                short,
+                conditionals,
+                owner: "",
+                redirects: new Array(parsedConditionals.length).fill(0)
+            });    
+        }
+
+        
 
         context.res = {
             status: 200, 

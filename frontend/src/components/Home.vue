@@ -1,53 +1,56 @@
 <script setup lang='ts'>
 import ConditionalsBuilder from './URLBuilder.vue'
 import AccountPopup from './Account/AccountPopup.vue'
-import AccountURLs from './Account/AccountURLs.vue'
+import ViewURLs from './Account/ViewURLs.vue'
 import { ref, provide, onBeforeMount } from 'vue'
 import type { Ref } from 'vue'
 import { AccountAction, usernameKey, accessTokenKey, refreshTokensKey, updateMsgKey } from '../types'
 import jwt_decode from 'jwt-decode'
 import AccountSettings from './Account/settings/AccountSettings.vue'
+import NavText from './NavText.vue'
 
-const accountAction: Ref<AccountAction> = ref(AccountAction.CreateURL)
+const accountAction: Ref<AccountAction> = ref(AccountAction.CreateURL);
 
+const username = ref('');
+const accessToken = ref('');
 
-const username = ref('')
-const accessToken = ref('')
-
-const updateUser = (user: string, access: string, refresh: string ) => {
-    username.value = user
-    accessToken.value = access
+const updateUser = (user: string, access: string, refresh: string) => {
+    username.value = user;
+    accessToken.value = access;
 
     if (user === "")
-        localStorage.removeItem('username')
+        localStorage.removeItem('username');
     else 
-        localStorage.setItem('username', user)
+        localStorage.setItem('username', user);
 
     if (access === "")
-        localStorage.removeItem('accessToken')
+        localStorage.removeItem('accessToken');
     else 
-        localStorage.setItem('accessToken', access)
+        localStorage.setItem('accessToken', access);
 
     if (refresh === "")
-        localStorage.removeItem('refreshToken')
+        localStorage.removeItem('refreshToken');
     else 
-        localStorage.setItem('refreshToken', refresh)
+        localStorage.setItem('refreshToken', refresh);
+
+    if (accountAction.value === AccountAction.SignIn || accountAction.value === AccountAction.SignUp)
+        accountAction.value = AccountAction.CreateURL;
 
     if (user === "" || access === "" || refresh === "") {
-        accountAction.value = AccountAction.CreateURL
+        accountAction.value = AccountAction.CreateURL;
     }
 }
 
 onBeforeMount(async () => {
-    const user = localStorage.getItem('username')
-    const access = localStorage.getItem('accessToken')
+    const user = localStorage.getItem('username');
+    const access = localStorage.getItem('accessToken');
     
     if (user !== null && access !== null) {
         const payload = jwt_decode(access as string) as { [key: string]: any }
 
         if (payload.username === user && payload.exp >= Date.now() / 1000) {
-            username.value = user
-            accessToken.value = access
+            username.value = user;
+            accessToken.value = access;
         } else {
             await refreshTokens();
         }
@@ -88,12 +91,12 @@ const refreshTokens = async () => {
 
     if (response !== null) {
         updateUser(username, response.accessToken, response.refreshToken)
-        console.log("Successfully refreshed tokens")
-        return true
+        console.log("Successfully refreshed tokens");
+        return true;
     } else {
         updateUser('', '', '')
-        console.log("Failed to refresh tokens")
-        return false
+        console.log("Failed to refresh tokens");
+        return false;
     }
 }
 
@@ -114,23 +117,23 @@ const updateMsg = (str: string, err?: boolean) => {
     if (err !== undefined) {
         error.value = err;
     } else {
-        error.value = false
+        error.value = false;
     }
 }
 
 const toggleAccountAction = (action: AccountAction) => {
     if (accountAction.value === action) {
-        accountAction.value = AccountAction.CreateURL
+        accountAction.value = AccountAction.CreateURL;
     } else {
-        accountAction.value = action
+        accountAction.value = action;
     }
 }
 
 
 provide(usernameKey, username);
-provide(accessTokenKey, accessToken)
-provide(refreshTokensKey, refreshTokens)
-provide(updateMsgKey, updateMsg)
+provide(accessTokenKey, accessToken);
+provide(refreshTokensKey, refreshTokens);
+provide(updateMsgKey, updateMsg);
 
 </script>
 
@@ -151,20 +154,30 @@ provide(updateMsgKey, updateMsg)
 
         <div v-if='username !== ""' class = "font-light text-gray-200 mt-2 select-none relative">
             <p>Welcome {{username}}!</p>
-            <span class = "cursor-pointer font-semibold relative hover:text-blue-300" :class='accountAction === AccountAction.CreateURL ? "text-blue-300" : "text-blue-200"'>
-                <span @click="accountAction = AccountAction.CreateURL">{{"Create URL"}}</span>
-            </span>
+
+            <NavText 
+                text="Create URL"
+                :active="accountAction === AccountAction.CreateURL"
+                @setActive="() => {accountAction = AccountAction.CreateURL}" />
+
             <span class="font-bold mx-1">•</span>
-            <span class = "cursor-pointer font-semibold relative hover:text-blue-300" :class='accountAction === AccountAction.ViewURLs ? "text-blue-300" : "text-blue-200"'>
-                <span @click="accountAction = AccountAction.ViewURLs">{{"Your URLs"}}</span>
-            </span>
+
+            <NavText
+                text="Your URLs"
+                :active="accountAction === AccountAction.ViewURLs"
+                @setActive="() => {accountAction = AccountAction.ViewURLs}" />
+
             <span class="font-bold mx-1">•</span>
-            <span class = "cursor-pointer font-semibold relative hover:text-blue-300" :class='accountAction === AccountAction.Settings ? "text-blue-300" : "text-blue-200"'>
-                <span @click="accountAction = AccountAction.Settings">{{ "Account Settings"}}</span>
-            </span>
+
+            <NavText
+                text="Account Settings"
+                :active="accountAction === AccountAction.Settings"
+                @setActive="() => {accountAction = AccountAction.Settings}" />
+
             <span class="font-bold mx-1">•</span>
-            <span class = "cursor-pointer font-semibold relative text-blue-200 hover:text-red-200">
-                <span @click="updateUser('', '', '')">Sign Out</span>
+
+            <span class = "cursor-pointer font-semibold relative text-blue-200 hover:text-red-200" @click="updateUser('', '', '')">
+                Sign Out
             </span>
         </div>
 
@@ -204,7 +217,7 @@ provide(updateMsgKey, updateMsg)
     </div>
     
 
-    <AccountURLs v-if="accountAction === AccountAction.ViewURLs" @close="accountAction=AccountAction.CreateURL"/>
+    <ViewURLs v-if="accountAction === AccountAction.ViewURLs" @close="accountAction=AccountAction.CreateURL"/>
     <AccountSettings v-else-if="accountAction === AccountAction.Settings" @signout="updateUser('', '', '')"/>
     <ConditionalsBuilder v-else />
 

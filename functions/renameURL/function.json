@@ -15,5 +15,5 @@
       "name": "res"
     }
   ],
-  "scriptFile": "../dist/deleteAllURLs/index.js"
+  "scriptFile": "../dist/renameURL/index.js"
 }

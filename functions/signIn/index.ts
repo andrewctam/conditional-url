@@ -27,7 +27,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             const accessToken = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '15m' });
             const refreshToken = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-            resource.refreshToken = refreshToken;
+            resource.hashedRefresh = await bcrypt.hash(refreshToken, 10);
             await container.item(username, username).replace(resource);
 
             context.res = {

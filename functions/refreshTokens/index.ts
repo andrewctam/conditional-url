@@ -2,7 +2,7 @@ import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import { CosmosClient } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
-
+import * as bcrypt from 'bcryptjs';
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const refreshToken = req.body.refreshToken;
     const username  = req.body.username;
@@ -45,7 +45,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    if (resource.refreshToken !== refreshToken) {
+    if (!(await bcrypt.compare(refreshToken, resource.hashedRefresh))) {
         context.res = {
             status: 401,
             body: JSON.stringify("Invalid refresh token")
@@ -54,13 +54,13 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
 
     const accessToken = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: "15m" });
-    let resRefreshToken = refreshToken;
+    let returnedRefreshToken = refreshToken;
 
     //if the token will expire in less than a day, refresh it
     const ONE_DAY = 60 * 60 * 24;
     if (payload.exp - Date.now() / 1000 < ONE_DAY) { 
-        resRefreshToken = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: "1d" });
-        resource.refreshToken = resRefreshToken;
+        returnedRefreshToken = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: "1d" });
+        resource.hashedRefresh = await bcrypt.hash(returnedRefreshToken, 10);
 
         await container.item(username, username).replace(resource);
     }
@@ -69,7 +69,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         status: 200,
         body: JSON.stringify({
             accessToken,
-            refreshToken: resRefreshToken
+            refreshToken: returnedRefreshToken
         })
     };
     

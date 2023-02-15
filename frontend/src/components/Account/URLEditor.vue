@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import { onMounted, ref, inject } from 'vue'
+import { onMounted, ref, inject, computed } from 'vue'
 import type { Ref } from 'vue'
 import { accessTokenKey, Conditional, refreshTokensKey, updateMsgKey } from '../../types'
 import ConditionalsEditor from '../ConditionalsEditor/ConditionalsEditor.vue';
@@ -18,19 +18,130 @@ const accessToken = inject(accessTokenKey)
 const refresh = inject(refreshTokensKey) as () => Promise<boolean>
 const updateMsg = inject(updateMsgKey) as (msg: string, err?: boolean) => void
 
+const confirmDelete = ref(false);
+
+const currentName = ref(props.short);
+const rename = ref(props.short);
+
+
 onMounted(async () => {
     await getConditionals();
 });
 
-const getConditionals = async () => {
+const emit = defineEmits<{
+    (event: 'close'): void,
+    (event: 'closeAndFetch'): void
+}>();
+
+
+const deleteURL = async (retry: boolean = true) => {
+    if (!accessToken || !accessToken.value || !currentName.value)
+        return;
+    
+    let url;
+    if (import.meta.env.PROD) {
+        url = `${import.meta.env.VITE_PROD_API_URL}/api/deleteURL`;
+    } else {
+        url = `${import.meta.env.VITE_DEV_API_URL}/api/deleteURL`;
+    }
+
+    const response = await fetch(url, {
+        method: "DELETE",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessToken.value}`
+        }, 
+        body: JSON.stringify({
+            short: currentName.value
+        })
+    }).then((res) => {
+        if (res.status === 200) {
+            return res.json();
+        } else if (res.status === 401) {
+            return -1;
+        } else {
+            return null;
+        }
+    });
+
+    if (response === -1) {
+        if (retry && await refresh()) {
+            await deleteURL(false);
+            return;
+        } else {
+            updateMsg("Failed to delete URL", true);
+        }
+    } else if (response) {
+        updateMsg("URL deleted successfully");
+        emit('closeAndFetch');
+    }
+}
+
+
+const renameURL = async (retry: boolean = true) => {
+    if (!accessToken || !accessToken.value || !currentName.value || currentName.value === rename.value)
+        return;
+    
+
+    
+    let url;
+    if (import.meta.env.PROD) {
+        url = `${import.meta.env.VITE_PROD_API_URL}/api/renameURL`;
+    } else {
+        url = `${import.meta.env.VITE_DEV_API_URL}/api/renameURL`;
+    }
+
+    const response = await fetch(url, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${accessToken.value}`
+        }, 
+        body: JSON.stringify({
+            oldShort: currentName.value,
+            newShort: rename.value
+        })
+    }).then((res) => {
+        if (res.status === 200) {
+            return res.json();
+        } else if (res.status === 401) {
+            return -1;
+        } else if (res.status === 409) {
+            return -2;
+        } else if (res.status === 400) {
+            return -3;
+        } else {
+            return null;
+        }
+    });
+
+    if (response === -1) {
+        if (retry && await refresh()) {
+            await deleteURL(false);
+            return;
+        } else {
+            updateMsg("Failed to rename URL", true);
+        }
+    } else if (response === -2) {
+        updateMsg("New URL name already exists", true);
+    } else if (response === -3) {
+        updateMsg("New URL name can only have letters and numbers", true)
+    } else if (response) {
+        updateMsg("URL renamed successfully");
+        currentName.value = rename.value;
+    }
+}
+
+
+const getConditionals = async (retry: boolean = true) => {
     if (!accessToken || !accessToken.value)
         return;
 
     let url;
     if (import.meta.env.PROD) {
-        url = `${import.meta.env.VITE_PROD_API_URL}/api/getConditionals?short=${props.short}`;
+        url = `${import.meta.env.VITE_PROD_API_URL}/api/getConditionals?short=${currentName.value}`;
     } else {
-        url = `${import.meta.env.VITE_DEV_API_URL}/api/getConditionals?short=${props.short}`;
+        url = `${import.meta.env.VITE_DEV_API_URL}/api/getConditionals?short=${currentName.value}`;
     }
 
     const response = await fetch(url, {
@@ -49,8 +160,8 @@ const getConditionals = async () => {
         }
     });
     if (response === -1) {
-        if (await refresh()) {
-            await getConditionals();
+        if (retry && await refresh()) {
+            await getConditionals(false);
         } else {
             doneLoading.value = true;
         }
@@ -69,8 +180,16 @@ const getConditionals = async () => {
     doneLoading.value = true;
 }
 
+const close = () => {
+    if (props.short !== currentName.value) {
+        emit('closeAndFetch');
+    } else {
+        emit('close');
+    }
+}
 
-const updateConditionalUrl = async () => {
+
+const updateConditionals = async (retry?: boolean) => {
     if (!accessToken || !accessToken.value)
         return;
         
@@ -140,7 +259,7 @@ const updateConditionalUrl = async () => {
             "Authorization": `Bearer ${accessToken.value}`
         },
         body: JSON.stringify({
-            short: props.short,
+            short: currentName.value,
             conditionals: JSON.stringify(trimmed)
         })
     }).then((res) => {
@@ -161,8 +280,8 @@ const updateConditionalUrl = async () => {
     });
 
     if (response === -1) {
-        if (await refresh()) {
-            await updateConditionalUrl();
+        if (retry && await refresh()) {
+            await updateConditionals(false);
         }
         return;
     } else if (response) {
@@ -177,12 +296,47 @@ const updateConditionalUrl = async () => {
 
 }
 
+const domain = computed(() => {
+    if (import.meta.env.PROD) {
+        return import.meta.env.VITE_PROD_URL;
+    } else {
+        return import.meta.env.VITE_DEV_URL;
+    }
+})
 
 
 </script>
 
 <template>    
+    <span @click="close" class="absolute top-1 left-2 text-xl text-white hover:text-red-200 cursor-pointer ">
+        ←
+    </span>
+
+    <div class="mt-4">
+        <span class = "text-white font-extralight text-xl">{{`${domain}/`}}</span>
+        <input 
+            v-model = "rename" 
+            type = "text" 
+            class = "text-white text-xl font-extralight w-[120px] bg-white/10 focus:outline-none placeholder:text-white/50 placeholder:text-center" 
+            />
+    </div>
+        
+    <div class="mx-auto w-fit mt-3">
+        <span class="font-extralight cursor-pointer w-fit select-none">
+            <span @click="confirmDelete = !confirmDelete" class="text-red-200 text-sm px-2 py-1 bg-black/10 rounded-lg">{{confirmDelete ? "Cancel" : "Delete URL"}}</span>
+            <span @click="deleteURL()" v-if="confirmDelete" class="text-gray-200 ml-2 text-sm px-2 py-1 bg-black/10 rounded-lg">Confirm</span>
+        </span>
+
+        <span class="font-extralight text-sm w-fit ml-5 px-2 py-1 bg-black/10 rounded-lg select-none"
+            :class="currentName === rename  || rename === '' ? 'text-gray-200/40 cursor-auto' : 'text-green-200 cursor-pointer'"
+            @click="renameURL()">
+            Rename
+        </span>
+    </div>
+
     <div v-if="doneLoading" class = "w-[90%] bg-black/10 my-8 mx-auto border border-black/25 rounded-xl text-center relative">
+
+
         <ConditionalsEditor 
             :conditionals="conditionals"
             @update-conditionals="(updated) => {
@@ -193,7 +347,7 @@ const updateConditionalUrl = async () => {
         
         <button 
             :disabled="!changesMade" 
-            @click = "updateConditionalUrl" 
+            @click = "updateConditionals()"
             class = "w-full px-4 py-2 mt-6 rounded-b-xl bg-black/10 border-t border-t-black/10 text-white font-light mx-auto select-none 
                             hover:bg-black/30 hover:text-green-100 disabled:bg-black/5 disabled:text-gray-500 disabled:hover:bg-black/5">
             Save Changes

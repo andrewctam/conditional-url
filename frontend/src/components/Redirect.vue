@@ -5,7 +5,7 @@ import type { Data } from "../types"
 
 onBeforeMount(async () => {    
     const userAgent = window.navigator.userAgent;
-    let browser = "Other"
+    let browser = "Other";
     if (userAgent.includes("Chrome")) {
         browser = "Chrome";
     } else if (userAgent.includes("Firefox")) {
@@ -43,27 +43,27 @@ onBeforeMount(async () => {
     const langCode = window.navigator.language;
     let language = "Other"
     if (langCode.includes("en"))
-        language = "English"
+        language = "English";
     else if (langCode.includes("es"))
-        language = "Spanish"
+        language = "Spanish";
     else if (langCode.includes("fr"))
-        language = "French"
+        language = "French";
     else if (langCode.includes("de"))
-        language = "German"
+        language = "German";
     else if (langCode.includes("it"))
-        language = "Italian"
+        language = "Italian";
     else if (langCode.includes("pt"))
-        language = "Portuguese"
+        language = "Portuguese";
     else if (langCode.includes("ru"))
-        language = "Russian"
+        language = "Russian";
     else if (langCode.includes("zh"))
-        language = "Chinese"
+        language = "Chinese";
     else if (langCode.includes("ja"))
-        language = "Japanese"
+        language = "Japanese";
     else if (langCode.includes("ko"))
-        language = "Korean"
+        language = "Korean";
     else if (langCode.includes("hi"))
-        language = "Hindi"
+        language = "Hindi";
     
     const params = Object.fromEntries(new URLSearchParams(window.location.search));
     const data: Data = {
@@ -93,15 +93,14 @@ onBeforeMount(async () => {
         })
     }).then(response => response.json())
 
-    console.log(response)
     try {
         if (!response.startsWith("http://") && !response.startsWith("https://"))
-            throw new Error("Invalid URL")
+            throw new Error("Invalid URL");
 
         window.location.href = response;
     } catch (e) {
         console.log(e);
-        window.location.href = "https://conditionalurl.web.app"
+        window.location.href = "https://conditionalurl.web.app";
     }
     
 })
@@ -111,6 +110,4 @@ onBeforeMount(async () => {
 <template>
     <div class = "bg-white w-screen h-screen">
     </div>
-
-
 </template>

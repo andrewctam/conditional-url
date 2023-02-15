@@ -3,7 +3,7 @@ import { ref, computed, onBeforeMount, inject, watch } from 'vue'
 import type { Ref } from 'vue'
 import ShortBlock from './ShortBlock.vue';
 import URLEditor from './URLEditor.vue';
-import { accessTokenKey, refreshTokensKey } from '../../types';
+import { accessTokenKey, refreshTokensKey, updateMsgKey } from '../../types';
 
 const enum Sorting {
     "Newest" = "Newest",
@@ -21,24 +21,17 @@ const pageCount = ref(1);
 const doneLoading = ref(false);
 const shortUrls: Ref<string[]> = ref([]); 
 const refresh = inject(refreshTokensKey) as () => Promise<boolean>
+const updateMsg = inject(updateMsgKey) as (msg: string, err?: boolean) => void;
+const accessToken = inject(accessTokenKey)
+
 
 const emit = defineEmits<{
     (event: 'close'): void
 }>();
 
 const selected = ref("");
-const accessToken = inject(accessTokenKey)
 
-const domain = computed(() => {
-    if (import.meta.env.PROD) {
-        return import.meta.env.VITE_PROD_URL;
-    } else {
-        return import.meta.env.VITE_DEV_URL;
-    }
-})
-
-
-const fetchUrls = async (direction: Direction) => {
+const fetchUrls = async (direction: Direction, retry: boolean = true) => {
     if (!accessToken || !accessToken.value)
         return;
     
@@ -60,7 +53,6 @@ const fetchUrls = async (direction: Direction) => {
             "Authorization": `Bearer ${accessToken.value}`
         },
     }).then((res) => {
-        console.log(res)
         if (res.status === 200) {
             return res.json();
         } else if (res.status === 401) {
@@ -71,12 +63,11 @@ const fetchUrls = async (direction: Direction) => {
     });
 
     if (response === -1) {
-        if (await refresh()) {
-            await fetchUrls(direction);
+        if (retry && await refresh()) {
+            await fetchUrls(direction, false);
         }
         return;
     } else if (response) {
-        console.log(response)
         shortUrls.value = response.paginatedUrls;
         pageCount.value = response.pageCount;
     }
@@ -84,7 +75,6 @@ const fetchUrls = async (direction: Direction) => {
     doneLoading.value = true;
     page.value += direction;
 }
-
 
 const hasNext = computed(() => {
     return page.value + 1 < pageCount.value;
@@ -107,8 +97,19 @@ watch(sorting, async (oldSorting, newSorting) => {
 </script>
 
 <template>
-    <div class="xl:w-1/2 lg:w-2/3 md:w-5/6 w-[95%] bg-black/10 my-8 pb-10 mx-auto border border-black/25 rounded-xl text-center relative">
-        <div v-if='selected === ""'>
+    <div class="xl:w-1/2 lg:w-2/3 md:w-5/6 w-[95%] bg-black/10 my-8 pb-8 mx-auto border border-black/25 rounded-xl text-center relative">
+        <URLEditor 
+            v-if="selected !== ''"
+            
+            :short="selected"
+            @close="selected = ''"
+            @closeAndFetch="() => {
+                selected = '';
+                fetchUrls(Direction.Same);
+            }"
+        />    
+
+        <div v-else>
             <div class="mx-auto mt-4 text-white font-extralight md:text-2xl text-lg">
                 Your URLs
             </div>
@@ -155,19 +156,6 @@ watch(sorting, async (oldSorting, newSorting) => {
                 </span>
             </div>
         </div>
-
-        <div v-else>
-            <span @click='selected = ""' class="absolute top-1 left-2 text-xl text-white hover:text-red-200 cursor-pointer ">
-                ←
-            </span>
-
-            <div v-if='selected !== ""' class="my-4 text-white font-extralight text-2xl">
-                {{`${domain}/${selected}`}}
-            </div>
-
-            <URLEditor :short="selected" />
-        </div>
-
 
     </div>
 

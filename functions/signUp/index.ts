@@ -27,14 +27,15 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     try {
         const accessToken = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '15m' });
         const refreshToken = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '7d' });
-        
+        const hashedRefresh = await bcrypt.hash(refreshToken, 10);
+
         await container.items.create({
             id: username,
             username,
             hashedPassword: hashedPassword,
             urls: [],
             urlCount: 0,
-            refreshToken: refreshToken
+            hashedRefresh: hashedRefresh
         });
 
 

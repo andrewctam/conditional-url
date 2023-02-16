@@ -77,12 +77,13 @@ const deleteURL = async (retry: boolean = true) => {
     }
 }
 
+const validRename = computed(() => {
+    return rename.value !== "" && rename.value !== currentName.value;
+});
 
 const renameURL = async (retry: boolean = true) => {
-    if (!accessToken || !accessToken.value || !currentName.value || currentName.value === rename.value)
+    if (!accessToken || !accessToken.value || !currentName.value || !validRename.value)
         return;
-    
-
     
     let url;
     if (import.meta.env.PROD) {
@@ -190,7 +191,7 @@ const close = () => {
 
 
 const updateConditionals = async (retry?: boolean) => {
-    if (!accessToken || !accessToken.value)
+    if (!accessToken || !accessToken.value || !changesMade.value)
         return;
         
     //verify
@@ -287,6 +288,7 @@ const updateConditionals = async (retry?: boolean) => {
     } else if (response) {
         updateMsg("Updated successfully");
         redirectsNonZero.value = false;
+        changesMade.value = false
         conditionals.value = conditionals.value.map(c => {
             c.redirects = 0;
             return c;
@@ -308,10 +310,11 @@ const domain = computed(() => {
 </script>
 
 <template>    
-    <span @click="close" class="absolute top-1 left-2 text-xl text-white hover:text-red-200 cursor-pointer ">
+    <span @click="close" class="absolute top-1 left-2 text-xl text-white hover:text-red-200 cursor-pointer select-none">
         ←
     </span>
 
+   
     <div class="mt-4">
         <span class = "text-white font-extralight text-xl">{{`${domain}/`}}</span>
         <input 
@@ -320,22 +323,37 @@ const domain = computed(() => {
             class = "text-white text-xl font-extralight w-[120px] bg-white/10 focus:outline-none placeholder:text-white/50 placeholder:text-center" 
             />
     </div>
+    
+    <div v-if="doneLoading" class = "w-[95%] bg-black/10 mt-2 py-2 mx-auto border border-black/25 rounded-xl text-center relative">
         
-    <div class="mx-auto w-fit mt-3">
-        <span class="font-extralight cursor-pointer w-fit select-none">
-            <span @click="confirmDelete = !confirmDelete" class="text-red-200 text-sm px-2 py-1 bg-black/10 rounded-lg">{{confirmDelete ? "Cancel" : "Delete URL"}}</span>
-            <span @click="deleteURL()" v-if="confirmDelete" class="text-gray-200 ml-2 text-sm px-2 py-1 bg-black/10 rounded-lg">Confirm</span>
-        </span>
+        <div class="mx-auto w-fit">
+            <span class="font-extralight cursor-pointer w-fit select-none">
+                <span @click="confirmDelete = !confirmDelete" class="text-red-200 hover:text-red-300 text-sm px-2 py-1 bg-black/10 rounded-lg">
+                    {{confirmDelete ? "Cancel" : "Delete URL"}}
+                </span>
 
-        <span class="font-extralight text-sm w-fit ml-5 px-2 py-1 bg-black/10 rounded-lg select-none"
-            :class="currentName === rename  || rename === '' ? 'text-gray-200/40 cursor-auto' : 'text-green-200 cursor-pointer'"
-            @click="renameURL()">
-            Rename
-        </span>
-    </div>
+                <span @click="deleteURL()" v-if="confirmDelete" class="text-gray-200 hover:text-red-500 ml-2 text-sm px-2 py-1 bg-black/10 rounded-lg">
+                    Confirm
+                </span>
+            </span>
 
-    <div v-if="doneLoading" class = "w-[90%] bg-black/10 my-8 mx-auto border border-black/25 rounded-xl text-center relative">
+            <span class="font-extralight text-sm w-fit ml-5 px-2 py-1 bg-black/10 rounded-lg select-none"
+                :class="validRename ? 'text-green-200 hover:text-green-300 cursor-pointer' : 'text-gray-200/40 cursor-auto'"
+                @click="renameURL()">
+                Rename
+            </span>
 
+            <span class="font-extralight text-sm w-fit ml-5 px-2 py-1 bg-black/10 rounded-lg select-none"
+                :class="changesMade ? 'text-green-200 hover:text-green-300 cursor-pointer' : 'text-gray-200/40 cursor-auto'"
+                @click="updateConditionals()">
+                Save Changes
+            </span>
+
+
+            <div v-if="changesMade && redirectsNonZero" class="text-red-200 my-2 font-light text-xs select-none">
+                WARNING: Saving changes will clear analytics
+            </div>
+        </div>
 
         <ConditionalsEditor 
             :conditionals="conditionals"
@@ -345,16 +363,7 @@ const domain = computed(() => {
             }"
         />
         
-        <button 
-            :disabled="!changesMade" 
-            @click = "updateConditionals()"
-            class = "w-full px-4 py-2 mt-6 rounded-b-xl bg-black/10 border-t border-t-black/10 text-white font-light mx-auto select-none 
-                            hover:bg-black/30 hover:text-green-100 disabled:bg-black/5 disabled:text-gray-500 disabled:hover:bg-black/5">
-            Save Changes
-        </button>
-        <div v-if="changesMade && redirectsNonZero" class="text-red-200 my-2 font-light text-xs">
-            WARNING: Saving changes will clear analytics
-        </div>
+      
     </div>
 
 </template>

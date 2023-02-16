@@ -49,18 +49,18 @@ const deleteAllURLs = async (retry: boolean = true) => {
 </script>
 
 <template>
-    <div class="mx-auto mt-4 text-white font-extralight md:text-2xl text-lg">
+    <div class="mx-auto mt-4 text-white font-extralight md:text-2xl text-lg select-none">
         Delete All URLs
     </div>
 
-    <div class="mx-auto mt-4 text-white font-extralight text-lg">
+    <div class="mx-auto mt-4 text-white font-extralight text-lg select-none">
         Are you sure you want to delete all your URLs?
     </div>
 
-    <button @click="$emit('close')" class = "rounded px-4 py-1 mr-4 border border-black bg-red-800/50 font-light text-white mt-8"> 
+    <button @click="$emit('close')" class = "rounded px-4 py-1 mr-4 border border-black bg-red-800/50 font-light text-white mt-8 select-none"> 
         Cancel
     </button>
-    <button @click="deleteAllURLs()" class = "rounded px-4 py-1 border border-black bg-transparent font-light text-white mt-8"> 
+    <button @click="deleteAllURLs()" class = "rounded px-4 py-1 border border-black bg-transparent font-light text-white mt-8 select-none"> 
         Confirm
     </button>
 </template>

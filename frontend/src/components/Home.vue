@@ -129,6 +129,17 @@ const toggleAccountAction = (action: AccountAction) => {
     }
 }
 
+const openAccountAction = (action: AccountAction) => {
+        
+
+    accountAction.value = action;
+}
+
+const createURLRerenderKey = ref(false)
+const viewURLsRerenderKey = ref(false)
+const settingsRerenderKey = ref(false)
+
+
 
 provide(usernameKey, username);
 provide(accessTokenKey, accessToken);
@@ -153,7 +164,10 @@ provide(updateMsgKey, updateMsg);
 
 
         <div v-if='username !== ""' class = "font-light text-gray-200 mt-2 select-none relative">
-            <p>Welcome {{username}}!</p>
+            <div class="text-lg">
+                Welcome <span class="text-rose-100 select-text">{{username}}</span>!
+            </div>
+            
 
             <NavText 
                 text="Create URL"
@@ -185,7 +199,8 @@ provide(updateMsgKey, updateMsg);
             <p class = "font-light text-gray-200 mt-2 select-none">
                 Create a shortened URL that conditionally redirects visitors to different URLs
             </p>
-            <p class = "font-light text-gray-200 mt-1 select-none relative">
+
+            <div class = "font-light text-gray-200 mt-1 select-none relative">
                 Track analytics and modify your URLs later with a free account:
                 <div class = "relative inline">
                     <span @click="toggleAccountAction(AccountAction.SignIn)" class="cursor-pointer font-semibold"
@@ -212,13 +227,20 @@ provide(updateMsgKey, updateMsg);
                         @updateUser="updateUser"
                         />
                 </div>
-            </p>
+            </div>
+
         </div>
     </div>
     
 
-    <ViewURLs v-if="accountAction === AccountAction.ViewURLs" @close="accountAction=AccountAction.CreateURL"/>
-    <AccountSettings v-else-if="accountAction === AccountAction.Settings" @signout="updateUser('', '', '')"/>
+    <ViewURLs 
+        v-if="accountAction === AccountAction.ViewURLs" 
+        @close="accountAction=AccountAction.CreateURL"/>
+        
+    <AccountSettings
+        v-else-if="accountAction === AccountAction.Settings" 
+        @signout="updateUser('', '', '')"/>
+
     <ConditionalsBuilder v-else />
 
     

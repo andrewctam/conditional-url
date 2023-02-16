@@ -110,7 +110,7 @@ watch(sorting, async (oldSorting, newSorting) => {
         />    
 
         <div v-else>
-            <div class="mx-auto mt-4 text-white font-extralight md:text-2xl text-lg">
+            <div class="mx-auto mt-4 text-white font-extralight md:text-2xl text-lg select-none">
                 Your URLs
             </div>
 
@@ -118,7 +118,7 @@ watch(sorting, async (oldSorting, newSorting) => {
                 <span @click="sorting=Sorting.Newest" class="cursor-pointer select-none" :class="sorting===Sorting.Newest ? 'text-blue-200' : 'text-white'" >
                     Newest
                 </span>
-                <span class="text-white text-xl">
+                <span class="text-white text-xl select-none">
                     •
                 </span>
                 <span @click="sorting=Sorting.Oldest" class="cursor-pointer select-none" :class="sorting===Sorting.Oldest ? 'text-blue-200' : 'text-white'" >
@@ -135,10 +135,9 @@ watch(sorting, async (oldSorting, newSorting) => {
                     Create your first!
                 </span>
             </p>
-            <ul v-else v-for="(short, i) in shortUrls" :key="short" class="my-3">
+            <ul v-else v-for="short in shortUrls" :key="short" class="my-3">
                 <ShortBlock 
                     :short="short" 
-                    :i = "i + page * 10"
                     @select="selected = short" />
             </ul>
 

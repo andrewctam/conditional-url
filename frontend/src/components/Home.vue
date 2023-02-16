@@ -8,11 +8,67 @@ import { AccountAction, usernameKey, accessTokenKey, refreshTokensKey, updateMsg
 import jwt_decode from 'jwt-decode'
 import AccountSettings from './Account/settings/AccountSettings.vue'
 import NavText from './NavText.vue'
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+const router = useRouter()
 
 const accountAction: Ref<AccountAction> = ref(AccountAction.CreateURL);
 
 const username = ref('');
 const accessToken = ref('');
+
+//clicking on a nav text again rerenders the component
+const rerenderKey = ref(0);
+
+const msg = ref('')
+const error = ref(false)
+const errorTimeout = ref<NodeJS.Timeout | null>(null)
+const updateMsg = (str: string, err?: boolean) => {
+    if (errorTimeout.value !== null) {
+        clearTimeout(errorTimeout.value);
+    }
+
+    errorTimeout.value = setTimeout(() => {
+        msg.value = "";
+    }, 2000);
+
+    msg.value = str;
+
+    if (err !== undefined) {
+        error.value = err;
+    } else {
+        error.value = false;
+    }
+}
+
+
+const toggleAccountAction = (action: AccountAction) => {
+    if (accountAction.value === action) {
+        accountAction.value = AccountAction.CreateURL;
+    } else {
+        accountAction.value = action;
+    }
+}
+
+const openAccountAction = (action: AccountAction) => {
+    if (accountAction.value === action)
+        rerenderKey.value++;
+    else
+        accountAction.value = action;
+
+    switch(action) {
+        case AccountAction.CreateURL:
+            router.push({ query: {  }});
+            break;
+        case AccountAction.ViewURLs:
+            router.push({ query: { action: 'viewurls' }});
+            break;
+        case AccountAction.Settings:
+            router.push({ query: { action: 'settings' }});
+            break;
+    }
+}
 
 const updateUser = (user: string, access: string, refresh: string) => {
     username.value = user;
@@ -41,21 +97,6 @@ const updateUser = (user: string, access: string, refresh: string) => {
     }
 }
 
-onBeforeMount(async () => {
-    const user = localStorage.getItem('username');
-    const access = localStorage.getItem('accessToken');
-    
-    if (user !== null && access !== null) {
-        const payload = jwt_decode(access as string) as { [key: string]: any }
-
-        if (payload.username === user && payload.exp >= Date.now() / 1000) {
-            username.value = user;
-            accessToken.value = access;
-        } else {
-            await refreshTokens();
-        }
-    }
-})
 
 const refreshTokens = async () => {
     const username = localStorage.getItem('username');
@@ -100,46 +141,44 @@ const refreshTokens = async () => {
     }
 }
 
-const msg = ref('')
-const error = ref(false)
-const errorTimeout = ref<NodeJS.Timeout | null>(null)
-const updateMsg = (str: string, err?: boolean) => {
-    if (errorTimeout.value !== null) {
-        clearTimeout(errorTimeout.value);
+
+onBeforeMount(async () => {
+    const user = localStorage.getItem('username');
+    const access = localStorage.getItem('accessToken');
+    
+    if (user !== null && access !== null) {
+        const payload = jwt_decode(access as string) as { [key: string]: any }
+
+        if (payload.username === user && payload.exp >= Date.now() / 1000) {
+            username.value = user;
+            accessToken.value = access;
+        } else {
+            await refreshTokens();
+        }
     }
 
-    errorTimeout.value = setTimeout(() => {
-        msg.value = "";
-    }, 2000);
 
-    msg.value = str;
-
-    if (err !== undefined) {
-        error.value = err;
-    } else {
-        error.value = false;
+    const action = route.query.action as string | undefined;
+    if (action) {
+        switch(action) {
+            case 'settings':
+                accountAction.value = AccountAction.Settings;
+                break;
+            case 'viewurls':
+                accountAction.value = AccountAction.ViewURLs;
+                break;
+            default:
+                accountAction.value = AccountAction.CreateURL;
+                break;
+        }
     }
-}
 
-const toggleAccountAction = (action: AccountAction) => {
-    if (accountAction.value === action) {
-        accountAction.value = AccountAction.CreateURL;
-    } else {
-        accountAction.value = action;
+    const view = route.query.view as string | undefined;
+    if (view) {
+        accountAction.value = AccountAction.ViewURLs;
     }
-}
 
-const openAccountAction = (action: AccountAction) => {
-        
-
-    accountAction.value = action;
-}
-
-const createURLRerenderKey = ref(false)
-const viewURLsRerenderKey = ref(false)
-const settingsRerenderKey = ref(false)
-
-
+})
 
 provide(usernameKey, username);
 provide(accessTokenKey, accessToken);
@@ -165,32 +204,32 @@ provide(updateMsgKey, updateMsg);
 
         <div v-if='username !== ""' class = "font-light text-gray-200 mt-2 select-none relative">
             <div class="text-lg">
-                Welcome <span class="text-rose-100 select-text">{{username}}</span>!
+                Welcome <span class="select-text">{{username}}</span>!
             </div>
             
 
             <NavText 
                 text="Create URL"
                 :active="accountAction === AccountAction.CreateURL"
-                @setActive="() => {accountAction = AccountAction.CreateURL}" />
+                @setActive="openAccountAction(AccountAction.CreateURL)" />
 
             <span class="font-bold mx-1">•</span>
 
             <NavText
                 text="Your URLs"
                 :active="accountAction === AccountAction.ViewURLs"
-                @setActive="() => {accountAction = AccountAction.ViewURLs}" />
+                @setActive="openAccountAction(AccountAction.ViewURLs)" />
 
             <span class="font-bold mx-1">•</span>
 
             <NavText
                 text="Account Settings"
                 :active="accountAction === AccountAction.Settings"
-                @setActive="() => {accountAction = AccountAction.Settings}" />
+                @setActive="openAccountAction(AccountAction.Settings)" />
 
             <span class="font-bold mx-1">•</span>
 
-            <span class = "cursor-pointer font-semibold relative text-blue-200 hover:text-red-200" @click="updateUser('', '', '')">
+            <span class = "cursor-pointer font-semibold relative text-blue-100 hover:text-red-200" @click="updateUser('', '', '')">
                 Sign Out
             </span>
         </div>
@@ -235,13 +274,16 @@ provide(updateMsgKey, updateMsg);
 
     <ViewURLs 
         v-if="accountAction === AccountAction.ViewURLs" 
-        @close="accountAction=AccountAction.CreateURL"/>
+        @close="accountAction=AccountAction.CreateURL"
+        :key="rerenderKey"/>
         
     <AccountSettings
         v-else-if="accountAction === AccountAction.Settings" 
-        @signout="updateUser('', '', '')"/>
+        @signout="updateUser('', '', '')"
+        :key="rerenderKey + 1"/>
 
-    <ConditionalsBuilder v-else />
+    <ConditionalsBuilder v-else 
+        :key="rerenderKey + 2" />
 
     
 </template>

@@ -37,7 +37,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
 
     const username = payload.username;
-    const short = req.body.short;
+    const short = req.body.short.toLowerCase();
 
     const key = process.env["COSMOS_KEY"];
     const endpoint = process.env["COSMOS_ENDPOINT"];

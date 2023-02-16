@@ -39,7 +39,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     
     const client = new CosmosClient({ endpoint, key });
     const container = client.database("conditionalurl").container("urls");
-    const short = req.query.short;
+    const short = req.query.short.toLowerCase();
     
     if (short === undefined || short === "") {
         context.res = {

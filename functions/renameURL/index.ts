@@ -4,8 +4,8 @@ import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
-    const oldShort = req.body.oldShort;
-    const newShort = req.body.newShort;
+    const oldShort = req.body.oldShort.toLowerCase();
+    const newShort = req.body.newShort.toLowerCase();
 
     if (newShort === "" || !/^[a-zA-Z0-9]*$/.test(newShort) || newShort.startsWith("http")) {
         context.res = {

@@ -4,6 +4,10 @@ import type { Ref } from 'vue'
 import ShortBlock from './ShortBlock.vue';
 import URLEditor from './URLEditor.vue';
 import { accessTokenKey, refreshTokensKey, updateMsgKey } from '../../types';
+import { useRoute, useRouter } from 'vue-router';
+
+const router = useRouter();
+const route = useRoute();
 
 const enum Sorting {
     "Newest" = "Newest",
@@ -21,7 +25,6 @@ const pageCount = ref(1);
 const doneLoading = ref(false);
 const shortUrls: Ref<string[]> = ref([]); 
 const refresh = inject(refreshTokensKey) as () => Promise<boolean>
-const updateMsg = inject(updateMsgKey) as (msg: string, err?: boolean) => void;
 const accessToken = inject(accessTokenKey)
 
 
@@ -86,6 +89,12 @@ const hasPrev = computed(() => {
 
 onBeforeMount(async () => {
     await fetchUrls(Direction.Same);
+
+    const view = route.query.view as string | undefined;
+    if (view) {
+        selected.value = view;
+    }
+
 })
 
 watch(sorting, async (oldSorting, newSorting) => {
@@ -138,7 +147,10 @@ watch(sorting, async (oldSorting, newSorting) => {
             <ul v-else v-for="short in shortUrls" :key="short" class="my-3">
                 <ShortBlock 
                     :short="short" 
-                    @select="selected = short" />
+                    @select="() => {
+                        selected = short
+                        router.push({query: {view: short}})
+                    }" />
             </ul>
 
             <div class="absolute left-0 right-0 bottom-1 mx-auto">

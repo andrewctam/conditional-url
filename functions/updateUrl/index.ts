@@ -5,7 +5,7 @@ import * as jwt from 'jsonwebtoken';
 import type { Conditional } from "../types";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
-    const short = req.body.short;
+    const short = req.body.short.toLowerCase();
     const conditionals = req.body.conditionals;
 
     if (short === "" || !/^[a-zA-Z0-9]*$/.test(short) || short.startsWith("http")) {

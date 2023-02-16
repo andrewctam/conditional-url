@@ -11,7 +11,7 @@ const props = defineProps<{
 const conditionals: Ref<Conditional[]> = ref([]);
 
 const doneLoading = ref(false);
-const redirectsNonZero = ref(false);
+const analyticsNonZero = ref(false);
 const changesMade = ref(false);
 
 const accessToken = inject(accessTokenKey)
@@ -172,7 +172,7 @@ const getConditionals = async (retry: boolean = true) => {
 
     for (let i = 0; i < response.redirects.length; i++) {
         if (response.redirects[i] !== 0) {
-            redirectsNonZero.value = true;
+            analyticsNonZero.value = true;
         }
 
         conditionals.value[i].redirects = response.redirects[i];
@@ -287,7 +287,7 @@ const updateConditionals = async (retry?: boolean) => {
         return;
     } else if (response) {
         updateMsg("Updated successfully");
-        redirectsNonZero.value = false;
+        analyticsNonZero.value = false;
         changesMade.value = false
         conditionals.value = conditionals.value.map(c => {
             c.redirects = 0;
@@ -337,20 +337,20 @@ const domain = computed(() => {
                 </span>
             </span>
 
-            <span class="font-extralight text-sm w-fit ml-5 px-2 py-1 bg-black/10 rounded-lg select-none"
+            <span class="font-extralight text-sm w-fit mx-5 px-2 py-1 bg-black/10 rounded-lg select-none"
                 :class="validRename ? 'text-green-200 hover:text-green-300 cursor-pointer' : 'text-gray-200/40 cursor-auto'"
                 @click="renameURL()">
                 Rename
             </span>
 
-            <span class="font-extralight text-sm w-fit ml-5 px-2 py-1 bg-black/10 rounded-lg select-none"
+            <span class="font-extralight text-sm w-fit px-2 py-1 bg-black/10 rounded-lg select-none whitespace-nowrap"
                 :class="changesMade ? 'text-green-200 hover:text-green-300 cursor-pointer' : 'text-gray-200/40 cursor-auto'"
                 @click="updateConditionals()">
                 Save Changes
             </span>
 
 
-            <div v-if="changesMade && redirectsNonZero" class="text-red-200 my-2 font-light text-xs select-none">
+            <div v-if="changesMade && analyticsNonZero" class="text-red-200 my-2 font-light text-xs select-none">
                 WARNING: Saving changes will clear analytics
             </div>
         </div>

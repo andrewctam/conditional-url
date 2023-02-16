@@ -5,7 +5,7 @@ import * as dotenv from 'dotenv';
 
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
-    const short = req.body.short;
+    const short = req.body.short.toLowerCase();
     const data = JSON.parse(req.body.data);
 
     if (short === "" || !/^[a-zA-Z0-9]*$/.test(short)) {

@@ -11,7 +11,7 @@ const emit = defineEmits<{
 
 <template>
     <span class = "cursor-pointer font-semibold relative hover:text-blue-300" 
-         :class='props.active ? "text-blue-300" : "text-blue-200"'
+         :class='props.active ? "text-blue-300" : "text-blue-100"'
          @click="$emit('setActive')">
         {{ props.text }}
     </span>

@@ -88,8 +88,8 @@ const createConditionalUrl = async (retry: boolean = true) => {
         url = `${import.meta.env.VITE_DEV_API_URL}/api/createUrl`;
     }
     
-    const authHeader = accessToken && accessToken.value ? `Bearer ${accessToken.value}` : "";
-
+    const authHeader = accessToken && accessToken.value ? `Bearer ${accessToken.value}` : "NONE";
+    console.log(authHeader)
     const response = await fetch(url, {
         method: "POST",
         headers: {

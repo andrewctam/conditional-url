@@ -58,7 +58,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const client = new CosmosClient({ endpoint, key });
 
     let owner = ""
-    if (req.headers.authorization !== "") {
+    if (req.headers.authorization && req.headers.authorization !== "NONE") {
         const accessToken = req.headers.authorization.split(" ")[1];
 
         let payload;

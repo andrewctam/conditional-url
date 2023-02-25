@@ -5,6 +5,7 @@ import * as dotenv from 'dotenv';
 
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
+    console.log(req)
     const short = req.body.short.toLowerCase();
     const data = JSON.parse(req.body.data);
 
@@ -35,7 +36,20 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         const conditionals = JSON.parse(resource.conditionals);
         const [url, i] = determineUrl(conditionals, data)
 
-        resource.redirects[i]++;
+        resource.redirects[i].push(data);
+
+        const unixTimeToMinute = Math.floor(Date.now() / 60000);
+        const points = resource.dataPoints;
+
+        if (points.length > 0 && points[points.length - 1].time === unixTimeToMinute) {
+            points[points.length - 1].count++;
+        } else {
+            points.push({
+                time: unixTimeToMinute,
+                count: 1
+            })
+        }
+        
         await container.item(short, short).replace(resource);
 
         context.res = {
@@ -80,13 +94,13 @@ const determineUrl = (conditionals: Conditional[], data: Data) => {
                 case "=":
                     result = variable === condition.value;
                     break;
-                case "!=":
+                case "≠":
                     result = variable !== condition.value;
                     break;
-                case ">=":
+                case "≥":
                     result = variable >= condition.value;
                     break;
-                case "<=":
+                case "≤":
                     result = variable <= condition.value;
                     break;
                 case ">":
@@ -95,6 +109,8 @@ const determineUrl = (conditionals: Conditional[], data: Data) => {
                 case "<":
                     result = variable < condition.value;
                     break;
+                case "Contains":
+                    result = variable.includes(condition.value);
                 default:
                     break
             }

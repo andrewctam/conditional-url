@@ -229,8 +229,8 @@ provide(updateMsgKey, updateMsg);
 
             <span class="font-bold mx-1">•</span>
 
-            <span class = "cursor-pointer font-semibold relative text-blue-100 hover:text-red-200" @click="updateUser('', '', '')">
-                Sign Out
+            <span class = "cursor-pointer font-semibold m-0 relative text-blue-100 hover:text-red-200" @click="updateUser('', '', '')">
+                {{"Sign Out"}}
             </span>
         </div>
 

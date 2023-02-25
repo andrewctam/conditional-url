@@ -55,19 +55,12 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <div class = "bg-white/5 hover:bg-black/10 border border-black/20 my-4 mx-2 p-3 relative rounded cursor-move select-none">
-      
-        
-
+    <div class = "bg-white/5 hover:bg-black/5 border border-black/20 my-4 mx-2 p-3 relative rounded cursor-move select-none">
         <button tabindex="-1" v-if="!onlyOne" @click = "$emit('delete', props.i)" class = "absolute top-0 right-2 text-lg text-red-400 hover:text-red-500">
-            
-
             × 
         </button>
 
        
-
-
         <div class = "flex">
             <span class = "font-light text-white mr-1 h-fit">{{msg}}</span>
 

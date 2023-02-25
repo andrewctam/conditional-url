@@ -1,8 +1,9 @@
 <script setup lang='ts'>
 import { onMounted, ref, inject, computed } from 'vue'
 import type { Ref } from 'vue'
-import { accessTokenKey, Conditional, refreshTokensKey, updateMsgKey } from '../../types'
+import { accessTokenKey, Conditional, Data, refreshTokensKey, updateMsgKey } from '../../types'
 import ConditionalsEditor from '../ConditionalsEditor/ConditionalsEditor.vue';
+import Analytics from './Analytics.vue';
 
 const props = defineProps<{
     short: string
@@ -17,6 +18,8 @@ const changesMade = ref(false);
 const accessToken = inject(accessTokenKey)
 const refresh = inject(refreshTokensKey) as () => Promise<boolean>
 const updateMsg = inject(updateMsgKey) as (msg: string, err?: boolean) => void
+
+const showAnalytics = ref(false);
 
 const confirmDelete = ref(false);
 
@@ -337,16 +340,23 @@ const domain = computed(() => {
                 </span>
             </span>
 
-            <span class="font-extralight text-sm w-fit mx-5 px-2 py-1 bg-black/10 rounded-lg select-none"
+            <span class="font-extralight text-sm w-fit ml-5 px-2 py-1 bg-black/10 rounded-lg select-none"
                 :class="validRename ? 'text-green-200 hover:text-green-300 cursor-pointer' : 'text-gray-200/40 cursor-auto'"
                 @click="renameURL()">
                 Rename
             </span>
 
-            <span class="font-extralight text-sm w-fit px-2 py-1 bg-black/10 rounded-lg select-none whitespace-nowrap"
+            <span class="font-extralight text-sm w-fit ml-5 px-2 py-1 bg-black/10 rounded-lg select-none whitespace-nowrap"
                 :class="changesMade ? 'text-green-200 hover:text-green-300 cursor-pointer' : 'text-gray-200/40 cursor-auto'"
                 @click="updateConditionals()">
                 Save Changes
+            </span>
+
+            <span class="font-extralight text-sm w-fit ml-5 px-2 py-1 bg-black/10 rounded-lg select-none whitespace-nowrap"
+                :class="analyticsNonZero ? 'text-blue-200 hover:text-blue-300 cursor-pointer' : 'text-gray-200/40 cursor-auto'"
+                @click="() => { if (!analyticsNonZero) return; showAnalytics = !showAnalytics }">
+
+                {{showAnalytics ? "Close Analytics" : "Detailed Analytics"}}
             </span>
 
 
@@ -354,8 +364,13 @@ const domain = computed(() => {
                 WARNING: Saving changes will clear analytics
             </div>
         </div>
+        
+        <Analytics 
+            v-if="showAnalytics" 
+            :short="props.short" />
 
         <ConditionalsEditor 
+            v-else
             :conditionals="conditionals"
             @update-conditionals="(updated) => {
                 conditionals = updated;

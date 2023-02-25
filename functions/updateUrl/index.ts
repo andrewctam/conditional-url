@@ -108,7 +108,8 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
 
     resource.conditionals = conditionals;
-    resource.redirects = new Array(parsedConditionals.length).fill(0);;
+    resource.redirects = new Array(parsedConditionals.length).fill([]);
+    resource.dataPoints = []
 
     await container.item(short, short).replace(resource);
 

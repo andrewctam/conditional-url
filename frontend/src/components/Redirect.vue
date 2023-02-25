@@ -1,9 +1,17 @@
 <script setup lang="ts">
 
-import { onBeforeMount } from 'vue'
+import { onMounted, ref } from 'vue'
 import type { Data } from "../types"
 
-onBeforeMount(async () => {    
+const dummyAd = ref<HTMLDivElement | null>(null);
+
+const zeroesIfNecessary = (num: number) => {
+    if (num < 10)
+        return `0${num}`;
+    return num;
+}
+
+onMounted(async () => {    
     const userAgent = window.navigator.userAgent;
     let browser = "Other";
     if (userAgent.includes("Chrome")) {
@@ -33,7 +41,7 @@ onBeforeMount(async () => {
 
     const date = new Date();
     let offset = -1/60 * Math.max( //account for DST
-                        new Date(date.getFullYear(), 0, 1).getTimezoneOffset(),  //time in January
+                        new Date(date.getFullYear(), 0, 1).getTimezoneOffset(), //time in January
                         new Date(date.getFullYear(), 6, 1).getTimezoneOffset()) //time in July
 
     let timezone = offset.toString();
@@ -70,11 +78,18 @@ onBeforeMount(async () => {
         "Language": language,
         "Browser": browser,
         "OS": operatingSystem,
-        "Time": `${date.getHours()}:${date.getMinutes()}`,
+        "Time": `${zeroesIfNecessary(date.getHours())}:${zeroesIfNecessary(date.getMinutes())}`,
         'Time Zone': timezone,
-        "params": JSON.stringify(params)
+        'Date': `${date.getFullYear()}-${zeroesIfNecessary(date.getUTCMonth() + 1)}-${zeroesIfNecessary(date.getDate())}`,
+        "params": JSON.stringify(params),
+        "Has Touchscreen": (navigator.maxTouchPoints > 0) ? "True" : "False",
+        "Screen Width": window.screen.width.toString(),
+        "Screen Height": window.screen.height.toString(),
+        "Using Ad Blocker": (dummyAd.value && dummyAd.value.offsetHeight === 0) ? "True" : "False"
     }
 
+    console.log(data)
+    console.log(Intl.DateTimeFormat().resolvedOptions().timeZone)
     let url;
     if (import.meta.env.PROD) {
         url = `${import.meta.env.VITE_PROD_API_URL}/api/determineUrl`;
@@ -97,7 +112,7 @@ onBeforeMount(async () => {
         if (!response.startsWith("http://") && !response.startsWith("https://"))
             throw new Error("Invalid URL");
 
-        window.location.href = response;
+        //window.location.href = response;
     } catch (e) {
         console.log(e);
         window.location.href = "https://conditionalurl.web.app";
@@ -109,5 +124,8 @@ onBeforeMount(async () => {
 
 <template>
     <div class = "bg-white w-screen h-screen">
+        <div ref = "dummyAd" class="banner_ad absolute -top-8"> 
+            Dummmy div for detecting adblocker
+        </div>
     </div>
 </template>

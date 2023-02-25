@@ -42,6 +42,7 @@ test('AND Test', async () => {
         "Time Zone": "+1",
         Time: "12:52",
         OS: "Linux",
+        Date: "2021-08-01",
         Browser: 'Safari',
         params: JSON.stringify({})
     }
@@ -67,6 +68,7 @@ test('OR Test 1', async () => {
         Time: "00:52",
         Browser: 'Safari',
         "Time Zone": "+1",
+        Date: "2021-08-01",
         params: JSON.stringify({})
     }
 
@@ -83,6 +85,7 @@ test('OR Test 2', async () => {
         Time: "00:52",
         OS: "Android",
         "Time Zone": "+1",
+        Date: "2021-08-01",
         params: JSON.stringify({})
     }
 
@@ -99,6 +102,7 @@ test('OR Test 3', async () => {
         Time: "14:00",
         OS: "Linux",
         "Time Zone": "+1",
+        Date: "2021-08-01",
         params: JSON.stringify({})
     }
 
@@ -123,6 +127,7 @@ test('Param Test', async () => {
         Time: "01:00:",
         OS: "Linux",
         "Time Zone": "+1",
+        Date: "2021-08-01",
         params: JSON.stringify({"ONE": "1"})
     }
 
@@ -141,6 +146,7 @@ test('ELSE Test', async () => {
         Time: "01:50",
         OS: "Linux",
         "Time Zone": "+1",
+        Date: "2021-08-01",
         params: JSON.stringify({})
     }
 
@@ -158,6 +164,7 @@ test('ELSE Test 2', async () => {
         Time: "00:00",
         OS: "Other",
         "Time Zone": "Other",
+        Date: "2021-08-01",
         params: JSON.stringify({})
     }
 

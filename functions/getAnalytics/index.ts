@@ -2,6 +2,7 @@ import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import { CosmosClient } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
+import { Variables } from "../types";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     if (req.headers.authorization === "") {
@@ -39,6 +40,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     
     const client = new CosmosClient({ endpoint, key });
     const container = client.database("conditionalurl").container("urls");
+
     const short = req.query.short.toLowerCase();
     
     if (short === undefined || short === "") {
@@ -68,15 +70,58 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
+    const counts: {
+        [key: typeof Variables[number]]: {
+            [key: string]: number
+        }
+    } = {};
+
+    for (const variable of Variables) {
+        counts[variable] = {};
+
+        for (const conditional of resource.redirects) { //go through each conditional's analytics
+            for (const redirect of conditional) { //for each redirect in the conditional, increment the count for the selected variable
+                let value = "";
+                if (variable === "URL Parameter")
+                    value = toParamsString(JSON.parse(redirect["params"]));
+                else 
+                    value = redirect[variable];
+
+                if (counts[variable][value] === undefined) {
+                    counts[variable][value] = 1;
+                } else {
+                    counts[variable][value]++;
+                }
+            }
+        }
+    }
+
+    
+
+
     context.res = {
         status: 200,
         body: JSON.stringify({
-            conditionals: resource.conditionals,
-            redirects: resource.redirects.map((c: any[]) => c.length)
+            counts: counts
         })
     }
 };
 
 
+const toParamsString = (params: {[key: string]: string}) => {
+    let str = "";
+    let i = 0;
+
+    for (const key in params) {
+        str += `${key}=${params[key]}`;
+        if (i++ < Object.keys(params).length - 1)
+            str += "&";
+    }
+
+    if (str === "")
+        str = '""';
+    
+    return str;
+}
 
 export default httpTrigger;

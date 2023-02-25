@@ -14,5 +14,11 @@ const props = defineProps<{
         <ul v-else-if="props.variable === 'Time Zone'">
             <li>UTC Offset (UTC+8, UTC-5, UTC+0, etc.)</li>
         </ul>
+        <ul v-else-if="props.variable === 'Screen Width'">
+            <li>Width in pixels</li>
+        </ul>
+        <ul v-else-if="props.variable === 'Screen Height'">
+            <li>Height in pixels</li>
+        </ul>
     </div>
 </template>

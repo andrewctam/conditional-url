@@ -102,7 +102,9 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 short,
                 conditionals,
                 owner: owner,
-                redirects: new Array(parsedConditionals.length).fill(0)
+                redirects: new Array(parsedConditionals.length).fill([]),
+                dataPoints: []
+                
             });   
 
             await userContainer.item(owner, owner).replace(resource);
@@ -114,7 +116,8 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 short,
                 conditionals,
                 owner: "",
-                redirects: new Array(parsedConditionals.length).fill(0)
+                redirects: new Array(parsedConditionals.length).fill([]),
+                dataPoints: []
             });    
         }
 

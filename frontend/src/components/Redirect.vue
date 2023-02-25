@@ -79,8 +79,8 @@ onMounted(async () => {
         "Browser": browser,
         "OS": operatingSystem,
         "Time": `${zeroesIfNecessary(date.getHours())}:${zeroesIfNecessary(date.getMinutes())}`,
+        'Date': `${date.getFullYear()}-${zeroesIfNecessary(date.getUTCMonth() + 1)}-${zeroesIfNecessary(date.getDate())}`, 
         'Time Zone': timezone,
-        'Date': `${date.getFullYear()}-${zeroesIfNecessary(date.getUTCMonth() + 1)}-${zeroesIfNecessary(date.getDate())}`,
         "params": JSON.stringify(params),
         "Has Touchscreen": (navigator.maxTouchPoints > 0) ? "True" : "False",
         "Screen Width": window.screen.width.toString(),
@@ -88,8 +88,6 @@ onMounted(async () => {
         "Using Ad Blocker": (dummyAd.value && dummyAd.value.offsetHeight === 0) ? "True" : "False"
     }
 
-    console.log(data)
-    console.log(Intl.DateTimeFormat().resolvedOptions().timeZone)
     let url;
     if (import.meta.env.PROD) {
         url = `${import.meta.env.VITE_PROD_API_URL}/api/determineUrl`;
@@ -112,7 +110,7 @@ onMounted(async () => {
         if (!response.startsWith("http://") && !response.startsWith("https://"))
             throw new Error("Invalid URL");
 
-        //window.location.href = response;
+        window.location.href = response;
     } catch (e) {
         console.log(e);
         window.location.href = "https://conditionalurl.web.app";

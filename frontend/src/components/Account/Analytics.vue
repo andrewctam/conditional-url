@@ -2,6 +2,7 @@
 import { ref, computed, inject, onMounted } from 'vue';
 import { accessTokenKey, refreshTokensKey, Variables } from '../../types';
 import { Variable } from '../ConditionalsEditor/AddConditionMenu.vue';
+import DataGraph from './DataGraph.vue';
 
 const props = defineProps<{
     short: string
@@ -130,44 +131,48 @@ const sortedData = computed(() => {
     <div v-if="!doneLoading" className = "text-white my-4 font-light">
         Loading...
     </div>
-    <div v-else-if="!counts" className = "text-white my-4 font-light">
+    <div v-else-if="!counts" className = "text-white mt-4 font-light">
         No Data
     </div>
-    <div v-else class="pt-8">
+    <div v-else class="pt-8 p-4">
+        <div class="bg-black/10 p-2 mb-6 rounded">
+            <p class = "text-white text-xl font-extralight" >Data Counts</p>
+            <table class="w-[95%] mx-auto text-left text-white bg-white/5 p-2 m-5 rounded font-light">
+                <thead class="text-gray-700 bg-stone-200">
+                    <th class="w-1/2">
+                        <select v-model="selected" class = "border border-black/50 p-1 m-1 rounded bg-transparent font-normal">
+                            <option v-for="variable in Variables">{{variable}}</option>
+                        </select>
+                    </th>
+                    <th class="w-1/2">  
+                        <select v-model="sort" class = "border border-black/50 p-1 m-1 rounded bg-transparent font-normal">
+                            <option>
+                                Count ↓
+                            </option>
+                            <option>
+                                Count ↑
+                            </option>
+                        </select>        
+                    </th>
+                </thead>
 
-        <table class="w-[95%] mx-auto text-left text-white bg-white/5 p-2 m-5 rounded font-light">
-            
-            <thead class="text-gray-700 bg-stone-200">
-                <th class="w-1/2">
-                    <select v-model="selected" class = "border border-black/50 p-1 m-1 rounded bg-transparent font-normal">
-                        <option v-for="variable in Variables">{{variable}}</option>
-                    </select>
-                </th>
-                <th class="w-1/2">  
-                    <select v-model="sort" class = "border border-black/50 p-1 m-1 rounded bg-transparent font-normal">
-                        <option>
-                            Count ↓
-                        </option>
-                        <option>
-                            Count ↑
-                        </option>
-                    </select>        
-                </th>
-            </thead>
 
+                <tbody class="px-6 py-4 whitespace-nowrap text-white">
+                    <tr v-for="(count, value, index) in sortedData" 
+                        :key="value" 
+                        class="hover:bg-white/5" :class="index % 2 === 0 ? 'bg-black/30' : 'bg-black/40'">
 
-            <tbody class="px-6 py-4 whitespace-nowrap text-white">
-                <tr v-for="(count, value, index) in sortedData" 
-                    :key="value" 
-                    class="hover:bg-white/5" :class="index % 2 === 0 ? 'bg-black/30' : 'bg-black/40'">
+                        <td class="p-2">{{value}}</td>
+                        <td class="p-2">{{count}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
-                    <td class="p-2">{{value}}</td>
-                    <td class="p-2">{{count}}</td>
-                </tr>
-            </tbody>
-        </table>
-
-        
+        <DataGraph
+            :short="props.short"
+        />
+          
     </div>
 
 </template>

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch, computed, inject, onBeforeMount } from 'vue';
+import { ref, watch, computed, inject, onMounted } from 'vue';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
 import { Line } from 'vue-chartjs'
 import { accessTokenKey, refreshTokensKey } from '../../types';
@@ -20,7 +20,7 @@ const props = defineProps<{
 }>();
 
 
-const span = ref<number>(1);
+const span = ref<number>(60);
 const start = ref<string | undefined>(undefined);
 const earliestPoint = ref<string | undefined>(undefined);
 
@@ -35,12 +35,13 @@ const refresh = inject(refreshTokensKey) as () => Promise<boolean>;
 const doneLoading = ref(false);
 
 
-onBeforeMount(async () => {
+onMounted(async () => {
     await getDataPoints();
 })
 
-watch([span, limit, start], async () => {
-    await getDataPoints();
+watch([span, limit, start], async ([newSpan, newLimit, newStart], [oldSpan, oldLimit, oldStart]) => {
+    if (oldStart !== undefined) //prevent another call after updating the start for the inital load
+        await getDataPoints();
 })
 
 const zeroesIfNecessary = (num: number) => {
@@ -116,7 +117,6 @@ const getDataPoints = async (retry: boolean = true) => {
         }
 
     }
-    console.log(response)
 }
 
 
@@ -190,12 +190,12 @@ const options = {
 
 
 <template>
-    <div class="w-full p-2 text-white bg-black/10 rounded font-light">
-        <p class="mb-4 font-extralight text-xl">
+    <div class="w-full p-2 text-white bg-black/10 rounded font-light select-none">
+        <p class="my-4 font-extralight text-xl">
             Redirects Over Time
         </p>
 
-        <div class="sm:flex justify-around">
+        <div class="sm:flex justify-around bg-[#424242] rounded mx-6 my-2 p-2">
             <div>
                 <label for="start" class="block text-sm">Range Start</label>
                 <input v-model = "start" type = "datetime-local" id="start" class = "border border-black/50 p-1 m-1 rounded bg-transparent font-normal inline" :min="earliestPoint"/>

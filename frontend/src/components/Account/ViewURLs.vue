@@ -5,6 +5,7 @@ import ShortBlock from './ShortBlock.vue';
 import URLEditor from './URLEditor.vue';
 import { accessTokenKey, refreshTokensKey, updateMsgKey } from '../../types';
 import { useRoute, useRouter } from 'vue-router';
+import PageArrows from '../PageArrows.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -153,19 +154,14 @@ watch(sorting, async (oldSorting, newSorting) => {
                     }" />
             </ul>
 
-            <div class="absolute left-0 right-0 bottom-1 mx-auto">
-                <span v-if="hasPrev" @click="fetchUrls(Direction.Prev)" class = "text-white hover:text-red-200 cursor-pointer font-light select-none">
-                    ←
-                </span>
-
-                <span v-if="pageCount > 1" class = "text-white font-light mx-2">
-                    {{`Page ${page + 1} of ${pageCount}`}}
-                </span>
-                
-                <span v-if="hasNext" @click="fetchUrls(Direction.Next)" class = "text-white hover:text-green-200 cursor-pointer font-light select-none">
-                    →
-                </span>
-            </div>
+            <PageArrows
+                :hasNext="hasNext"
+                :hasPrev="hasPrev"
+                :page="page"
+                :pageCount="pageCount"
+                @prev="fetchUrls(Direction.Prev)"
+                @next="fetchUrls(Direction.Next)"
+            />
         </div>
 
     </div>

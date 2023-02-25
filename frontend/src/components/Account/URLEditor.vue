@@ -3,7 +3,8 @@ import { onMounted, ref, inject, computed } from 'vue'
 import type { Ref } from 'vue'
 import { accessTokenKey, Conditional, Data, refreshTokensKey, updateMsgKey } from '../../types'
 import ConditionalsEditor from '../ConditionalsEditor/ConditionalsEditor.vue';
-import Analytics from './Analytics.vue';
+import DataGraph from './DataGraph.vue';
+import DataTable from './DataTable.vue';
 
 const props = defineProps<{
     short: string
@@ -330,7 +331,7 @@ const domain = computed(() => {
     <div v-if="doneLoading" class = "w-[95%] bg-black/10 mt-2 py-2 mx-auto border border-black/25 rounded-xl text-center relative">
         
         <div class="mx-auto w-fit">
-            <span class="font-extralight cursor-pointer w-fit select-none">
+            <div class="inline font-extralight cursor-pointer w-fit select-none">
                 <span @click="confirmDelete = !confirmDelete" class="text-red-200 hover:text-red-300 text-sm px-2 py-1 bg-black/10 rounded-lg">
                     {{confirmDelete ? "Cancel" : "Delete URL"}}
                 </span>
@@ -338,26 +339,26 @@ const domain = computed(() => {
                 <span @click="deleteURL()" v-if="confirmDelete" class="text-gray-200 hover:text-red-500 ml-2 text-sm px-2 py-1 bg-black/10 rounded-lg">
                     Confirm
                 </span>
-            </span>
+            </div>
 
-            <span class="font-extralight text-sm w-fit ml-5 px-2 py-1 bg-black/10 rounded-lg select-none"
+            <div class="inline font-extralight text-sm w-fit ml-5 px-2 py-1 bg-black/10 rounded-lg select-none"
                 :class="validRename ? 'text-green-200 hover:text-green-300 cursor-pointer' : 'text-gray-200/40 cursor-auto'"
                 @click="renameURL()">
                 Rename
-            </span>
+            </div>
 
-            <span class="font-extralight text-sm w-fit ml-5 px-2 py-1 bg-black/10 rounded-lg select-none whitespace-nowrap"
+            <div class="inline font-extralight text-sm w-fit ml-5 px-2 py-1 bg-black/10 rounded-lg select-none whitespace-nowrap"
                 :class="changesMade ? 'text-green-200 hover:text-green-300 cursor-pointer' : 'text-gray-200/40 cursor-auto'"
                 @click="updateConditionals()">
                 Save Changes
-            </span>
+            </div>
 
-            <span class="font-extralight text-sm w-fit ml-5 px-2 py-1 bg-black/10 rounded-lg select-none whitespace-nowrap"
+            <div class="inline font-extralight text-sm w-fit ml-5 px-2 py-1 bg-black/10 rounded-lg select-none whitespace-nowrap"
                 :class="analyticsNonZero ? 'text-blue-200 hover:text-blue-300 cursor-pointer' : 'text-gray-200/40 cursor-auto'"
                 @click="() => { if (!analyticsNonZero) return; showAnalytics = !showAnalytics }">
 
-                {{showAnalytics ? "Close Analytics" : "Detailed Analytics"}}
-            </span>
+                {{showAnalytics ? "Close Analytics" : "Show Analytics"}}
+            </div>
 
 
             <div v-if="changesMade && analyticsNonZero" class="text-red-200 my-2 font-light text-xs select-none">
@@ -365,10 +366,16 @@ const domain = computed(() => {
             </div>
         </div>
         
-        <Analytics 
-            v-if="showAnalytics" 
-            :short="props.short" />
+        <div v-if="showAnalytics" class="pt-8 p-4">
+            <DataTable
+                :short="props.short"
+            />
 
+            <DataGraph
+                :short="props.short"
+            />
+        </div>
+        
         <ConditionalsEditor 
             v-else
             :conditionals="conditionals"

@@ -328,7 +328,7 @@ const domain = computed(() => {
             />
     </div>
     
-    <div v-if="doneLoading" class = "w-[95%] bg-black/10 mt-2 py-2 mx-auto border border-black/25 rounded-xl text-center relative">
+    <div v-if="doneLoading" class = "w-[95%] mt-2 py-2 mx-auto text-center relative">
         
         <div class="mx-auto w-fit">
             <div class="inline font-extralight cursor-pointer w-fit select-none">
@@ -366,7 +366,7 @@ const domain = computed(() => {
             </div>
         </div>
         
-        <div v-if="showAnalytics" class="pt-8 p-4">
+        <div v-if="showAnalytics" class="p-4">
             <DataTable
                 :short="props.short"
             />

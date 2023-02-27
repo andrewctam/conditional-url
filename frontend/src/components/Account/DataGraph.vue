@@ -24,7 +24,7 @@ const span = ref<number>(60);
 const start = ref<string | undefined>(undefined);
 const earliestPoint = ref<string | undefined>(undefined);
 
-const limit = ref<number>(10);
+const limit = ref<number>(30);
 const dataPoints = ref<{
     spanStart: string,
     count: number
@@ -212,7 +212,7 @@ const options = {
                     <option :value = "180"> 3 hours </option>
                     <option :value = "360"> 6 hours </option>
                     <option :value = "720"> 12 hours </option>
-                    <option :value = "1440"> 1 Day </option>
+                    <option :value = "1440"> 1 day </option>
                 </select>
             </div>
 
@@ -227,8 +227,6 @@ const options = {
         </div>
 
         <Line :data="data" :options="options" />
-
-        
     </div>
 
 </template>

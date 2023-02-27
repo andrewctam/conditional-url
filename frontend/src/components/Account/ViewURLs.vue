@@ -107,7 +107,7 @@ watch(sorting, async (oldSorting, newSorting) => {
 </script>
 
 <template>
-    <div class="xl:w-1/2 lg:w-2/3 md:w-5/6 w-[95%] bg-black/10 my-8 pb-8 mx-auto border border-black/25 rounded-xl text-center relative">
+    <div class="xl:w-1/2 lg:w-2/3 md:w-5/6 w-[95%] bg-black/10 my-8 pb-4 mx-auto border border-black/25 rounded-xl text-center relative">
         <URLEditor 
             v-if="selected !== ''"
             

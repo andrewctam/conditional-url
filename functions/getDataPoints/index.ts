@@ -99,25 +99,22 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     let start: number;
     if (req.query.start === undefined || req.query.start === "undefined") {
-        //past week
-        start = Math.floor(Date.now() / 60000) - 10080;
+        start = Math.floor(Date.now() / 60000) - span * limit * 60000
     } else {
         start = parseInt(req.query.start);
     }
 
-
-    let index = binarySearchForGEQ(dataPoints, start);
-    
-    //-1 case already checked above for empty array
-    if (index === -2) {
+    let index;
+    let currentSpan;
+    if (start > dataPoints[dataPoints.length - 1].time) {
         //greater than all, so just send all 0s
-        const allZeroes =  new Array(limit).fill(null).map((_, i) => {
+        const allZeroes = new Array(limit).fill(null).map((_, i) => {
             return {
                 spanStart: new Date(start * 60000 + i * span * 60000).toISOString(),
                 count: 0
             }
         })
-
+        
         context.res = {
             status: 200,
             body: JSON.stringify({
@@ -125,10 +122,16 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 earliestPoint: new Date(dataPoints[0].time * 60000).toISOString(),
             })
         }
-
+        
         return;
+    } else if (start < dataPoints[0].time) {
+        //convert to 12AM of first point
+        currentSpan = new Date((dataPoints[0].time - dataPoints[0].time % 1440) * 60000);
+        index = 0
+    } else  {
+        index = binarySearchForGEQ(dataPoints, start);
+        currentSpan = new Date(dataPoints[index].time * 60000); //minutes to milliseconds
     }
-
     let compare: (a: number, b: number) => boolean;
     switch (span) {
         case 1:
@@ -158,9 +161,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }[] = [];
 
 
-
     let sum = 0;
-    let currentSpan = new Date(dataPoints[index].time * 60000); //minutes to milliseconds
     //group the data points into the same time spans
     while (points.length < limit && index < dataPoints.length) {
         const nextPoint = dataPoints[index];
@@ -207,14 +208,10 @@ function binarySearchForGEQ(dataPoints: {"time": number, "count": number}[], sta
     let low = 0;
     let high = dataPoints.length - 1;
 
-    if (dataPoints.length === 0) {
+    if (dataPoints.length === 0 || dataPoints[high].time < start) {
         return -1;
     }
 
-    //if start is greater than all of them
-    if (dataPoints[high].time < start) {
-        return -2;
-    }
 
     while (low < high) {
         let mid = Math.floor((high + low) / 2);

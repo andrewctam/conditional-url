@@ -11,7 +11,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (!username || !oldPassword || !newPassword || oldPassword.length < 8 || newPassword.length < 8) {
         context.res = {
             status: 401,
-            body: JSON.stringify("Incorrect password")
+            body: JSON.stringify({"msg": "Incorrect password"})
         };    
         return;
     }
@@ -32,13 +32,13 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
         context.res = {
             status: 200,
-            body: JSON.stringify("Password successfully changed")
+            body: JSON.stringify( "Password successfully changed")
         }
         return;
     } else {
         context.res = {
             status: 401,
-            body: JSON.stringify("Incorrect password")
+            body: JSON.stringify({"msg": "Incorrect password"})
         }
         return;
     }

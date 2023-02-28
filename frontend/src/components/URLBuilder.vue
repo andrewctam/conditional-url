@@ -89,7 +89,6 @@ const createConditionalUrl = async (retry: boolean = true) => {
     }
     
     const authHeader = accessToken && accessToken.value ? `Bearer ${accessToken.value}` : "NONE";
-    console.log(authHeader)
     const response = await fetch(url, {
         method: "POST",
         headers: {
@@ -102,32 +101,22 @@ const createConditionalUrl = async (retry: boolean = true) => {
         })
     }).then((res) => {
         console.log(res)
-        if (res.status === 200) {
-            return res.json();
-        } else if (res.status === 401) {
-            return -1;
-        } else if (res.status === 409) {
-            updateMsg("URL already exists. Please enter a different short URL.", true)
-            return null;
-        } else if (res.status === 400) {
-            updateMsg("Problem with conditionals. Please check your inputs and try again.", true)
-            return null;
-        } else {
-            updateMsg("Error creating URL.", true)
-            return null;
-        }
+        return res.json()
     }).catch((err) => {
         console.log(err)
         updateMsg("Error creating URL.", true)
         return null;
     });
+    console.log(response)
     
-    if (response === -1) {
+    if (response.msg === "Invalid token") {
         if (retry && await refresh()) {
             await createConditionalUrl(false);
         }
         return;
-    } else if (response) {
+    } else if (response.msg) {
+        updateMsg(response.msg, true);
+    } else {
         responseUrl.value = response;
     }
     

@@ -12,7 +12,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (short === "" || !/^[a-zA-Z0-9]*$/.test(short) || short.startsWith("http")) {
         context.res = {
             status: 400,
-            body: JSON.stringify("Short URL contains invalid characters")
+            body: JSON.stringify({"msg": "Short URL contains invalid characters"})
         };    
         return;
     } 
@@ -20,7 +20,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (req.headers.authorization === "") {
         context.res = {
             status: 401,
-            body: JSON.stringify("No token provided")
+            body: JSON.stringify({"msg": "No token provided"})
         };
         return;
     }
@@ -35,7 +35,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     } catch (e) {
         context.res = {
             status: 401,
-            body: JSON.stringify("Invalid token")
+            body: JSON.stringify({"msg": "Invalid token"})
         };
         return;
     }
@@ -44,7 +44,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (payload === undefined || payload.username === undefined) {
         context.res = {
             status: 401,
-            body: JSON.stringify("Invalid token")
+            body: JSON.stringify({"msg": "Invalid token"})
         };
         return;
     }
@@ -55,7 +55,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (parsedConditionals.length > 100) {
         context.res = {
             status: 400,
-            body: JSON.stringify("Too many URLs")
+            body: JSON.stringify({"msg": "Too many URLs"})
         };    
         return;
     }
@@ -72,7 +72,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         ) {
             context.res = {
                 status: 400,
-                body: JSON.stringify("Error with a conditional url")
+                body: JSON.stringify({"msg": "A URL is invalid"})
             };    
             return;
         } 
@@ -84,14 +84,14 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             if (condition.value === "" && condition.variable !== "URL Parameter") { //url param value can be empty
                 context.res = {
                     status: 400,
-                    body: JSON.stringify("Error with a conditional url")
+                    body: JSON.stringify({"msg": "Error with a conditional url"})
                 };    
                 return;
             } else if (condition.variable === "URL Parameter") {
                 if (!condition.param || !/^[a-zA-Z0-9]*$/.test(condition.param)) {
                     context.res = {
                         status: 400,
-                        body: JSON.stringify("Error with a conditional url")
+                        body: JSON.stringify({"msg": "Error with a conditional url"})
                     };    
                     return;
                 }
@@ -121,7 +121,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             if (response.data.matches) {
                 context.res = {
                     status: 400,
-                    body: JSON.stringify({"error": "Unsafe URL detected"})
+                    body: JSON.stringify({"msg": "Unsafe URL detected"})
                 };
                 return;
             }
@@ -144,7 +144,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (resource === undefined) {
         context.res = {
             status: 404,
-            body: JSON.stringify("Short URL not found")
+            body: JSON.stringify({"msg": "Short URL not found"})
         };
         return;
     }
@@ -152,7 +152,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (resource.owner !== payload.username) {
         context.res = {
             status: 401,
-            body: JSON.stringify("You do not own this URL")
+            body: JSON.stringify({"msg": "You do not own this URL"})
         };
         return;
     }

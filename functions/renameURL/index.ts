@@ -10,7 +10,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (newShort === "" || !/^[a-zA-Z0-9]*$/.test(newShort) || newShort.startsWith("http")) {
         context.res = {
             status: 400,
-            body: JSON.stringify("Short URL contains invalid characters")
+            body: JSON.stringify({"msg": "Short URL contains invalid characters"})
         };    
         return;
     } 
@@ -19,7 +19,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (req.headers.authorization === "") {
         context.res = {
             status: 401,
-            body: JSON.stringify("No token provided")
+            body: JSON.stringify({"msg": "No token provided"})
         };
         return;
     }
@@ -34,7 +34,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     } catch (e) {
         context.res = {
             status: 401,
-            body: JSON.stringify("Invalid token") 
+            body: JSON.stringify({"msg": "Invalid token"})
         };
         return;
     }
@@ -43,7 +43,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (payload === undefined || payload.username === undefined) {
         context.res = {
             status: 401,
-            body: JSON.stringify("Invalid token")
+            body: JSON.stringify({"msg": "Invalid token"})
         };
         return;
     }
@@ -63,7 +63,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (urlResource === undefined || urlResource.owner !== username) {
         context.res = {
             status: 404,
-            body: JSON.stringify("User or URL not found")
+            body: JSON.stringify({"msg": "User or URL not found"})
         };
         return;
     }
@@ -74,7 +74,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (userResource === undefined || !userResource.urls.includes(oldShort)) {   
         context.res = {
             status: 404,
-            body: JSON.stringify("User or URL not found")
+            body: JSON.stringify({"msg": "User or URL not found"})
         };
         return;
     }
@@ -97,7 +97,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         console.log(e)
         context.res = {
             status: 409,
-            body: JSON.stringify("New URL already exists")
+            body: JSON.stringify({"msg": "New URL already exists"})
         };
         return;
     }

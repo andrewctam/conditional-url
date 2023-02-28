@@ -11,7 +11,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (username === "" || !/^[a-zA-Z0-9]*$/.test(username) || password.length < 8) {
         context.res = {
             status: 401,
-            body: JSON.stringify("Failed to sign in")
+            body: JSON.stringify({"msg": "Failed to sign in"})
         };
     }
 
@@ -46,7 +46,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     } catch (e) {
         context.res = {
             status: 401,
-            body: JSON.stringify("Failed to sign in")
+            body: JSON.stringify({"msg": "Failed to sign in"})
         }
         return;
     }

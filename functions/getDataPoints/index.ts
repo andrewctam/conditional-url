@@ -7,7 +7,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (req.headers.authorization === "") {
         context.res = {
             status: 401,
-            body: JSON.stringify("No token provided")
+            body: JSON.stringify({"msg": "No token provided"})
         };
         return;
     }
@@ -20,7 +20,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     } catch (e) {
         context.res = {
             status: 401,
-            body: JSON.stringify("Invalid token")
+            body: JSON.stringify({"msg": "Invalid token"})
         };
         return;
     }
@@ -28,7 +28,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (payload === undefined || payload.username === undefined) {
         context.res = {
             status: 401,
-            body: JSON.stringify("Invalid token")
+            body: JSON.stringify({"msg": "Invalid token"})
         };
         return;
     }
@@ -45,7 +45,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (short === undefined || short === "") {
         context.res = {
             status: 400,
-            body: JSON.stringify("Missing infromation")
+            body: JSON.stringify({"msg": "Missing infromation"})
         };
         return;
     }
@@ -56,7 +56,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (resource === undefined) {
         context.res = {
             status: 400,
-            body: JSON.stringify("Short URL not found")
+            body: JSON.stringify({"msg": "Short URL not found"})
         };
         return;
     }
@@ -64,7 +64,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (resource.owner !== payload.username) {
         context.res = {
             status: 400,
-            body: JSON.stringify("You do not own this URL")
+            body: JSON.stringify({"msg": "You do not own this URL"})
         };
         return;
     }
@@ -125,8 +125,10 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         
         return;
     } else if (start < dataPoints[0].time) {
-        //convert to 12AM of first point
-        currentSpan = new Date((dataPoints[0].time - dataPoints[0].time % 1440) * 60000);
+        //12 AM of first point
+        const earlier = Math.max(start, dataPoints[0].time - dataPoints[0].time % 1440) 
+
+        currentSpan = new Date(earlier * 60000);
         index = 0
     } else  {
         index = binarySearchForGEQ(dataPoints, start);

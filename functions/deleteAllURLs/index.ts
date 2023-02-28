@@ -7,7 +7,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (req.headers.authorization === "") {
         context.res = {
             status: 401,
-            body: JSON.stringify("No token provided")
+            body: JSON.stringify({"msg": "No token provided"})
         };
         return;
     }
@@ -22,7 +22,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     } catch (e) {
         context.res = {
             status: 401,
-            body: JSON.stringify("Invalid token") 
+            body: JSON.stringify({"msg": "Invalid token"})
         };
         return;
     }
@@ -31,7 +31,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (payload === undefined || payload.username === undefined) {
         context.res = {
             status: 401,
-            body: JSON.stringify("Invalid token")
+            body: JSON.stringify({"msg": "Invalid token"})
         };
         return;
     }

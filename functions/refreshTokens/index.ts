@@ -20,7 +20,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     } catch (error) {
         context.res = {
             status: 401,
-            body: JSON.stringify("Invalid token")
+            body: JSON.stringify({"msg": "Invalid token"})
         };
         return;
     }
@@ -30,7 +30,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (payload === undefined || payload.username === undefined || payload.username !== username) {
         context.res = {
             status: 401,
-            body: JSON.stringify("Invalid token")
+            body: JSON.stringify({"msg": "Invalid token"})
         };
         return;
     }
@@ -40,7 +40,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (resource === undefined) {
         context.res = {
             status: 400,
-            body: JSON.stringify("User not found")
+            body: JSON.stringify({"msg": "User not found"})
         };
         return;
     }
@@ -48,7 +48,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (!(await bcrypt.compare(refreshToken, resource.hashedRefresh))) {
         context.res = {
             status: 401,
-            body: JSON.stringify("Invalid refresh token")
+            body: JSON.stringify({"msg": "Invalid refresh token"})
         };
         return;
     }

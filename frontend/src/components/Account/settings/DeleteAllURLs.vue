@@ -26,22 +26,16 @@ const deleteAllURLs = async (retry: boolean = true) => {
             "Authorization": `Bearer ${accessToken.value}`
         }
     }).then((res) => {
-        if (res.status === 200) {
-            return res.json();
-        } else if (res.status === 401) {
-            return -1;
-        } else {
-            return null;
-        }
+        return res.json();
     });
 
-    if (response === -1) {
+    if (response.msg === "Invalid token") {
         if (retry && await refresh()) {
             await deleteAllURLs(false);
         } else {
             updateMsg("Error with tokens", true);
         }
-    } else if (response) {
+    } else if (!response.msg) {
         updateMsg("All URLs deleted");
         emit('close')
     }

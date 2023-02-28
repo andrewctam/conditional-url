@@ -107,7 +107,7 @@ const toggleAnd = (i: number) => {
         </template>
     </draggable>
 
-    <div @click = "newConditional" class = "mx-2 p-2 cursor-pointer text-center rounded bg-white/5 border border-black/20 text-green-100 hover:text-green-200 text-sm font-light hover:bg-black/30 select-none">
+    <div v-if="conditionals.length < 100" @click = "newConditional" class = "mx-2 p-2 cursor-pointer text-center rounded bg-white/5 border border-black/20 text-green-100 hover:text-green-200 text-sm font-light hover:bg-black/30 select-none">
         Add Block
     </div>
 </template>

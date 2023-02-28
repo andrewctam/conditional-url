@@ -37,22 +37,18 @@ const deleteAccount = async () => {
             alsoDeleteURLs: action.value === Action.Both
         })
     }).then((res) => {
-        if (res.status === 200) {
-            return res.json();
-        } else {
-            return null;
-        }
+        return res.json();
     });
 
-    if (response) {
+    if (response.msg) {
+        updateMsg(response.msg, true);
+    } else {
         if (action.value === Action.Both)
             updateMsg("Account and URLs deleted");
         else if (action.value === Action.Account)
             updateMsg("Account deleted");
 
         emit('signout');
-    } else {
-        updateMsg("Incorrect password.", true);
     }
 }
 </script>

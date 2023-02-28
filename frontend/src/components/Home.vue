@@ -123,21 +123,17 @@ const refreshTokens = async () => {
             refreshToken: refreshToken
         })
     }).then(res => {
-        if (res.status === 200) {
-            return res.json();
-        } else {
-            return null;
-        }
+        return res.json();
     })
 
-    if (response !== null) {
-        updateUser(username, response.accessToken, response.refreshToken)
-        console.log("Successfully refreshed tokens");
-        return true;
-    } else {
+    if (response.msg) {
         updateUser('', '', '')
         console.log("Failed to refresh tokens");
         return false;
+    } else {
+        updateUser(username, response.accessToken, response.refreshToken)
+        console.log("Successfully refreshed tokens");
+        return true;
     }
 }
 

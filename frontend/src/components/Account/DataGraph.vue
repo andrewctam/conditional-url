@@ -73,22 +73,17 @@ const getDataPoints = async (retry: boolean = true) => {
             "Authorization": `Bearer ${accessToken.value}`
         },
     }).then((res) => {
-        if (res.status === 200) {
-            return res.json();
-        } else if (res.status === 401) {
-            return -1;
-        } else {
-            return null;
-        }
+        return res.json();
+
     });
 
-    if (response === -1) {
+    if (response.msg === "Invalid token") {
         if (retry && await refresh()) {
             await getDataPoints(false);
         } else {
             doneLoading.value = true;
         }
-    } else if (response) {
+    } else if (!response.msg) {
         dataPoints.value = response.dataPoints;
         doneLoading.value = true;
 

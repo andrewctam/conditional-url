@@ -59,23 +59,17 @@ const deleteURL = async (retry: boolean = true) => {
             short: currentName.value
         })
     }).then((res) => {
-        if (res.status === 200) {
-            return res.json();
-        } else if (res.status === 401) {
-            return -1;
-        } else {
-            return null;
-        }
+        return res.json();
     });
 
-    if (response === -1) {
+    if (response.msg === "Invalid token") {
         if (retry && await refresh()) {
             await deleteURL(false);
             return;
         } else {
             updateMsg("Failed to delete URL", true);
         }
-    } else if (response) {
+    } else if (!response.msg) {
         updateMsg("URL deleted successfully");
         emit('closeAndFetch');
     }
@@ -107,31 +101,19 @@ const renameURL = async (retry: boolean = true) => {
             newShort: rename.value
         })
     }).then((res) => {
-        if (res.status === 200) {
-            return res.json();
-        } else if (res.status === 401) {
-            return -1;
-        } else if (res.status === 409) {
-            return -2;
-        } else if (res.status === 400) {
-            return -3;
-        } else {
-            return null;
-        }
+        return res.json();
     });
 
-    if (response === -1) {
+    if (response.msg === "Invalid token") {
         if (retry && await refresh()) {
-            await deleteURL(false);
+            await renameURL(false);
             return;
         } else {
             updateMsg("Failed to rename URL", true);
         }
-    } else if (response === -2) {
-        updateMsg("New URL name already exists", true);
-    } else if (response === -3) {
-        updateMsg("New URL name can only have letters and numbers", true)
-    } else if (response) {
+    } else if (response.msg) {
+        updateMsg(response.msg, true);
+    } else {
         updateMsg("URL renamed successfully");
         currentName.value = rename.value;
     }
@@ -156,31 +138,26 @@ const getConditionals = async (retry: boolean = true) => {
             "Authorization": `Bearer ${accessToken.value}`
         },
     }).then((res) => {
-        if (res.status === 200) {
-            return res.json();
-        } else if (res.status=== 401) {
-            return -1;
-        } else {
-            return null;
-        }
+        return res.json();
     });
-    if (response === -1) {
+    if (response.msg === "Invalid token" ) {
         if (retry && await refresh()) {
             await getConditionals(false);
         } else {
             doneLoading.value = true;
         }
-    } else if (response) {
+    } else if (!response.msg) {
         conditionals.value = JSON.parse(response.conditionals);
-    }
-
-    for (let i = 0; i < response.redirects.length; i++) {
-        if (response.redirects[i] !== 0) {
-            analyticsNonZero.value = true;
+        
+        for (let i = 0; i < response.redirects.length; i++) {
+            if (response.redirects[i] !== 0) {
+                analyticsNonZero.value = true;
+            }
+    
+            conditionals.value[i].redirects = response.redirects[i];
         }
-
-        conditionals.value[i].redirects = response.redirects[i];
     }
+
     
     doneLoading.value = true;
 }
@@ -194,7 +171,7 @@ const close = () => {
 }
 
 
-const updateConditionals = async (retry?: boolean) => {
+const updateConditionals = async (retry: boolean = true) => {
     if (!accessToken || !accessToken.value || !changesMade.value)
         return;
         
@@ -268,28 +245,20 @@ const updateConditionals = async (retry?: boolean) => {
             conditionals: JSON.stringify(trimmed)
         })
     }).then((res) => {
-        if (res.status === 200) {
-            return res.json();
-        } else if (res.status === 401) { 
-            return -1;
-        } else if (res.status === 409) {
-            updateMsg("URL already exists. Please enter a different short URL.", true)
-            return null;
-        } else if (res.status === 400) {
-            updateMsg("Problem with conditionals. Please check your inputs and try again.", true)
-            return null;
-        } else {
-            updateMsg("Something went wrong. Please try again later.", true)
-            return null;
-        }
+        return res.json();
+    }).catch((err) => {
+        console.log(err);
     });
 
-    if (response === -1) {
+
+    if (response.msg === "Invalid token") {
         if (retry && await refresh()) {
             await updateConditionals(false);
         }
         return;
-    } else if (response) {
+    } else if (response.msg) {
+        updateMsg(response.msg, true);
+    } else {
         updateMsg("Updated successfully");
         analyticsNonZero.value = false;
         changesMade.value = false

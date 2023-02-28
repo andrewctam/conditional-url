@@ -7,7 +7,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (req.headers.authorization === "") {
         context.res = {
             status: 401,
-            body: JSON.stringify("No token provided")
+            body: JSON.stringify({"msg": "No token provided"})
         };
         return;
     }
@@ -21,7 +21,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     } catch (e) {
         context.res = {
             status: 401,
-            body: JSON.stringify("Invalid token")
+            body: JSON.stringify({"msg": "Invalid token"})
         };
         return;
     }
@@ -29,7 +29,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (payload === undefined || payload.username === undefined) {
         context.res = {
             status: 401,
-            body: JSON.stringify("Invalid token")
+            body: JSON.stringify({"msg": "Invalid token"})
         };
         return;
     }
@@ -45,7 +45,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (short === undefined || short === "") {
         context.res = {
             status: 400,
-            body: JSON.stringify("No short URL provided")
+            body: JSON.stringify({"msg": "No short URL provided"})
         };
         return;
     }
@@ -55,7 +55,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (variable === undefined || variable === "") {
         context.res = {
             status: 400,
-            body: JSON.stringify("No variable provided")
+            body: JSON.stringify({"msg": "No variable provided"})
         };
         return;
     }
@@ -66,7 +66,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (resource === undefined) {
         context.res = {
             status: 400,
-            body: JSON.stringify("Short URL not found")
+            body: JSON.stringify({"msg": "Short URL not found"})
         };
         return;
     }
@@ -74,7 +74,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (resource.owner !== payload.username) {
         context.res = {
             status: 400,
-            body: JSON.stringify("You do not own this URL")
+            body: JSON.stringify({"msg": "You do not own this URL"})
         };
         return;
     }

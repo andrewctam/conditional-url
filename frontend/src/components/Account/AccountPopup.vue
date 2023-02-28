@@ -64,15 +64,13 @@ const signUp = async () => {
             password: passwordInput.value
         })
     }).then((res) => {
-        if (res.status == 200) 
-            return res.json();
-        else
-            return null;
+        return res.json();
     });
-    if (response) {
-        emit('updateUser', response.username, response.accessToken, response.refreshToken);
-    } else {
+
+    if (response.msg) {
         updateMsg("Username already taken", true)
+    } else {
+        emit('updateUser', response.username, response.accessToken, response.refreshToken);
     }
 }
 
@@ -109,15 +107,12 @@ const signIn = async () => {
             password: passwordInput.value
         })
     }).then((res) => {
-        if (res.status == 200) 
-            return res.json();
-        else
-            return null;
+        return res.json();
     });
-    if (response) {
-        emit('updateUser', response.username, response.accessToken, response.refreshToken);
-    } else {
+    if (response.msg) {
         updateMsg("Failed to login. Verify your username and password", true)
+    } else {
+        emit('updateUser', response.username, response.accessToken, response.refreshToken);
     }
 
     

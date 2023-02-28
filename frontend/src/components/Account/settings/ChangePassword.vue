@@ -50,18 +50,12 @@ const changePassword = async () => {
             newPassword: newPassword.value,
         })
     }).then((res) => {
-        if (res.status === 200) {
-            return res.json();
-        } else if (res.status=== 401) {
-            return -1;
-        } else {
-            return null;
-        }
+        return res.json();
     });
 
-    if (response === -1) {
-        updateMsg("Incorrect old password.", true );
-    } else if (response) {
+    if (response.msg) {
+        updateMsg(response.msg, true );
+    } else {
         updateMsg("Password changed successfully!");
         emit('close')
     }

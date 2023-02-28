@@ -14,7 +14,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (username === undefined || username === "" || password === undefined || password === "") {
         context.res = {
             status: 400,
-            body: JSON.stringify("No username or password provided")
+            body: JSON.stringify({"msg:": "No username or password provided"})
         }
     }
 
@@ -31,7 +31,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (resource === undefined) {
         context.res = {
             status: 400,
-            body: JSON.stringify("User not found")
+            body: JSON.stringify({"msg:": "User not found"})
         }
         return;
     }
@@ -41,7 +41,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     } else {
         context.res = {
             status: 401,
-            body: JSON.stringify("Incorrect password")
+            body: JSON.stringify({"msg:": "Incorrect password"})
         }
         return;
     }
@@ -63,6 +63,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             resource.redirects = [];
             resource.dataPoints = [];
             resource.conditionals = "";
+            resource.owner = ""; //disassociate the url from the user
     
             await urlsContainer.item(resource.short, resource.short).replace(resource);
         }
@@ -75,7 +76,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     context.res = {
         status: 200,
-        body: JSON.stringify("Deleted")
+        body: JSON.stringify("Deleted Account")
     }
 
 };

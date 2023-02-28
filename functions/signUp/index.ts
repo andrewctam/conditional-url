@@ -11,7 +11,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (username === "" || !/^[a-zA-Z0-9]*$/.test(username) || password.length < 8) {
         context.res = {
             status: 400,
-            body: JSON.stringify("Invalid username or password")
+            body: JSON.stringify({"msg": "Invalid username or password"})
         };    
         return;
     }
@@ -51,7 +51,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     } catch (e) {
         context.res = {
             status: 400,
-            body: JSON.stringify("Username already exists")
+            body: JSON.stringify({"msg": "Username already exists"})
         }
     }
     

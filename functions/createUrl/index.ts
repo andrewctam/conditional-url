@@ -3,6 +3,7 @@ import { CosmosClient } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 import type { Conditional } from "../types";
+import axios from "axios";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const short = req.body.short.toLowerCase();
@@ -11,12 +12,23 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (short === "" || !/^[a-zA-Z0-9]*$/.test(short) || short.startsWith("http")) {
         context.res = {
             status: 400,
-            body: JSON.stringify("Short URL contains invalid characters")
+            body: JSON.stringify({"msg": "Short URL contains invalid characters"})
         };    
         return;
     } 
 
     const parsedConditionals: Conditional[] = JSON.parse(conditionals);
+
+    if (parsedConditionals.length > 100) {
+        context.res = {
+            status: 400,
+            body: JSON.stringify({"msg": "Too many URLs"})
+        };    
+        return;
+    }
+    
+    const urls: {url: string}[] = [];
+
     for (let i = 0; i < parsedConditionals.length; i++) {
         const c = parsedConditionals[i];
         if (c.url == "" ||
@@ -26,24 +38,26 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         ) {
             context.res = {
                 status: 400,
-                body: JSON.stringify("Error with a conditional url")
+                body: JSON.stringify({"msg": "Error with a conditional url"})
             };    
             return;
         } 
+
+        urls.push({"url": c.url});
 
         for (let j = 0; j < c.conditions.length; j++) {
             const condition = c.conditions[j];
             if (condition.value === "" && condition.variable !== "URL Parameter") { //url param value can be empty
                 context.res = {
                     status: 400,
-                    body: JSON.stringify("Error with a conditional url")
+                    body: JSON.stringify({"msg": "Error with a conditional url"})
                 };    
                 return;
             } else if (condition.variable === "URL Parameter") {
                 if (!condition.param || !/^[a-zA-Z0-9]*$/.test(condition.param)) {
                     context.res = {
                         status: 400,
-                        body: JSON.stringify("Error with a conditional url")
+                        body: JSON.stringify({"msg": "Error with a conditional url"})
                     };    
                     return;
                 }
@@ -51,7 +65,41 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         }
     }
 
+    //send URLs to Safe Browsing API
     dotenv.config();
+    const GOOGLE_API_KEY = process.env["GOOGLE_API_KEY"];
+    if (GOOGLE_API_KEY) { //if no key provided in .env, skip
+        const apiUrl = "https://safebrowsing.googleapis.com/v4/threatMatches:find?key=" + GOOGLE_API_KEY;
+
+        const body = {
+            client: {
+                clientId: "conditionalurl",
+                clientVersion: "1.0.0"
+            },
+            threatInfo: {
+                threatTypes: ["MALWARE", "SOCIAL_ENGINEERING", "UNWANTED_SOFTWARE", "POTENTIALLY_HARMFUL_APPLICATION"],
+                platformTypes: ["ANY_PLATFORM"],
+                threatEntryTypes: ["URL"],
+                threatEntries: urls
+            }
+        }
+
+        try {
+            const response = await axios.post(apiUrl, body);
+            if (response.data.matches) {
+                context.res = {
+                    status: 400,
+                    body: JSON.stringify({"msg": "Unsafe URL detected"})
+                };
+                return;
+            }
+
+        } catch (error) {
+            console.log(error)
+        }
+    }
+            
+
     const key = process.env["COSMOS_KEY"];
     const endpoint = process.env["COSMOS_ENDPOINT"];
     
@@ -70,7 +118,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         } catch (error) {
             context.res = {
                 status: 401,
-                body: JSON.stringify("Invalid token")
+                body: JSON.stringify({"msg": "Invalid token"})
             };
             return;
         }
@@ -89,7 +137,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         if (userResource === undefined) {
             context.res = {
                 status: 400,
-                body: JSON.stringify("User not found")
+                body: JSON.stringify({"msg": "User not found"})
             };
             return;
         }
@@ -123,7 +171,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             //url already exists, or deleted url and not the owner
             context.res = {
                 status: 409,
-                body: JSON.stringify("Short URL already exists")
+                body: JSON.stringify({"msg": "Short URL already exists"})
             }
 
             return;

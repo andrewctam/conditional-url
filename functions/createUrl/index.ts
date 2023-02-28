@@ -57,7 +57,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     
     const client = new CosmosClient({ endpoint, key });
 
-    let owner = ""
+    let owner: string | null = null;
     if (req.headers.authorization && req.headers.authorization !== "NONE") {
         const accessToken = req.headers.authorization.split(" ")[1];
 
@@ -77,64 +77,80 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
         owner = payload.username;
     }
-    
-
-    try {
-        const urlsContainer = client.database("conditionalurl").container("urls");
-
-        if (owner) {
-            const userContainer = client.database("conditionalurl").container("users");
-            const { resource } = await userContainer.item(owner, owner).read();
-            if (resource === undefined) {
-                context.res = {
-                    status: 400,
-                    body: JSON.stringify("User not found")
-                };
-                return;
-            }
-
-            resource.urls.push(short);
-            resource.urlCount++;
 
 
-            await urlsContainer.items.create({
-                id: short,
-                short,
-                conditionals,
-                owner: owner,
-                redirects: new Array(parsedConditionals.length).fill([]),
-                dataPoints: []
-                
-            });   
 
-            await userContainer.item(owner, owner).replace(resource);
-            
-            
-        } else {
-            await urlsContainer.items.create({
-                id: short,
-                short,
-                conditionals,
-                owner: "",
-                redirects: new Array(parsedConditionals.length).fill([]),
-                dataPoints: []
-            });    
+    const userContainer = client.database("conditionalurl").container("users");
+    let userResource = undefined;
+    if (owner) {
+        const { resource: user } = await userContainer.item(owner, owner).read();
+        userResource = user;
+
+        if (userResource === undefined) {
+            context.res = {
+                status: 400,
+                body: JSON.stringify("User not found")
+            };
+            return;
         }
 
-        
+        userResource.urls.push(short);
+        userResource.urlCount++;
+    } 
+
+    const urlsContainer = client.database("conditionalurl").container("urls");
+    const { resource: existing } = await urlsContainer.item(short, short).read();
+
+    if (existing !== undefined) {
+        //owner deleted an old url and is now trying to recreate it
+        if (existing.deleted && existing.owner !== "" && existing.owner === owner) {
+            existing.conditionals = conditionals;
+            existing.redirects = new Array(parsedConditionals.length).fill([]);
+            existing.dataPoints = [];
+            existing.deleted = false;
+
+            await client.database("conditionalurl").container("urls").item(short, short).replace(existing);
+
+            context.res = {
+                status: 200,
+                body: JSON.stringify(short)
+            }
+
+            await userContainer.item(owner, owner).replace(userResource);
+            return;
+
+        } else { 
+            //url already exists, or deleted url and not the owner
+            context.res = {
+                status: 409,
+                body: JSON.stringify("Short URL already exists")
+            }
+
+            return;
+        }
+    } else {
+        //url doesn't exist, create it
+        await urlsContainer.items.create({
+            id: short,
+            short,
+            conditionals,
+            owner: owner ?? "",
+            redirects: new Array(parsedConditionals.length).fill([]),
+            dataPoints: [],
+            deleted: false
+
+        });    
 
         context.res = {
             status: 200, 
             body: JSON.stringify(short)
         }
-    } catch (error) {
-        context.res = {
-            status: 409,
-            body: JSON.stringify("Short URL already exists")
+        //if logged in, update the user's list
+        if (userResource) {
+            await userContainer.item(owner, owner).replace(userResource);
         }
+        return;
     }
-
-
 
 
 };

@@ -58,7 +58,12 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         ]
     }).fetchAll();
     for (const resource of resources) {
-        await urlsContainer.item(resource.short, resource.short).delete();
+        resource.deleted = true;
+        resource.redirects = [];
+        resource.dataPoints = [];
+        resource.conditionals = "";
+
+        await urlsContainer.item(resource.short, resource.short).replace(resource);
     }
 
     await userContainer.item(payload.username, payload.username).replace(resource);

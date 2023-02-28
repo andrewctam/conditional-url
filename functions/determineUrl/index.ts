@@ -25,7 +25,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
         const { resource } = await container.item(short, short).read();
 
-        if (resource === undefined) {
+        if (resource === undefined || resource.deleted) {
             context.res = {
                 status: 404,
                 body: JSON.stringify("Short URL not found")

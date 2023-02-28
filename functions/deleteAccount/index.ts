@@ -59,11 +59,16 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     if (alsoDeleteURLs) {
         for (const resource of resources) {
-            await urlsContainer.item(resource.short, resource.short).delete();
+            resource.deleted = true;
+            resource.redirects = [];
+            resource.dataPoints = [];
+            resource.conditionals = "";
+    
+            await urlsContainer.item(resource.short, resource.short).replace(resource);
         }
     } else {
         for (const resource of resources) {
-            resource.username = "";
+            resource.username = ""; //disassociate the url from the user
             await urlsContainer.item(resource.short, resource.short).replace(resource);
         }
     }

@@ -73,7 +73,12 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    await urlsContainer.item(short, short).delete();
+    urlResource.deleted = true;
+    urlResource.redirects = [];
+    urlResource.dataPoints = [];
+    urlResource.conditionals = "";
+    
+    await urlsContainer.item(short, short).replace(urlResource);
 
     const index = resource.urls.indexOf(short);
     resource.urls.splice(index, 1);

@@ -7,7 +7,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const oldShort = req.body.oldShort.toLowerCase();
     const newShort = req.body.newShort.toLowerCase();
 
-    if (newShort === "" || !/^[a-zA-Z0-9]*$/.test(newShort) || newShort.startsWith("http")) {
+    if (newShort === "" || !/^[a-zA-Z0-9]*$/.test(newShort)) {
         context.res = {
             status: 400,
             body: JSON.stringify({"msg": "Short URL contains invalid characters"})
@@ -48,39 +48,43 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    const username = payload.username;
-    
 
     const key = process.env["COSMOS_KEY"];
     const endpoint = process.env["COSMOS_ENDPOINT"];
     
     const client = new CosmosClient({ endpoint, key });
-    const urlsContainer = client.database("conditionalurl").container("urls");
 
-
-    const { resource: urlResource } = await urlsContainer.item(oldShort, oldShort).read();
-
-    if (urlResource === undefined || urlResource.owner !== username) {
-        context.res = {
-            status: 404,
-            body: JSON.stringify({"msg": "User or URL not found"})
-        };
-        return;
-    }
-
+    
     const userContainer = client.database("conditionalurl").container("users");
     const { resource: userResource } = await userContainer.item(payload.username, payload.username).read();
     
-    if (userResource === undefined || !userResource.urls.includes(oldShort)) {   
+    if (userResource === undefined) {   
         context.res = {
             status: 404,
-            body: JSON.stringify({"msg": "User or URL not found"})
+            body: JSON.stringify({"msg": "User not found"})
         };
         return;
     }
+
+    if (!userResource.urls.includes(oldShort)) {
+        context.res = {
+            status: 401,
+            body: JSON.stringify({"msg": "Unauthorized"})
+        };
+        return;
+    }
+    
+
+    const urlsContainer = client.database("conditionalurl").container("urls");
+    const { resource: urlResource } = await urlsContainer.item(oldShort, oldShort).read();
+
+    if (urlResource === undefined || urlResource.owner !== payload.username) {
+        //already checked to see if on user's list above, but not found in DB
+        throw Error("URL from user list not found");
+    }
+
     const index = userResource.urls.indexOf(oldShort);
     userResource.urls[index] = newShort;
-
 
     try {
         urlResource.id = newShort;

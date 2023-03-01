@@ -69,7 +69,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         }
     } else {
         for (const resource of resources) {
-            resource.username = ""; //disassociate the url from the user
+            resource.owner = ""; //disassociate the url from the user
             await urlsContainer.item(resource.short, resource.short).replace(resource);
         }
     }

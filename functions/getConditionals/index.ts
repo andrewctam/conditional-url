@@ -34,13 +34,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    const key = process.env["COSMOS_KEY"];
-    const endpoint = process.env["COSMOS_ENDPOINT"];
-    
-    const client = new CosmosClient({ endpoint, key });
-    const container = client.database("conditionalurl").container("urls");
     const short = req.query.short.toLowerCase();
-    
     if (short === undefined || short === "") {
         context.res = {
             status: 400,
@@ -49,12 +43,19 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
+    const key = process.env["COSMOS_KEY"];
+    const endpoint = process.env["COSMOS_ENDPOINT"];
+    
+    const client = new CosmosClient({ endpoint, key });
+    const container = client.database("conditionalurl").container("urls");
+    
+
 
     const { resource } = await container.item(short, short).read();
 
     if (resource === undefined) {
         context.res = {
-            status: 400,
+            status: 404,
             body: JSON.stringify({"msg": "Short URL not found"})
         };
         return;
@@ -62,7 +63,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     if (resource.owner !== payload.username) {
         context.res = {
-            status: 400,
+            status: 401,
             body: JSON.stringify({"msg": "You do not own this URL"})
         };
         return;

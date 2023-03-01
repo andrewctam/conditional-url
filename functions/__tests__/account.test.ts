@@ -9,6 +9,7 @@ import updateUrl from "../updateUrl/index";
 import renameUrl from "../renameUrl/index";
 import deleteUrl from "../deleteUrl/index";
 import determineUrl from "../determineUrl/index";
+import deleteAccount from "../deleteAccount/index";
 
 describe("Sign up, Login, and Create/Edit URLs", () => {
     let context = ({ log: jest.fn() } as unknown) as Context;
@@ -18,7 +19,6 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
     let username = Math.random().toString(36).substring(2, 10);
     let password = Math.random().toString(36).substring(2, 10);
     let accessToken;
-    let refreshToken;
 
     const conditionals1 = JSON.stringify([
         {
@@ -146,7 +146,6 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
         expect(body.refreshToken).toBeDefined();
 
         accessToken = body.accessToken;
-        refreshToken = body.refreshToken;
     })
 
 
@@ -438,6 +437,113 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
         expect(JSON.parse(context.res.body)).toBe(randomShort);
     })
     
+    it("should successfully delete account", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: {
+                username: username,
+                password: password,
+                alsoDeleteURLs: false
+            }
+        }
+
+        await deleteAccount(context, req);
+
+        expect(context.res.status).toBe(200);
+        expect(JSON.parse(context.res.body)).toBe("Deleted Account");
+    })
+
+
+    it("should successfully sign up", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: {
+                username: username,
+                password: password
+            }
+        }
+
+        await signUp(context, req);
+
+        expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+
+        expect(body.username).toBe(username);
+        expect(body.accessToken).toBeDefined();
+        expect(body.refreshToken).toBeDefined();
+
+        accessToken = body.accessToken;
+    })
+
+
+
+    it("should not find old url in user's list after account deleted", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                page: 0,
+                sort: "Newest"
+            }
+        }
+
+        await userUrls(context, req);
+
+        expect(context.res.status).toBe(200);
+
+        const body = JSON.parse(context.res.body);
+        expect(body.page).toBe(0);
+        expect(body.pageCount).toBe(0);
+        expect(body.paginatedUrls).toStrictEqual([]);
+    })
+
+
+    it("should fail be retrieved after account deleted", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort
+            }
+        }
+
+        await getConditionals(context, req);
+        expect(context.res.status).toBe(401);
+        expect(JSON.parse(context.res.body).msg).toBe("You do not own this URL");
+    })
+
+    
+
+
+    it("should still find old url", async () => {
+        const context = ({ log: jest.fn() } as unknown) as Context;
+        const req = {
+            body: {
+                short: randomShort,
+                data: JSON.stringify({
+                    Language: "English",
+                    params: JSON.stringify({})
+                })
+            }
+        }
+    
+        await determineUrl(context, req);
+    
+        expect(context.res.status).toBe(200);
+        expect(JSON.parse(context.res.body)).toBe("https://example.com/1");
+
+    })
+
+
+
 
 
 

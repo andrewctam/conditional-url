@@ -7,7 +7,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (req.headers.authorization === "") {
         context.res = {
             status: 401,
-            body: JSON.stringify("No token provided")
+            body: JSON.stringify({"msg": "No token provided"})
         };
         return;
     }
@@ -22,7 +22,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     } catch (e) {
         context.res = {
             status: 401,
-            body: JSON.stringify("Invalid token") 
+            body: JSON.stringify({"msg": "Invalid token"})
         };
         return;
     }
@@ -31,7 +31,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (payload === undefined || payload.username === undefined) {
         context.res = {
             status: 401,
-            body: JSON.stringify("Invalid token")
+            body: JSON.stringify({"msg": "Invalid token"})
         };
         return;
     }
@@ -45,10 +45,18 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const userContainer = client.database("conditionalurl").container("users");
     const { resource } = await userContainer.item(payload.username, payload.username).read();
     
-    if (resource === undefined || !resource.urls.includes(short)) {   
+    if (resource === undefined) {   
         context.res = {
             status: 404,
-            body: JSON.stringify("User or URL not found")
+            body: JSON.stringify({"msg": "User not found"})
+        };
+        return;
+    }
+
+    if (!resource.urls.includes(short)) {
+        context.res = {
+            status: 401,
+            body: JSON.stringify({"msg": "Unauthorized"})
         };
         return;
     }
@@ -56,20 +64,9 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const urlsContainer = client.database("conditionalurl").container("urls");
     const { resource: urlResource } = await urlsContainer.item(short, short).read();
 
-    if (urlResource === undefined) {
-        context.res = {
-            status: 404,
-            body: JSON.stringify("User or URL not found")
-        };
-        return;
-    }
-
-    if (urlResource.owner !== payload.username) {
-        context.res = {
-            status: 400,
-            body: JSON.stringify("Unauthorized")
-        };
-        return;
+    if (urlResource === undefined || urlResource.owner !== payload.username) {
+        //already checked to see if on user's list above, but not found in DB
+        throw Error("URL from user list not found");
     }
 
     urlResource.deleted = true;

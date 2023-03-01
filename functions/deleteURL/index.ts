@@ -36,7 +36,6 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    const username = payload.username;
     const short = req.body.short.toLowerCase();
 
     const key = process.env["COSMOS_KEY"];
@@ -65,7 +64,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    if (urlResource.owner !== username) {
+    if (urlResource.owner !== payload.username) {
         context.res = {
             status: 400,
             body: JSON.stringify("Unauthorized")

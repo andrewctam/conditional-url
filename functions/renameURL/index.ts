@@ -88,11 +88,6 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         
         //create new one
         await urlsContainer.items.create(urlResource);
-        
-        //delete old one
-        await urlsContainer.item(oldShort, oldShort).delete();
-
-        
     } catch (e) {
         console.log(e)
         context.res = {
@@ -102,6 +97,16 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
+    //delete old one
+    urlResource.id = oldShort;
+    urlResource.short = oldShort;
+
+    urlResource.deleted = true;
+    urlResource.redirects = [];
+    urlResource.dataPoints = [];
+    urlResource.conditionals = "";
+
+    await urlsContainer.item(oldShort, oldShort).replace(urlResource);
 
     await userContainer.item(payload.username, payload.username).replace(userResource);
 

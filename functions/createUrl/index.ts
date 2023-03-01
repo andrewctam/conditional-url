@@ -2,7 +2,7 @@ import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import { CosmosClient } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
-import type { Conditional } from "../types";
+import { Conditional, Operators } from "../types";
 import axios from "axios";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
@@ -38,26 +38,44 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         ) {
             context.res = {
                 status: 400,
-                body: JSON.stringify({"msg": "Error with a conditional url"})
+                body: JSON.stringify({"msg": "Error with a link"})
             };    
             return;
         } 
+
+        if (c.and !== true && c.and !== false) {
+            context.res = {
+                status: 400,
+                body: JSON.stringify({"msg": "No AND/OR value provided"})
+            }
+            return;
+        }
 
         urls.push({"url": c.url});
 
         for (let j = 0; j < c.conditions.length; j++) {
             const condition = c.conditions[j];
+
+
+            if (!Operators.includes(condition.operator)) {
+                context.res = {
+                    status: 400,
+                    body: JSON.stringify({"msg": "Invalid operator"})
+                };    
+                return;
+            }
+
             if (condition.value === "" && condition.variable !== "URL Parameter") { //url param value can be empty
                 context.res = {
                     status: 400,
-                    body: JSON.stringify({"msg": "Error with a conditional url"})
+                    body: JSON.stringify({"msg": "A value was not provided"})
                 };    
                 return;
             } else if (condition.variable === "URL Parameter") {
                 if (!condition.param || !/^[a-zA-Z0-9]*$/.test(condition.param)) {
                     context.res = {
                         status: 400,
-                        body: JSON.stringify({"msg": "Error with a conditional url"})
+                        body: JSON.stringify({"msg": "URL Parameter param was invalid"})
                     };    
                     return;
                 }
@@ -106,9 +124,9 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const client = new CosmosClient({ endpoint, key });
 
     let owner: string | null = null;
-    if (req.headers.authorization && req.headers.authorization !== "NONE") {
+    
+    if (req.headers.authorization && req.headers.authorization !== "Bearer NONE") {
         const accessToken = req.headers.authorization.split(" ")[1];
-
         let payload;
         try {
             payload = jwt.verify(accessToken, process.env.JWT_SECRET);

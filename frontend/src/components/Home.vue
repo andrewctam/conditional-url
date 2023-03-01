@@ -1,5 +1,5 @@
 <script setup lang='ts'>
-import ConditionalsBuilder from './URLBuilder.vue'
+import URLBuilder from './URLBuilder.vue'
 import AccountPopup from './Account/AccountPopup.vue'
 import ViewURLs from './Account/ViewURLs.vue'
 import { ref, provide, onBeforeMount } from 'vue'
@@ -278,7 +278,7 @@ provide(updateMsgKey, updateMsg);
         @signout="updateUser('', '', '')"
         :key="rerenderKey + 1"/>
 
-    <ConditionalsBuilder v-else 
+    <URLBuilder v-else 
         :key="rerenderKey + 2" />
 
     

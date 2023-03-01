@@ -5,14 +5,13 @@ import * as dotenv from 'dotenv';
 
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
-    console.log(req)
     const short = req.body.short.toLowerCase();
     const data = JSON.parse(req.body.data);
 
     if (short === "" || !/^[a-zA-Z0-9]*$/.test(short)) {
         context.res = {
             status: 400,
-            body: "Short URL contains invalid characters"
+            body: JSON.stringify({"msg": "Short URL contains invalid characters"})
         };    
 
     } else {
@@ -83,36 +82,38 @@ const determineUrl = (conditionals: Conditional[], data: Data) => {
             const condition: Condition = conditions[i];
 
             let variable = null;
+            let value: string | number = condition.value;
             if (condition.variable == "URL Parameter") {
                 if (condition.param in parsedParams)
                     variable = parsedParams[condition.param]
+            } else if (["Screen Height", "Screen Width"].includes(condition.variable)) {
+                variable = parseInt(data[condition.variable])
+                value = parseInt(value)
             } else
                 variable = data[condition.variable]
             
             let result = false;
             switch(condition.operator) {
                 case "=":
-                    result = variable === condition.value;
+                    result = variable === value;
                     break;
                 case "≠":
-                    result = variable !== condition.value;
+                    result = variable !== value;
                     break;
                 case "≥":
-                    result = variable >= condition.value;
+                    result = variable >= value;
                     break;
                 case "≤":
-                    result = variable <= condition.value;
+                    result = variable <= value;
                     break;
                 case ">":
-                    result = variable > condition.value;
+                    result = variable > value;
                     break;
                 case "<":
-                    result = variable < condition.value;
+                    result = variable < value;
                     break;
-                case "Contains":
-                    result = variable.includes(condition.value);
                 default:
-                    break
+                    continue;
             }
                 
 

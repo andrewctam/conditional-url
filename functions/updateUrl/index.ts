@@ -2,7 +2,7 @@ import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import { CosmosClient } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
-import type { Conditional } from "../types";
+import { Conditional, Operators } from "../types";
 import axios from "axios";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
@@ -62,7 +62,6 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     
     const urls: {url: string}[] = [];
 
-
     for (let i = 0; i < parsedConditionals.length; i++) {
         const c = parsedConditionals[i];
         if (c.url == "" ||
@@ -72,26 +71,44 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         ) {
             context.res = {
                 status: 400,
-                body: JSON.stringify({"msg": "A URL is invalid"})
+                body: JSON.stringify({"msg": "Error with a link"})
             };    
             return;
         } 
+
+        if (c.and !== true && c.and !== false) {
+            context.res = {
+                status: 400,
+                body: JSON.stringify({"msg": "No AND/OR value provided"})
+            }
+            return;
+        }
 
         urls.push({"url": c.url});
 
         for (let j = 0; j < c.conditions.length; j++) {
             const condition = c.conditions[j];
+
+
+            if (!Operators.includes(condition.operator)) {
+                context.res = {
+                    status: 400,
+                    body: JSON.stringify({"msg": "Invalid operator"})
+                };    
+                return;
+            }
+
             if (condition.value === "" && condition.variable !== "URL Parameter") { //url param value can be empty
                 context.res = {
                     status: 400,
-                    body: JSON.stringify({"msg": "Error with a conditional url"})
+                    body: JSON.stringify({"msg": "A value was not provided"})
                 };    
                 return;
             } else if (condition.variable === "URL Parameter") {
                 if (!condition.param || !/^[a-zA-Z0-9]*$/.test(condition.param)) {
                     context.res = {
                         status: 400,
-                        body: JSON.stringify({"msg": "Error with a conditional url"})
+                        body: JSON.stringify({"msg": "URL Parameter param was invalid"})
                     };    
                     return;
                 }
@@ -99,6 +116,8 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         }
     }
 
+    //send URLs to Safe Browsing API
+    dotenv.config();
     const GOOGLE_API_KEY = process.env["GOOGLE_API_KEY"];
     if (GOOGLE_API_KEY) { //if no key provided in .env, skip
         const apiUrl = "https://safebrowsing.googleapis.com/v4/threatMatches:find?key=" + GOOGLE_API_KEY;

@@ -30,7 +30,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 body: JSON.stringify({"msg": "Short URL not found"})
             };
             return;
-        }
+        }``
         
         const conditionals = JSON.parse(resource.conditionals);
         const [url, i] = determineUrl(conditionals, data)

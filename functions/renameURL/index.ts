@@ -93,7 +93,6 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         //create new one
         await urlsContainer.items.create(urlResource);
     } catch (e) {
-        console.log(e)
         context.res = {
             status: 409,
             body: JSON.stringify({"msg": "New URL already exists"})

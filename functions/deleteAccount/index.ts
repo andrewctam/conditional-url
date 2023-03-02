@@ -6,16 +6,14 @@ import * as bcrypt from 'bcryptjs';
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const username = req.body.username;
     const password = req.body.password;
-    let alsoDeleteURLs = req.body.alsoDeleteURLs;
-    
-    if (alsoDeleteURLs === undefined)
-        alsoDeleteURLs = true;
+    const alsoDeleteURLs = req.body.alsoDeleteURLs ?? true;
 
     if (username === undefined || username === "" || password === undefined || password === "") {
         context.res = {
-            status: 400,
-            body: JSON.stringify({"msg:": "No username or password provided"})
+            status: 401,
+            body: JSON.stringify({"msg": "Incorrect password"})
         }
+        return;
     }
 
 
@@ -30,8 +28,8 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     if (resource === undefined) {
         context.res = {
-            status: 400,
-            body: JSON.stringify({"msg:": "User not found"})
+            status: 404,
+            body: JSON.stringify({"msg": "User not found"})
         }
         return;
     }
@@ -41,7 +39,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     } else {
         context.res = {
             status: 401,
-            body: JSON.stringify({"msg:": "Incorrect password"})
+            body: JSON.stringify({"msg": "Incorrect password"})
         }
         return;
     }

@@ -8,7 +8,7 @@ import userUrls from "../userUrls/index";
 import updateUrl from "../updateUrl/index";
 import renameUrl from "../renameUrl/index";
 import deleteUrl from "../deleteUrl/index";
-import determineUrl from "../determineUrl/index";
+import determineURL from "../determineUrl/index";
 import deleteAccount from "../deleteAccount/index";
 
 describe("Sign up, Login, and Create/Edit URLs", () => {
@@ -321,7 +321,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
             }
         }
     
-        await determineUrl(context, req);
+        await determineURL(context, req);
     
         expect(context.res.status).toBe(404);
         expect(JSON.parse(context.res.body).msg).toBe("Short URL not found");
@@ -394,7 +394,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
             }
         }
     
-        await determineUrl(context, req);
+        await determineURL(context, req);
     
         expect(context.res.status).toBe(404);
         expect(JSON.parse(context.res.body).msg).toBe("Short URL not found");
@@ -455,6 +455,22 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
         expect(JSON.parse(context.res.body)).toBe("Deleted Account");
     })
 
+    it("should fail to login", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: {
+                username: username,
+                password: password
+            }
+        }
+
+        await signIn(context, req);
+
+        expect(context.res.status).toBe(401);
+        expect(JSON.parse(context.res.body).msg).toBe("Failed to sign in");
+    })
 
     it("should successfully sign up", async () => {
         const req = {
@@ -535,7 +551,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
             }
         }
     
-        await determineUrl(context, req);
+        await determineURL(context, req);
     
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/1");

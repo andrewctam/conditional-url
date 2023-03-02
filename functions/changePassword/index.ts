@@ -25,6 +25,14 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     const { resource } = await container.item(username, username).read();
 
+    if (resource === undefined) {
+        context.res = {
+            status: 404,
+            body: JSON.stringify({"msg": "User not found"})
+        }
+        return;
+    }
+
     if (await bcrypt.compare(oldPassword, resource.hashedPassword)) {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         resource.hashedPassword = hashedPassword;
@@ -32,7 +40,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
         context.res = {
             status: 200,
-            body: JSON.stringify( "Password successfully changed")
+            body: JSON.stringify("Password successfully changed")
         }
         return;
     } else {

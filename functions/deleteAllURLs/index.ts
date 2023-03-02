@@ -43,6 +43,24 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const userContainer = client.database("conditionalurl").container("users");
     
     const { resource } = await userContainer.item(payload.username, payload.username).read();
+
+    if (resource === undefined) {
+        context.res = {
+            status: 404,
+            body: JSON.stringify({"msg": "User not found"})
+        };
+        return;
+    }
+
+
+    if (resource.urlCount === 0) {
+        context.res = {
+            status: 404,
+            body: JSON.stringify("No URLs to delete")
+        };
+        return;
+    }
+
     resource.urls = [];
     resource.urlCount = 0;
 

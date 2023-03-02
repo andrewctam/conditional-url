@@ -2,10 +2,10 @@ import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import { CosmosClient } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
-import * as bcrypt from 'bcryptjs';
+import { createHmac, timingSafeEqual } from "crypto";
+
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const refreshToken = req.body.refreshToken;
-    const username  = req.body.username;
 
     dotenv.config();
     const key = process.env["COSMOS_KEY"];
@@ -27,7 +27,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
 
 
-    if (payload === undefined || payload.username === undefined || payload.username !== username) {
+    if (payload === undefined || payload.username === undefined || payload.username !== payload.username) {
         context.res = {
             status: 401,
             body: JSON.stringify({"msg": "Invalid token"})
@@ -35,40 +35,44 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    const { resource } = await container.item(username, username).read();
+    const { resource } = await container.item(payload.username, payload.username).read();
 
     if (resource === undefined) {
         context.res = {
-            status: 400,
+            status: 404,
             body: JSON.stringify({"msg": "User not found"})
         };
         return;
     }
 
-    if (!(await bcrypt.compare(refreshToken, resource.hashedRefresh))) {
+    const providedRefresh = createHmac("sha256", process.env.JWT_SECRET)
+                        .update(refreshToken)
+                        .digest("hex");
+
+    if (!timingSafeEqual(Buffer.from(resource.hashedRefresh), Buffer.from(providedRefresh))) {
         context.res = {
             status: 401,
-            body: JSON.stringify({"msg": "Invalid refresh token"})
+            body: JSON.stringify({"msg": "Invalid token"})
         };
         return;
     }
 
-    const accessToken = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: "15m" });
     let returnedRefreshToken = refreshToken;
-
     //if the token will expire in less than a day, refresh it
     const ONE_DAY = 60 * 60 * 24;
     if (payload.exp - Date.now() / 1000 < ONE_DAY) { 
-        returnedRefreshToken = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: "1d" });
-        resource.hashedRefresh = await bcrypt.hash(returnedRefreshToken, 10);
+        returnedRefreshToken = jwt.sign({ username: payload.username }, process.env.JWT_SECRET, { expiresIn: "1d" });
+        resource.hashedRefresh = createHmac("sha256", process.env.JWT_SECRET)
+                                    .update(returnedRefreshToken)
+                                    .digest("hex");
 
-        await container.item(username, username).replace(resource);
+        await container.item(payload.username, payload.username).replace(resource);
     }
 
     context.res = {
         status: 200,
         body: JSON.stringify({
-            accessToken,
+            accessToken: jwt.sign({ username: payload.username }, process.env.JWT_SECRET, { expiresIn: "15m" }),
             refreshToken: returnedRefreshToken
         })
     };

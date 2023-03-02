@@ -3,7 +3,7 @@ import * as bcrypt from 'bcryptjs';
 import { CosmosClient } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
-
+import { createHmac } from "crypto";
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const username = req.body.username.toLowerCase();
     const password = req.body.password;
@@ -27,7 +27,10 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     try {
         const accessToken = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '15m' });
         const refreshToken = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '7d' });
-        const hashedRefresh = await bcrypt.hash(refreshToken, 10);
+
+        const hashedRefresh = createHmac("sha256", process.env.JWT_SECRET)
+                                    .update(refreshToken)
+                                    .digest("hex");
 
         await container.items.create({
             id: username,

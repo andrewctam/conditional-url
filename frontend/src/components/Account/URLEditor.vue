@@ -338,6 +338,12 @@ const domain = computed(() => {
         <div v-if="showAnalytics" class="p-4">
             <DataTable
                 :short="props.short"
+                :urls="conditionals.map((c, i) => {
+                    return {
+                        id: i,
+                        url: c.url
+                    }
+                })"
             />
 
             <DataGraph

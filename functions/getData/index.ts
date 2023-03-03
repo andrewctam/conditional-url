@@ -103,12 +103,25 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         [key: string]: number
     } = {};
 
-    for (const conditional of resource.redirects) { //go through each conditional's analytics
+    let selectedUrl = parseInt(req.query.url)
+    if (selectedUrl === undefined || isNaN(selectedUrl) || selectedUrl > resource.redirects.length) {
+        selectedUrl = -1;
+    }
+    
+
+    let conditionals;
+
+    if (selectedUrl === -1) //add up all data from all urls
+        conditionals = resource.redirects;
+    else //add up data from a specific url
+        conditionals = [resource.redirects[selectedUrl]];
+        
+    for (const conditional of conditionals) {
         for (const redirect of conditional) { //for each redirect in the conditional, increment the count for the selected variable
             let value = "";
-            if (variable === "URL Parameter")
+            if (variable === "URL Parameter") 
                 value = toParamsString(JSON.parse(redirect["params"]));
-            else 
+            else
                 value = redirect[variable];
 
             if (counts[value] === undefined) {

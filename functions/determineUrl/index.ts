@@ -30,24 +30,45 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 body: JSON.stringify({"msg": "Short URL not found"})
             };
             return;
-        }``
+        }
         
         const conditionals = JSON.parse(resource.conditionals);
         const [url, i] = determineUrl(conditionals, data)
 
-        resource.redirects[i].push(data);
+
+        let redirects = resource.redirects;
+        redirects[i].push({...data, timestamp: Date.now()});
+
+        let sum = 0;
+        let earliest = -1;
+        for (let i = 0; i < redirects.length; i++) {
+            const cond = redirects[i];
+
+            if (cond.length > 0) {
+                sum += cond.length;
+                if (earliest === -1 || cond[0].timestamp < redirects[earliest][0].timestamp)
+                    earliest = i;
+            }
+        }
+
+        if (sum > 1000000) {
+            redirects[earliest].shift();
+        }
 
         const unixTimeToMinute = Math.floor(Date.now() / 60000);
-        const points = resource.dataPoints;
+        const dataPoints = resource.dataPoints;
 
-        if (points.length > 0 && points[points.length - 1].time === unixTimeToMinute) {
-            points[points.length - 1].count++;
+        if (dataPoints.length > 0 && dataPoints[dataPoints.length - 1].time === unixTimeToMinute) {
+            dataPoints[dataPoints.length - 1].count++;
         } else {
-            points.push({
+            dataPoints.push({
                 time: unixTimeToMinute,
                 count: 1
             })
         }
+
+        if (dataPoints.length > 1000000)
+            dataPoints.shift();
         
         await container.item(short, short).replace(resource);
 

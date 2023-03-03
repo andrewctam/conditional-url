@@ -5,7 +5,8 @@ import { Variable } from '../ConditionalsEditor/AddConditionMenu.vue';
 import PageArrows from '../PageArrows.vue';
 
 const props = defineProps<{
-    short: string
+    short: string,
+    urls: {id: number, url: string}[]
 }>();
 
 
@@ -17,6 +18,7 @@ const sort = ref<"Increasing" | "Decreasing">("Decreasing");
 const counts = ref< {key: string, count: number}[] | null>(null);
 const page = ref(0);
 const pageCount = ref(0);
+const selectedUrl = ref<number>(-1);
 
 const accessToken = inject(accessTokenKey);
 const refresh = inject(refreshTokensKey) as () => Promise<boolean>;
@@ -29,9 +31,9 @@ const getCounts = async (retry: boolean = true) => {
     let url;
     const pageSize = 10;
     if (import.meta.env.PROD) {
-        url = `${import.meta.env.VITE_PROD_API_URL}/api/getData?short=${props.short}&variable=${selected.value}&page=${page.value}&pageSize=${pageSize}&sort=${sort.value}`;
+        url = `${import.meta.env.VITE_PROD_API_URL}/api/getData?short=${props.short}&variable=${selected.value}&url=${selectedUrl.value}&page=${page.value}&pageSize=${pageSize}&sort=${sort.value}`;
     } else {
-        url = `${import.meta.env.VITE_DEV_API_URL}/api/getData?short=${props.short}&variable=${selected.value}&page=${page.value}&pageSize=${pageSize}&sort=${sort.value}`;
+        url = `${import.meta.env.VITE_DEV_API_URL}/api/getData?short=${props.short}&variable=${selected.value}&url=${selectedUrl.value}&page=${page.value}&pageSize=${pageSize}&sort=${sort.value}`;
     }
 
     const response = await fetch(url, {
@@ -70,7 +72,7 @@ watch(selected, async () => {
     await getCounts();
 })
 
-watch([sort, page], async () => {
+watch([sort, page, selectedUrl], async () => {
     doneLoading.value = false;
     await getCounts();
 })
@@ -83,12 +85,29 @@ const hasPrev = computed(() => {
     return page.value > 0;
 })
 
+const truncate = (str: string, maxLen: number = 50) => {
+    if (str.length > maxLen) {
+        return str.slice(0, maxLen) + "...";
+    } else {
+        return str;
+    }
+}
 
 </script>
 
 <template>
-    <div class="bg-black/10 p-2 mb-6 rounded select-none">
+    <div class="bg-black/10 p-2 mb-6 rounded select-none text-white">
         <p class = "text-white text-xl font-extralight select-none mt-4">Data Counts</p>
+        <span class="mr-1 font-light">From:</span>
+        <select v-model="selectedUrl" class = "select-none text-white border border-black/50 p-1 m-1 w-[200px] rounded bg-transparent font-light">
+            <option value = "-1">
+                All URLs
+            </option>
+            <option v-for="url in props.urls" :value="url.id">
+                {{`(${url.id + 1}) ${truncate(url.url)}`}}
+            </option>
+        </select>
+
         <table class="w-[95%] mx-auto text-left text-whitep-2 m-5 font-light">
             <thead class="text-white bg-[#424242]">
                 <th class="w-1/2">

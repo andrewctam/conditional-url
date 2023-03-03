@@ -150,7 +150,7 @@ describe("Delete account tests", () => {
             body: {
                 short: short,
                 data: JSON.stringify({
-                    params: JSON.stringify({})
+                    "URL Parameter": JSON.stringify("")
                 })
             }
         }
@@ -283,7 +283,7 @@ describe("Delete account tests", () => {
             body: {
                 short: short2,
                 data: JSON.stringify({
-                    params: JSON.stringify({})
+                    "URL Parameter": JSON.stringify("")
                 })
             }
         }

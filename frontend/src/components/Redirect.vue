@@ -11,6 +11,22 @@ const zeroesIfNecessary = (num: number) => {
     return num;
 }
 
+const toParamsString = (params: {[key: string]: string}) => {
+    let str = "";
+    let i = 0;
+
+    for (const key in params) {
+        str += `${key}=${params[key]}`;
+        if (i++ < Object.keys(params).length - 1)
+            str += "&";
+    }
+
+    if (str === "")
+        str = '""';
+    
+    return str;
+}
+
 onMounted(async () => {    
     const userAgent = window.navigator.userAgent;
     let browser = "Other";
@@ -81,7 +97,7 @@ onMounted(async () => {
         "Time": `${zeroesIfNecessary(date.getHours())}:${zeroesIfNecessary(date.getMinutes())}`,
         'Date': `${date.getFullYear()}-${zeroesIfNecessary(date.getUTCMonth() + 1)}-${zeroesIfNecessary(date.getDate())}`, 
         'Time Zone': timezone,
-        "params": JSON.stringify(params),
+        "URL Parameter": toParamsString(params),
         "Has Touchscreen": (navigator.maxTouchPoints > 0) ? "True" : "False",
         "Screen Width": window.screen.width.toString(),
         "Screen Height": window.screen.height.toString(),

@@ -140,6 +140,7 @@ const getConditionals = async (retry: boolean = true) => {
     }).then((res) => {
         return res.json();
     });
+    
     if (response.msg === "Invalid token" ) {
         if (retry && await refresh()) {
             await getConditionals(false);

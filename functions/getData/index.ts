@@ -2,6 +2,7 @@ import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import { CosmosClient } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
+import { Variables } from "../types";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     if (req.headers.authorization === "") {
@@ -26,6 +27,18 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
+    
+
+    const variable = req.query.variable;
+
+    if (variable === undefined || variable === "" || !Variables.includes(variable)) {
+        context.res = {
+            status: 400,
+            body: JSON.stringify({"msg": "Invalid variable provided"})
+        };
+        return;
+    }
+
     if (payload === undefined || payload.username === undefined) {
         context.res = {
             status: 401,
@@ -46,16 +59,6 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         context.res = {
             status: 400,
             body: JSON.stringify({"msg": "No short URL provided"})
-        };
-        return;
-    }
-
-    const variable = req.query.variable;
-
-    if (variable === undefined || variable === "") {
-        context.res = {
-            status: 400,
-            body: JSON.stringify({"msg": "No variable provided"})
         };
         return;
     }
@@ -99,38 +102,58 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
 
 
-    const counts: {
+    let counts: {
         [key: string]: number
     } = {};
 
-    let selectedUrl = parseInt(req.query.url)
+    let selectedUrl = parseInt(req.query.selectedUrl)
     if (selectedUrl === undefined || isNaN(selectedUrl) || selectedUrl > resource.redirects.length) {
         selectedUrl = -1;
     }
     
+    let i = 0;
+    let lim = resource.redirects.length;
 
-    let conditionals;
+    if (selectedUrl >= 0)  { //if user just wants to see data for one url
+        i = selectedUrl;
+        lim = selectedUrl + 1;
+    } 
 
-    if (selectedUrl === -1) //add up all data from all urls
-        conditionals = resource.redirects;
-    else //add up data from a specific url
-        conditionals = [resource.redirects[selectedUrl]];
-        
-    for (const conditional of conditionals) {
-        for (const redirect of conditional) { //for each redirect in the conditional, increment the count for the selected variable
-            let value = "";
-            if (variable === "URL Parameter") 
-                value = toParamsString(JSON.parse(redirect["params"]));
-            else
-                value = redirect[variable];
+    for (; i < lim; i++) {
+        let data = resource.redirects[i][variable]
+        /*
+            "redirects": [
+                {
+                    "count": 5,
+                    "Language": {
+                        "English": 5
+                    }, ...
+                },
+                {
+                    "count": 7,
+                    "Language": {
+                        "English": 3,
+                        "Spanish": 4
+                    }, ...
+                }
+            ]
+        */
 
-            if (counts[value] === undefined) {
-                counts[value] = 1;
+        for (const key in data) {
+            /* 
+                "Language": {
+                    "English": 3,
+                    "Spanish": 4
+                }, ...
+            */
+            if (counts[key] === undefined) {
+                counts[key] = data[key];
             } else {
-                counts[value]++;
+                counts[key] += data[key];
             }
         }
     }
+
 
     let compare: (a: string, b: string) => number;
     switch (req.query.sort) {
@@ -140,32 +163,25 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                     return -1;
                 else if (counts[a] < counts[b])
                     return 1;
-                else if (a > b)
-                    return -1;
-                else if (a < b)
-                    return 1;
-                else
-                    return 0;
+                else 
+                    return a.localeCompare(b);
             }
             break;
 
         case "Decreasing":
         default:
             compare = (a, b) => {
-                if (counts[a] < counts[b])
+                if (counts[a] > counts[b])
                     return -1;
-                else if (counts[a] > counts[b])
-                    return 1;
-                else if (a < b)
-                    return -1;
-                else if (a > b)
+                else if (counts[a] < counts[b])
                     return 1;
                 else
-                    return 0;
+                    return a.localeCompare(b);
                     
             }
             break;
     }
+
 
     const sortedPaginatedData = []
     Object.keys(counts)
@@ -195,21 +211,5 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
 };
 
-
-const toParamsString = (params: {[key: string]: string}) => {
-    let str = "";
-    let i = 0;
-
-    for (const key in params) {
-        str += `${key}=${params[key]}`;
-        if (i++ < Object.keys(params).length - 1)
-            str += "&";
-    }
-
-    if (str === "")
-        str = '""';
-    
-    return str;
-}
 
 export default httpTrigger;

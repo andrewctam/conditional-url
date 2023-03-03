@@ -9,7 +9,7 @@ test("Nonexistent url", async () => {
             short: Math.random().toString(36).substring(2, 10),
             data: JSON.stringify({
                 Language: "English",
-                params: JSON.stringify({})
+                "URL Parameter": JSON.stringify("")
             })
         }
     }
@@ -28,7 +28,7 @@ test("Invalid short", async () => {
             short: "",
             data: JSON.stringify({
                 Language: "English",
-                params: JSON.stringify({})
+                "URL Parameter": JSON.stringify("")
             })
         }
     }
@@ -47,7 +47,7 @@ test("Invalid short 2", async () => {
             short: "&",
             data: JSON.stringify({
                 Language: "English",
-                params: JSON.stringify({})
+                "URL Parameter": JSON.stringify("")
             })
         }
     }

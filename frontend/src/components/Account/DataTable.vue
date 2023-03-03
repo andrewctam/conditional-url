@@ -31,9 +31,9 @@ const getCounts = async (retry: boolean = true) => {
     let url;
     const pageSize = 10;
     if (import.meta.env.PROD) {
-        url = `${import.meta.env.VITE_PROD_API_URL}/api/getData?short=${props.short}&variable=${selected.value}&url=${selectedUrl.value}&page=${page.value}&pageSize=${pageSize}&sort=${sort.value}`;
+        url = `${import.meta.env.VITE_PROD_API_URL}/api/getData?short=${props.short}&variable=${selected.value}&selectedUrl=${selectedUrl.value}&page=${page.value}&pageSize=${pageSize}&sort=${sort.value}`;
     } else {
-        url = `${import.meta.env.VITE_DEV_API_URL}/api/getData?short=${props.short}&variable=${selected.value}&url=${selectedUrl.value}&page=${page.value}&pageSize=${pageSize}&sort=${sort.value}`;
+        url = `${import.meta.env.VITE_DEV_API_URL}/api/getData?short=${props.short}&variable=${selected.value}&selectedUrl=${selectedUrl.value}&page=${page.value}&pageSize=${pageSize}&sort=${sort.value}`;
     }
 
     const response = await fetch(url, {
@@ -47,6 +47,7 @@ const getCounts = async (retry: boolean = true) => {
         
     });
 
+    console.log(response)
     if (response.msg === "Invalid token") {
         if (retry && await refresh()) {
             await getCounts(false);

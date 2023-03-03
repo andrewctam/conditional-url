@@ -316,7 +316,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
                 short: randomShort,
                 data: JSON.stringify({
                     Language: "English",
-                    params: JSON.stringify({})
+                    "URL Parameter": JSON.stringify("")
                 })
             }
         }
@@ -389,7 +389,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
                 short: randomShort,
                 data: JSON.stringify({
                     Language: "English",
-                    params: JSON.stringify({})
+                    "URL Parameter": JSON.stringify("")
                 })
             }
         }
@@ -546,7 +546,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
                 short: randomShort,
                 data: JSON.stringify({
                     Language: "English",
-                    params: JSON.stringify({})
+                    "URL Parameter": JSON.stringify("")
                 })
             }
         }

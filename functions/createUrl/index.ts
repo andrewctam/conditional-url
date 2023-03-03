@@ -171,7 +171,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         //owner deleted an old url and is now trying to recreate it
         if (existing.deleted && existing.owner !== "" && existing.owner === owner) {
             existing.conditionals = conditionals;
-            existing.redirects = new Array(parsedConditionals.length).fill([]);
+            existing.redirects = new Array(parsedConditionals.length).fill({"count": 0});
             existing.dataPoints = [];
             existing.deleted = false;
 
@@ -201,7 +201,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             short,
             conditionals,
             owner: owner ?? "",
-            redirects: new Array(parsedConditionals.length).fill([]),
+            redirects: new Array(parsedConditionals.length).fill({"count": 0}),
             dataPoints: [],
             deleted: false
 

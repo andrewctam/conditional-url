@@ -156,7 +156,7 @@ describe("Delete account tests", () => {
                     short: short,
                     data: JSON.stringify({
                         Language: "English",
-                        params: JSON.stringify({})
+                        "URL Parameter": JSON.stringify("")
                     })
                 }
             }

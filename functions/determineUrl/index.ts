@@ -1,5 +1,5 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
-import type { Condition, Conditional, Data } from "../types"
+import { Condition, Conditional, Data, Variables } from "../types"
 import { CosmosClient } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 
@@ -36,24 +36,65 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         const [url, i] = determineUrl(conditionals, data)
 
 
-        let redirects = resource.redirects;
-        redirects[i].push({...data, timestamp: Date.now()});
-
-        let sum = 0;
-        let earliest = -1;
-        for (let i = 0; i < redirects.length; i++) {
-            const cond = redirects[i];
-
-            if (cond.length > 0) {
-                sum += cond.length;
-                if (earliest === -1 || cond[0].timestamp < redirects[earliest][0].timestamp)
-                    earliest = i;
+        let redirects: {
+            [key: typeof Variables[number]]: {
+                [key: string]: {
+                    [key: string]: number
+                }
             }
-        }
+        }[] = resource.redirects;
 
-        if (sum > 1000000) {
-            redirects[earliest].shift();
-        }
+        /*
+            "redirects": [
+                {
+                    "count": 5,
+                    "Language": {
+                        "English": 5
+                    }, ...
+                },
+                {
+                    "count": 7,
+                    "Language": {
+                        "English": 3,
+                        "Spanish": 4
+                    }, ...
+                }
+            ]
+        */
+
+        if ("count" in redirects[i])
+            redirects[i]["count"]++;
+        else
+            redirects[i]["count"] = 1;
+            
+        for (const variable in data) {
+            if (!Variables.includes(variable))
+                continue;
+
+            const value = data[variable];
+
+            let totals = redirects[i][variable];
+
+            if (totals === undefined) {
+                redirects[i][variable] = {};
+                totals = redirects[i][variable];
+            } 
+        
+            /*  redirects[i]
+                {
+                    "count": 7,
+                    "Language": {
+                        "English": 3,
+                        "Spanish": 4
+                    }, ...
+                }
+            */
+
+            if (value in totals) {
+                totals[value]++;
+            } else
+                totals[value] = 1;
+        }        
 
         const unixTimeToMinute = Math.floor(Date.now() / 60000);
         const dataPoints = resource.dataPoints;
@@ -82,8 +123,19 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
 
 const determineUrl = (conditionals: Conditional[], data: Data) => {
-    const parsedParams: {string: string} = JSON.parse(data["params"])
+    const parsedParams: {[key: string]: string} = data["URL Parameter"].split("&")
+            .reduce((acc, cur) => {
+                const [key, value] = cur.split("=");
 
+                if (/^\d+$/.test(value)) {
+                    acc[key] = parseInt(value);
+                } else
+                    acc[key] = value;
+
+                return acc;
+            }, {} );
+
+        console.log(parsedParams)
     for (let i = 0; i < conditionals.length; i++) {
         const conditional = conditionals[i];
 

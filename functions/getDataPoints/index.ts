@@ -60,10 +60,10 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     let start: number;
     if (req.query.start === undefined || req.query.start === "undefined") {
-        start = Math.floor(Date.now() / 60000) - span * limit
+        start = Math.floor(Date.now() / 60000) - span * (limit - 2)
     } else {
         start = Math.max(15778380, parseInt(req.query.start));
-    } //26297280 is 1/1/2020
+    } //26297280 is 1/1/2000
 
     //round down to nearest span
     start = start - start % span; 
@@ -75,7 +75,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     let earliestPoint;
 
     //redis caching if env vars are set (and span > 1 since its unnecessary to cache by the minute)
-    let usingRedis = span > 1 && process.env["REDIS_HOST"] !== undefined && process.env["REDIS_PORT"] !== undefined && process.env["REDIS_PASSWORD"] !== undefined
+    let usingRedis = process.env["REDIS_HOST"] !== undefined && process.env["REDIS_PORT"] !== undefined && process.env["REDIS_PASSWORD"] !== undefined
     let redisClient;
     if (usingRedis) {
         try {
@@ -205,7 +205,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                     Math.min(firstIndex + limit, points.length));
 
             if (start < dataPoints[0].time && points.length < limit) {
-                const numPoints = Math.min(Math.abs(firstIndex), limit - points.length);
+                const numPoints = Math.min(Math.floor((dataPoints[0].time - start) / span), limit - points.length);
                 points = new Array(numPoints).fill("0").concat(points);
             }
             
@@ -285,13 +285,13 @@ function groupPoints(start: number, span: number, limit: number, dataPoints: Dat
         default:
             //in span => [a, a + span)
             compare = (a, b) => {
-               return b >= a && b - a <= span; //minutes to milliseconds
+               return a <= b && b < a + span;
             }
             break;
     }
 
     let sum = 0;
-
+    currentSpan -= currentSpan % span
     //if limit is -1, then get all data in the dataPoints
     //group the data points into the same time spans
     while ((allData || points.length < limit) && index < dataPoints.length) {

@@ -58,10 +58,15 @@ const getDataPoints = async (retry: boolean = true, refreshData = false) => {
     if (!accessToken || !accessToken.value)
         return;
 
+    const unixInMins = start.value ? Math.floor(new Date(start.value).getTime() / 60000) : "undefined";
+    
+    if (unixInMins < 15778380) // year is before 2000
+        return;
+    
     doneLoading.value = false;
 
     
-    const unixInMins = start.value ? Math.floor(new Date(start.value).getTime() / 60000) : "undefined";
+
 
     let url;
     if (import.meta.env.PROD) {
@@ -218,6 +223,7 @@ const options = {
                 <input v-model = "start" 
                     type = "datetime-local" id="start" class = "border border-black/50 p-1 m-1 rounded bg-transparent font-normal inline"
                     :min="earliestPoint"
+                    :max="new Date().toISOString().slice(0, -8)"
                     :step="span * 60"
                     />
             </div>

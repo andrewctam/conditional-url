@@ -90,6 +90,12 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 }
             */
 
+            if (Object.keys(totals).length > 1000) {
+                //get the key with the lowest value if too many data
+                const minKey = Object.keys(totals).reduce((a, b) => totals[a] < totals[b] ? a : b);
+                delete totals[minKey];
+            }
+
             if (value in totals) {
                 totals[value]++;
             } else

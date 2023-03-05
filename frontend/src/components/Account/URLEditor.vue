@@ -1,7 +1,7 @@
 <script setup lang='ts'>
 import { onMounted, ref, inject, computed } from 'vue'
 import type { Ref } from 'vue'
-import { accessTokenKey, Conditional, Data, refreshTokensKey, updateMsgKey } from '../../types'
+import { accessTokenKey, Conditional, refreshTokensKey, updateMsgKey } from '../../types'
 import ConditionalsEditor from '../ConditionalsEditor/ConditionalsEditor.vue';
 import DataGraph from './DataGraph.vue';
 import DataTable from './DataTable.vue';

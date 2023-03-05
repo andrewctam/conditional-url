@@ -3,7 +3,6 @@ import { ref, watch, computed, inject, onMounted } from 'vue';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
 import { Line } from 'vue-chartjs'
 import { accessTokenKey, refreshTokensKey } from '../../types';
-import { spawnSync } from 'child_process';
 
 ChartJS.register(
   CategoryScale,

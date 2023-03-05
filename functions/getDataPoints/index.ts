@@ -99,7 +99,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         } else {
             redisClient.on('error', err => {throw new Error(err + " Fetch from DB")});
 
-            const info = await redisClient.lRange(short, 0, 3)
+            const info = await redisClient.lRange(short + "_graph", 0, 3)
 
             
             if (info.length === 0) {
@@ -127,7 +127,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
             //get indexes to get cached data, offset of 4 for meta data
             const firstIndex = 4 + Math.floor((Math.max(start, cacheStart) - cacheStart) / cacheSpan);
-            points = await redisClient.lRange(short, firstIndex, firstIndex + limit - 1);
+            points = await redisClient.lRange(short + "_graph", firstIndex, firstIndex + limit - 1);
 
             if (start < cacheStart && points.length < limit) {
                 const numPoints = Math.min(Math.floor((cacheStart - start) / span), limit - points.length);
@@ -192,8 +192,8 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 ]
 
             try {
-                await redisClient.del(short);
-                await redisClient.rPush(short, cachedData);
+                await redisClient.del(short + "_graph");
+                await redisClient.rPush(short + "_graph", cachedData);
             } catch (error) {
                 console.log(error)
             }

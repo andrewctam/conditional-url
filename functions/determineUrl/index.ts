@@ -135,7 +135,6 @@ const determineUrl = (conditionals: Conditional[], data: Data) => {
                 return acc;
             }, {} );
 
-        console.log(parsedParams)
     for (let i = 0; i < conditionals.length; i++) {
         const conditional = conditionals[i];
 
@@ -159,6 +158,10 @@ const determineUrl = (conditionals: Conditional[], data: Data) => {
             if (condition.variable == "URL Parameter") {
                 if (condition.param in parsedParams)
                     variable = parsedParams[condition.param]
+                    
+                if (/^\d+$/.test(value)) {
+                    value = parseInt(value);
+                } 
             } else if (["Screen Height", "Screen Width"].includes(condition.variable)) {
                 variable = parseInt(data[condition.variable])
                 value = parseInt(value)

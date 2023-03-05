@@ -2,6 +2,7 @@ import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import { CosmosClient } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
+import { createClient, RedisClientType } from 'redis';
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     if (req.headers.authorization === "") {
@@ -33,14 +34,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    const key = process.env["COSMOS_KEY"];
-    const endpoint = process.env["COSMOS_ENDPOINT"];
-    
-    const client = new CosmosClient({ endpoint, key });
-    const container = client.database("conditionalurl").container("urls");
-
     const short = req.query.short.toLowerCase();
-
 
     if (short === undefined || short === "") {
         context.res = {
@@ -49,90 +43,239 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         };
         return;
     }
-
-
-    const { resource } = await container.item(short, short).read();
-
-    if (resource === undefined) {
-        context.res = {
-            status: 400,
-            body: JSON.stringify({"msg": "Short URL not found"})
-        };
-        return;
-    }
-
-    if (resource.owner !== payload.username) {
-        context.res = {
-            status: 400,
-            body: JSON.stringify({"msg": "You do not own this URL"})
-        };
-        return;
-    }
-
-    const dataPoints = resource.dataPoints;
-
-    if (dataPoints.length === 0) {
-        context.res = {
-            status: 200,
-            body: JSON.stringify({
-                dataPoints: [],
-                firstPoint: null
-            })
-        }
-
-        return;
-    }
-
+    
     let span: number;
     if (req.query.span === undefined || req.query.span === "undefined") {
         span = 1;
     } else {
-        span = parseInt(req.query.span);
+        span = Math.min(10080, parseInt(req.query.span));
     }
     
     let limit: number;
     if (req.query.limit === undefined || req.query.limit === "undefined") {
         limit = 30;
     } else {
-        limit = Math.min(100, parseInt(req.query.limit));
+        limit = Math.min(10000, parseInt(req.query.limit));
     }
 
     let start: number;
     if (req.query.start === undefined || req.query.start === "undefined") {
-        start = Math.floor(Date.now() / 60000) - span * limit * 60000
+        start = Math.floor(Date.now() / 60000) - span * limit
     } else {
-        start = parseInt(req.query.start);
+        start = Math.max(15778380, parseInt(req.query.start));
+    } //26297280 is 1/1/2020
+
+    //round down to nearest span
+    start = start - start % span; 
+
+    let end = start + span * limit;
+
+    
+    let points: string[];
+    let earliestPoint;
+
+    //redis caching if env vars are set (and span > 1 since its unnecessary to cache by the minute)
+    let usingRedis = span > 1 && process.env["REDIS_HOST"] !== undefined && process.env["REDIS_PORT"] !== undefined && process.env["REDIS_PASSWORD"] !== undefined
+    let redisClient;
+    if (usingRedis) {
+        try {
+            redisClient = createClient({
+                password: process.env["REDIS_PASSWORD"],
+                socket: {
+                    host: process.env["REDIS_HOST"],
+                    port: parseInt(process.env["REDIS_PORT"])
+                }
+            });
+            await redisClient.connect();
+        } catch (error) {
+            console.log(error)
+            usingRedis = false;
+        }
+    }
+   
+    try {
+        if (req.query.refresh === "true" || !usingRedis) {
+            throw new Error("Force Refresh!")
+        } else {
+            redisClient.on('error', err => {throw new Error(err + " Fetch from DB")});
+
+            const info = await redisClient.lRange(short, 0, 3)
+
+            
+            if (info.length === 0) {
+                throw new Error("No cached data. Fetch from DB");
+            }
+
+            const cacheSpan = parseInt(info[0]);
+            const cacheStart = parseInt(info[1]);
+            const cacheEnd = parseInt(info[2]);
+            const username = info[3];
+
+            if (username !== payload.username) {
+                context.res = {
+                    status: 400,
+                    body: JSON.stringify({"msg": "You do not own this URL"})
+                };
+
+                await redisClient.disconnect();
+                return;
+            }
+
+            if (cacheSpan !== span || end < cacheStart || start > cacheEnd) {
+                throw new Error("Data outside cache requested. Fetch from DB");
+            }
+
+            //get indexes to get cached data, offset of 4 for meta data
+            const firstIndex = 4 + Math.floor((Math.max(start, cacheStart) - cacheStart) / cacheSpan);
+            points = await redisClient.lRange(short, firstIndex, firstIndex + limit - 1);
+
+            if (start < cacheStart && points.length < limit) {
+                const numPoints = Math.min(Math.floor((cacheStart - start) / span), limit - points.length);
+                points = new Array(numPoints).fill("0").concat(points);
+            }
+            
+            if (points.length < limit) {
+                points = points.concat(new Array(limit - points.length).fill("0"))
+            }
+
+            earliestPoint = new Date(cacheStart * 60000).toISOString()
+        }
+    } catch (error) {
+        const key = process.env["COSMOS_KEY"];
+        const endpoint = process.env["COSMOS_ENDPOINT"];
+        
+        const client = new CosmosClient({ endpoint, key });
+        const container = client.database("conditionalurl").container("urls");
+        
+        const { resource } = await container.item(short, short).read();
+
+        if (resource === undefined) {
+            context.res = {
+                status: 400,
+                body: JSON.stringify({"msg": "Short URL not found"})
+            };
+            return;
+        }
+
+        if (resource.owner !== payload.username) {
+            context.res = {
+                status: 400,
+                body: JSON.stringify({"msg": "You do not own this URL"})
+            };
+            return;
+        }
+
+        const dataPoints: {
+            time: number,
+            count: number
+        }[] = resource.dataPoints;
+
+        if (dataPoints.length === 0) {
+            context.res = {
+                status: 200,
+                body: JSON.stringify({"msg": "No Data Found"})
+            }
+            return;
+        }
+
+        earliestPoint = new Date(dataPoints[0].time * 60000).toISOString()
+        
+        if (usingRedis) { //cache data for faster access
+            points = groupPoints(dataPoints[0].time, span, limit, dataPoints, true);
+
+            const cachedData: string[] = [
+                    span.toString(),
+                    dataPoints[0].time.toString(), 
+                    dataPoints[dataPoints.length - 1].time.toString(),
+                    resource.owner, 
+                    ...points
+                ]
+
+            try {
+                await redisClient.del(short);
+                await redisClient.rPush(short, cachedData);
+            } catch (error) {
+                console.log(error)
+            }
+
+            const firstIndex = Math.floor((start - dataPoints[0].time) / span);
+
+            points = points.slice(
+                    Math.max(firstIndex, 0),
+                    Math.min(firstIndex + limit, points.length));
+
+            if (start < dataPoints[0].time && points.length < limit) {
+                const numPoints = Math.min(Math.abs(firstIndex), limit - points.length);
+                points = new Array(numPoints).fill("0").concat(points);
+            }
+            
+            if (points.length < limit) {
+                points = points.concat(new Array(limit - points.length).fill("0"))
+            }
+
+        } else { //just get requested data
+            points = groupPoints(start, span, limit, dataPoints);
+        }
+
     }
 
+    if (usingRedis)
+        await redisClient.disconnect();
+            
+
+    context.res = {
+        status: 200,
+        body: JSON.stringify({
+            dataPoints: points,
+            span,
+            start,
+            limit,
+            earliestPoint,
+        })
+    }
+
+    };
+
+
+
+type DataPoints = {time: number, count: number}[];
+function groupPoints(start: number, span: number, limit: number, dataPoints: DataPoints, allData: boolean = false): string[] {
     let index;
     let currentSpan;
+    let points: string[] = []
+
     if (start > dataPoints[dataPoints.length - 1].time) {
         //greater than all, so just send all 0s
-        const allZeroes = new Array(limit).fill(null).map((_, i) => {
-            return {
-                spanStart: new Date(start * 60000 + i * span * 60000).toISOString(),
-                count: 0
-            }
-        })
+        return new Array(limit).fill("0");
         
-        context.res = {
-            status: 200,
-            body: JSON.stringify({
-                dataPoints: allZeroes,
-                earliestPoint: new Date(dataPoints[0].time * 60000).toISOString(),
-            })
-        }
-        
-        return;
     } else if (start < dataPoints[0].time) {
-        //12 AM of first point
-        const earlier = Math.max(start, dataPoints[0].time - dataPoints[0].time % 1440) 
+        const spansBeforeStart = Math.floor((dataPoints[0].time - start) / span);
 
-        currentSpan = new Date(earlier * 60000);
-        index = 0
-    } else  {
+        if (spansBeforeStart >= limit) {
+            //if there are more spans than the limit, then just send all 0s
+            return new Array(limit).fill("0");
+        } else {
+            //otherwise, send padding of 0s and then the data
+            points = new Array(spansBeforeStart).fill("0");
+        }
+
+        currentSpan = dataPoints[0].time;
+        index = 0;
+    } else if (start === dataPoints[0].time) {
+        index = 0;
+        currentSpan = dataPoints[0].time;
+    } else {
         index = binarySearchForGEQ(dataPoints, start);
-        currentSpan = new Date(dataPoints[index].time * 60000); //minutes to milliseconds
+        if (start < dataPoints[index].time) {
+            const spansBeforeStart = Math.floor((dataPoints[index].time - start) / span);
+            if (spansBeforeStart >= limit) {
+                //if there are more spans than the limit, then just send all 0s
+                return new Array(limit).fill("0");
+            }
+
+            points = new Array(spansBeforeStart).fill("0");
+        }
+        currentSpan = dataPoints[index].time;
     }
     let compare: (a: number, b: number) => boolean;
     switch (span) {
@@ -142,68 +285,44 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         default:
             //in span => [a, a + span)
             compare = (a, b) => {
-               return b >= a && b - a <= span * 60000; //minutes to milliseconds
+               return b >= a && b - a <= span; //minutes to milliseconds
             }
             break;
     }
 
-    /*
-    console.log(dataPoints.map((d) => {
-        return {
-            ms: d.time,
-            time: new Date(d.time * 60000),
-            count: d.count
-        }
-    }))
-    */
-    
-    const points: {
-        spanStart: string,
-        count: number
-    }[] = [];
-
-
     let sum = 0;
+
+    //if limit is -1, then get all data in the dataPoints
     //group the data points into the same time spans
-    while (points.length < limit && index < dataPoints.length) {
+    while ((allData || points.length < limit) && index < dataPoints.length) {
         const nextPoint = dataPoints[index];
 
-        if (compare(currentSpan.getTime(), nextPoint.time * 60000)) {
+        if (compare(currentSpan, nextPoint.time)) {
             //if the two times are the same span, add the count
             sum += nextPoint.count;
             index++;
         } else {
             //once we reach a new time span, push the sum and reset
-            points.push({
-                spanStart: currentSpan.toISOString(),
-                count: sum
-            });
+            points.push(sum.toString());
             sum = 0;
 
-            currentSpan.setMinutes(currentSpan.getMinutes() + span);
+            currentSpan += span;
         }
     }
 
     //push the last span, and pad extra zeroes if the end of array is reached
-    while (points.length < limit) { 
-        points.push({
-            spanStart: currentSpan.toISOString(),
-            count: sum
-        });
-        currentSpan.setMinutes(currentSpan.getMinutes() + span);
-        sum = 0;
+    if (allData) {
+        points.push(sum.toString());
+    } else {
+        while (points.length < limit) { 
+            points.push(sum.toString());
+            currentSpan += span;
+            sum = 0;
+        }
     }
 
-
-  
-    context.res = {
-        status: 200,
-        body: JSON.stringify({
-            dataPoints: points,
-            earliestPoint: new Date(dataPoints[0].time * 60000).toISOString(),
-        })
-    }
-};
+    return points;
+}
 
 //binary search for closest element that is less than or equal to start
 function binarySearchForGEQ(dataPoints: {"time": number, "count": number}[], start: number) {
@@ -228,6 +347,7 @@ function binarySearchForGEQ(dataPoints: {"time": number, "count": number}[], sta
 
     return low;
 }
+
 
 
 export default httpTrigger;

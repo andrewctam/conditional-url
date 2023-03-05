@@ -98,7 +98,10 @@ const truncate = (str: string, maxLen: number = 50) => {
 
 <template>
     <div class="bg-black/10 p-2 mb-6 rounded select-none text-white">
-        <p class = "text-white text-xl font-extralight select-none mt-4">Data Counts</p>
+        <p class = "text-white text-xl font-extralight select-none mt-4">
+            Data Counts
+        </p>
+
         <span class="mr-1 font-light">From:</span>
         <select v-model="selectedUrl" class = "select-none text-white border border-black/50 p-1 m-1 w-[200px] rounded bg-transparent font-light">
             <option value = "-1">

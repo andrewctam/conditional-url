@@ -143,12 +143,17 @@ onBeforeMount(async () => {
     const access = localStorage.getItem('accessToken');
     
     if (user !== null && access !== null) {
-        const payload = jwt_decode(access as string) as { [key: string]: any }
+        try {
+            const payload = jwt_decode(access as string) as { [key: string]: any }
 
-        if (payload.username === user && payload.exp >= Date.now() / 1000) {
-            username.value = user;
-            accessToken.value = access;
-        } else {
+            if (payload.username === user && payload.exp >= Date.now() / 1000) {
+                username.value = user;
+                accessToken.value = access;
+            } else {
+                throw new Error("Token will expire soon");
+            }
+
+        } catch (e) {
             await refreshTokens();
         }
     }

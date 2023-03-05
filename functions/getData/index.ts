@@ -171,9 +171,9 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         case "Decreasing":
         default:
             compare = (a, b) => {
-                if (counts[a] > counts[b])
+                if (counts[a] < counts[b])
                     return -1;
-                else if (counts[a] < counts[b])
+                else if (counts[a] > counts[b])
                     return 1;
                 else
                     return a.localeCompare(b);

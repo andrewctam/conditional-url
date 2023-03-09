@@ -73,7 +73,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         status: 200,
         body: JSON.stringify({
             conditionals: resource.conditionals,
-            redirects: resource.redirects.map((c) => c.count)
+            redirects: resource.redirects
         })
     }
 };

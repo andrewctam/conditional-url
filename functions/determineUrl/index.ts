@@ -22,9 +22,9 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         const client = new CosmosClient({ endpoint, key });
         const container = client.database("conditionalurl").container("urls");
 
-        const { resource } = await container.item(short, short).read();
+        const { resource: urlResource } = await container.item(short, short).read();
 
-        if (resource === undefined || resource.deleted) {
+        if (urlResource === undefined || urlResource.deleted) {
             context.res = {
                 status: 404,
                 body: JSON.stringify({"msg": "Short URL not found"})
@@ -32,92 +32,23 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             return;
         }
         
-        const conditionals = JSON.parse(resource.conditionals);
+        const conditionals = JSON.parse(urlResource.conditionals);
         const [url, i] = determineUrl(conditionals, data)
 
 
-        let redirects: {
-            [key: typeof Variables[number]]: {
-                [key: string]: {
-                    [key: string]: number
-                }
-            }
-        }[] = resource.redirects;
+        urlResource.redirects[i]++;
+        await container.item(short, short).replace(urlResource);
 
-        /*
-            "redirects": [
-                {
-                    "count": 5,
-                    "Language": {
-                        "English": 5
-                    }, ...
-                },
-                {
-                    "count": 7,
-                    "Language": {
-                        "English": 3,
-                        "Spanish": 4
-                    }, ...
-                }
-            ]
-        */
 
-        if ("count" in redirects[i])
-            redirects[i]["count"]++;
-        else
-            redirects[i]["count"] = 1;
-            
-        for (const variable in data) {
-            if (!Variables.includes(variable))
-                continue;
-
-            const value = data[variable];
-
-            let totals = redirects[i][variable];
-
-            if (totals === undefined) {
-                redirects[i][variable] = {};
-                totals = redirects[i][variable];
-            } 
-        
-            /*  redirects[i]
-                {
-                    "count": 7,
-                    "Language": {
-                        "English": 3,
-                        "Spanish": 4
-                    }, ...
-                }
-            */
-
-            if (Object.keys(totals).length > 1000) {
-                //get the key with the lowest value if too many data
-                const minKey = Object.keys(totals).reduce((a, b) => totals[a] < totals[b] ? a : b);
-                delete totals[minKey];
-            }
-
-            if (value in totals) {
-                totals[value]++;
-            } else
-                totals[value] = 1;
-        }        
-
-        const unixTimeToMinute = Math.floor(Date.now() / 60000);
-        const dataPoints = resource.dataPoints;
-
-        if (dataPoints.length > 0 && dataPoints[dataPoints.length - 1].time === unixTimeToMinute) {
-            dataPoints[dataPoints.length - 1].count++;
-        } else {
-            dataPoints.push({
-                time: unixTimeToMinute,
-                count: 1
-            })
-        }
-
-        if (dataPoints.length > 1000000)
-            dataPoints.shift();
-        
-        await container.item(short, short).replace(resource);
+        const dataPointsContainer = client.database("conditionalurl").container("dataPoints");
+        await dataPointsContainer.items.create({
+            short: short,
+            info: {
+                "url": i,
+                "unixMin": Math.floor(Date.now() / 60000)
+            },
+            values: Variables.map(v => data[v]),
+        })
 
         context.res = {
             status: 200,

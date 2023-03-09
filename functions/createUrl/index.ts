@@ -171,11 +171,11 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         //owner deleted an old url and is now trying to recreate it
         if (existing.deleted && existing.owner !== "" && existing.owner === owner) {
             existing.conditionals = conditionals;
-            existing.redirects = new Array(parsedConditionals.length).fill({"count": 0});
-            existing.dataPoints = [];
+            existing.redirects = new Array(parsedConditionals.length).fill(0);
+            existing.urlCount = parsedConditionals.length;
             existing.deleted = false;
 
-            await client.database("conditionalurl").container("urls").item(short, short).replace(existing);
+            await urlsContainer.item(short, short).replace(existing);
 
             context.res = {
                 status: 200,
@@ -200,21 +200,22 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             id: short,
             short,
             conditionals,
+            urlCount: parsedConditionals.length,
             owner: owner ?? "",
-            redirects: new Array(parsedConditionals.length).fill({"count": 0}),
-            dataPoints: [],
+            redirects: new Array(parsedConditionals.length).fill(0),
             deleted: false
-
         });    
+
+        //if logged in, update the user's list
+        if (userResource) {
+            await userContainer.item(owner, owner).replace(userResource);
+        }
 
         context.res = {
             status: 200, 
             body: JSON.stringify(short)
         }
-        //if logged in, update the user's list
-        if (userResource) {
-            await userContainer.item(owner, owner).replace(userResource);
-        }
+        
         return;
     }
 

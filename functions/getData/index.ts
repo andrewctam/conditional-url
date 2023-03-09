@@ -2,8 +2,15 @@ import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import { CosmosClient } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
-import { Variables } from "../types";
+import { Data, Variables } from "../types";
 import { createClient } from "redis";
+
+
+type VarValueCounts = { [key: string]: number }
+
+type DataTables = {
+    [key in typeof Variables[number]]: VarValueCounts
+}[]
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     if (req.headers.authorization === "") {
@@ -29,9 +36,9 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
 
     
-    const variable = req.query.variable;
+    const variable = req.query.variable as typeof Variables[number];
     
-    if (variable === undefined || variable === "" || !Variables.includes(variable)) {
+    if (variable === undefined || !Variables.includes(variable)) {
         context.res = {
             status: 400,
             body: JSON.stringify({"msg": "Invalid variable provided"})
@@ -83,9 +90,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
     
 
-    let counts: {
-        [key: string]: number
-    } = {};
+    let dataTable: DataTables;
 
     let usingRedis = process.env["REDIS_HOST"] !== undefined && process.env["REDIS_PORT"] !== undefined && process.env["REDIS_PASSWORD"] !== undefined
     let redisClient;
@@ -111,10 +116,8 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         } else {
             redisClient.on('error', err => {throw new Error(err + " Fetch from DB")});
 
-            const info = await redisClient.lRange(short + "_table", 0, 2)
-            const redisVariable = info[0];
-            const redisSelectedUrl = info[1];
-            const owner = info[2];
+            const info = await redisClient.lRange(short + "_table", 0, 0)
+            const owner = info[0];
 
             if (owner === undefined) {
                 throw new Error("No data found. Fetch from DB");
@@ -123,15 +126,13 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                     status: 400,
                     body: JSON.stringify({"msg": "You do not own this URL"})
                 };
+
+                await redisClient.disconnect();
                 return;
             }
-
-            if (redisVariable !== variable || redisSelectedUrl === selectedUrl) {
-                throw new Error("Different Data. Fetch fron DB");
-            }
             
-            const cachedData = await redisClient.lRange(short + "_table", 3, -1);
-            counts = JSON.parse(cachedData);
+            const cachedData = await redisClient.lRange(short + "_table", 1, -1);
+            dataTable = JSON.parse(cachedData);
         }
 
     } catch (error) {
@@ -140,12 +141,10 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         const endpoint = process.env["COSMOS_ENDPOINT"];
         
         const client = new CosmosClient({ endpoint, key });
-        const container = client.database("conditionalurl").container("urls");
+        const urlsContainer = client.database("conditionalurl").container("urls");
+        const { resource: urlResource } = await urlsContainer.item(short, short).read();
 
-        
-        const { resource } = await container.item(short, short).read();
-
-        if (resource === undefined) {
+        if (urlResource === undefined) {
             context.res = {
                 status: 400,
                 body: JSON.stringify({"msg": "Short URL not found"})
@@ -153,7 +152,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             return;
         }
 
-        if (resource.owner !== payload.username) {
+        if (urlResource.owner !== payload.username) {
             context.res = {
                 status: 400,
                 body: JSON.stringify({"msg": "You do not own this URL"})
@@ -161,61 +160,38 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             return;
         }
 
-        let i = 0;
-        let lim = resource.redirects.length;
 
-        if (selectedUrl > resource.redirects.length)
-            selectedUrl = -1;
+        const dataPointsContainer = client.database("conditionalurl").container("dataPoints");
+        const { resources: dataPoints } = await dataPointsContainer.items
+                .query(`SELECT * FROM c WHERE c.short = "${short}"`).fetchAll();
 
-        if (selectedUrl >= 0)  { //if user just wants to see data for one url
-            i = selectedUrl;
-            lim = selectedUrl + 1;
-        } 
 
-        for (; i < lim; i++) {
-            let data = resource.redirects[i][variable]
-            /*
-                "redirects": [
-                    {
-                        "count": 5,
-                        "Language": {
-                            "English": 5
-                        }, ...
-                    },
-                    {
-                        "count": 7,
-                        "Language": {
-                            "English": 3,
-                            "Spanish": 4
-                        }, ...
-                    }
-                ]
-            */
+        dataTable = new Array(urlResource.urlCount).fill(null).map(_ => { 
+            return Object.fromEntries(Variables.map(v => [v, {}])) as DataTables[number]
+        });
 
-            for (const key in data) {
-                /* 
-                    "Language": {
-                        "English": 3,
-                        "Spanish": 4
-                    }, ...
-                */
-                if (counts[key] === undefined) {
-                    counts[key] = data[key];
-                } else {
-                    counts[key] += data[key];
-                }
-            }
+
+        for (const datum of dataPoints) {
+            const dataForUrl = dataTable[datum.info.url as number];
+
+            Variables.forEach((variable, i) => {
+                const observedVal = datum.values[i];
+
+                if (dataForUrl[variable][observedVal] === undefined)
+                    dataForUrl[variable][observedVal] = 1;
+                else
+                    dataForUrl[variable][observedVal] += 1;     
+            })
         }
         
+
         if (usingRedis) { //cache data for faster access
             try {
                 await redisClient.del(short + "_table");
                 await redisClient.rPush(short + "_table", [
-                    variable, 
-                    selectedUrl.toString(), 
-                    resource.owner, 
-                    JSON.stringify(counts)]
-                );
+                    urlResource.owner, 
+                    JSON.stringify(dataTable)
+                ]);
             } catch (error) {
                 console.log(error)
             }
@@ -225,7 +201,20 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (usingRedis)
         await redisClient.disconnect();
 
-        
+    let counts: VarValueCounts = {};
+
+    if (selectedUrl === -1) {
+        for (const urlData of dataTable) {
+            for (const [key, value] of Object.entries(urlData[variable])) {
+                if (counts[key] === undefined)
+                    counts[key] = value;
+                else
+                    counts[key] += value;
+            }
+        }
+    } else
+        counts = dataTable[selectedUrl][variable];
+
     let compare: (a: string, b: string) => number;
     switch (req.query.sort) {
         case "Increasing":

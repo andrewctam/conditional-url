@@ -4,6 +4,12 @@ import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 import { createClient, RedisClientType } from 'redis';
 
+export type DataPoint = {
+    info: {
+        unixMin: number
+    }
+};
+
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     if (req.headers.authorization === "") {
         context.res = {
@@ -72,7 +78,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     
     let points: string[];
-    let earliestPoint;
+    let earliestPoint = "";
 
     //redis caching if env vars are set (and span > 1 since its unnecessary to cache by the minute)
     let usingRedis = process.env["REDIS_HOST"] !== undefined && process.env["REDIS_PORT"] !== undefined && process.env["REDIS_PASSWORD"] !== undefined
@@ -165,10 +171,13 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             return;
         }
 
-        const dataPoints: {
-            time: number,
-            count: number
-        }[] = resource.dataPoints;
+        const dataPointsContainer = client.database("conditionalurl").container("dataPoints");
+        
+        const { resources: dataPoints } = await dataPointsContainer.items
+                .query(`SELECT * FROM c 
+                        WHERE c.short = "${short}" 
+                        ORDER BY c.info.unixMin ASC`).fetchAll();
+
 
         if (dataPoints.length === 0) {
             context.res = {
@@ -178,15 +187,15 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             return;
         }
 
-        earliestPoint = new Date(dataPoints[0].time * 60000).toISOString()
+        earliestPoint = new Date(dataPoints[0].info.unixMin * 60000).toISOString()
         
         if (usingRedis) { //cache data for faster access
-            points = groupPoints(dataPoints[0].time, span, limit, dataPoints, true);
+            points = groupPoints(dataPoints[0].info.unixMin, span, limit, dataPoints, true);
 
             const cachedData: string[] = [
                     span.toString(),
-                    dataPoints[0].time.toString(), 
-                    dataPoints[dataPoints.length - 1].time.toString(),
+                    dataPoints[0].info.unixMin.toString(), 
+                    dataPoints[dataPoints.length - 1].info.unixMin.toString(),
                     resource.owner, 
                     ...points
                 ]
@@ -198,14 +207,14 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 console.log(error)
             }
 
-            const firstIndex = Math.floor((start - dataPoints[0].time) / span);
+            const firstIndex = Math.floor((start - dataPoints[0].info.unixMin) / span);
 
             points = points.slice(
                     Math.max(firstIndex, 0),
                     Math.min(firstIndex + limit, points.length));
 
-            if (start < dataPoints[0].time && points.length < limit) {
-                const numPoints = Math.min(Math.floor((dataPoints[0].time - start) / span), limit - points.length);
+            if (start < dataPoints[0].info.unixMin && points.length < limit) {
+                const numPoints = Math.min(Math.floor((dataPoints[0].info.unixMin - start) / span), limit - points.length);
                 points = new Array(numPoints).fill("0").concat(points);
             }
             
@@ -234,22 +243,21 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         })
     }
 
-    };
+};
 
 
 
-type DataPoints = {time: number, count: number}[];
-function groupPoints(start: number, span: number, limit: number, dataPoints: DataPoints, allData: boolean = false): string[] {
+function groupPoints(start: number, span: number, limit: number, dataPoints: DataPoint[], allData: boolean = false): string[] {
     let index;
     let currentSpan;
     let points: string[] = []
 
-    if (start > dataPoints[dataPoints.length - 1].time) {
+    if (start > dataPoints[dataPoints.length - 1].info.unixMin) {
         //greater than all, so just send all 0s
         return new Array(limit).fill("0");
         
-    } else if (start < dataPoints[0].time) {
-        const spansBeforeStart = Math.floor((dataPoints[0].time - start) / span);
+    } else if (start < dataPoints[0].info.unixMin) {
+        const spansBeforeStart = Math.floor((dataPoints[0].info.unixMin - start) / span);
 
         if (spansBeforeStart >= limit) {
             //if there are more spans than the limit, then just send all 0s
@@ -259,15 +267,15 @@ function groupPoints(start: number, span: number, limit: number, dataPoints: Dat
             points = new Array(spansBeforeStart).fill("0");
         }
 
-        currentSpan = dataPoints[0].time;
+        currentSpan = dataPoints[0].info.unixMin;
         index = 0;
-    } else if (start === dataPoints[0].time) {
+    } else if (start === dataPoints[0].info.unixMin) {
         index = 0;
-        currentSpan = dataPoints[0].time;
+        currentSpan = dataPoints[0].info.unixMin;
     } else {
-        index = binarySearchForGEQ(dataPoints, start);
-        if (start < dataPoints[index].time) {
-            const spansBeforeStart = Math.floor((dataPoints[index].time - start) / span);
+        index = getFirstGEQ(dataPoints, start);
+        if (start < dataPoints[index].info.unixMin) {
+            const spansBeforeStart = Math.floor((dataPoints[index].info.unixMin - start) / span);
             if (spansBeforeStart >= limit) {
                 //if there are more spans than the limit, then just send all 0s
                 return new Array(limit).fill("0");
@@ -275,7 +283,7 @@ function groupPoints(start: number, span: number, limit: number, dataPoints: Dat
 
             points = new Array(spansBeforeStart).fill("0");
         }
-        currentSpan = dataPoints[index].time;
+        currentSpan = dataPoints[index].info.unixMin;
     }
     let compare: (a: number, b: number) => boolean;
     switch (span) {
@@ -290,21 +298,21 @@ function groupPoints(start: number, span: number, limit: number, dataPoints: Dat
             break;
     }
 
-    let sum = 0;
+    let count = 0;
     currentSpan -= currentSpan % span
     //if limit is -1, then get all data in the dataPoints
     //group the data points into the same time spans
     while ((allData || points.length < limit) && index < dataPoints.length) {
         const nextPoint = dataPoints[index];
 
-        if (compare(currentSpan, nextPoint.time)) {
+        if (compare(currentSpan, nextPoint.info.unixMin)) {
             //if the two times are the same span, add the count
-            sum += nextPoint.count;
+            count++;
             index++;
         } else {
             //once we reach a new time span, push the sum and reset
-            points.push(sum.toString());
-            sum = 0;
+            points.push(count.toString());
+            count = 0;
 
             currentSpan += span;
         }
@@ -312,33 +320,33 @@ function groupPoints(start: number, span: number, limit: number, dataPoints: Dat
 
     //push the last span, and pad extra zeroes if the end of array is reached
     if (allData) {
-        points.push(sum.toString());
+        points.push(count.toString());
     } else {
         while (points.length < limit) { 
-            points.push(sum.toString());
+            points.push(count.toString());
             currentSpan += span;
-            sum = 0;
+            count = 0;
         }
     }
 
     return points;
 }
 
-//binary search for closest element that is less than or equal to start
-function binarySearchForGEQ(dataPoints: {"time": number, "count": number}[], start: number) {
+//search for the index of the first element with unixMinutes start,
+//or the closest element that is greater than or equal to start
+function getFirstGEQ(dataPoints: DataPoint[], start: number) {
     let low = 0;
     let high = dataPoints.length - 1;
 
-    if (dataPoints.length === 0 || dataPoints[high].time < start) {
+    if (dataPoints.length === 0 || dataPoints[high].info.unixMin < start) {
         return -1;
     }
 
-
     while (low < high) {
         let mid = Math.floor((high + low) / 2);
-        if (dataPoints[mid].time < start) {
+        if (dataPoints[mid].info.unixMin < start) {
             low = mid + 1;
-        } else if (dataPoints[mid].time === start) {
+        } else if (dataPoints[mid].info.unixMin === start && (mid == 0 || dataPoints[mid - 1].info.unixMin < start)) {
             return mid;
         } else {
             high = mid;

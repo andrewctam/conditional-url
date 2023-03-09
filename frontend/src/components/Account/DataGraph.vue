@@ -229,7 +229,7 @@ const options = {
 
             <div>
                 <label for="span" class="block text-sm">Time Span</label>
-                <select v-model="span" id="span" class = "border border-black/50 p-1 m-1 rounded bg-transparent font-normal">
+                <select v-model="span" id="span" class = "border border-black/50 p-1 m-1 rounded font-normal bg-gray-600">
                     <option :value = "1"> 1 minute </option>
                     <option :value = "5"> 5 minutes </option>
                     <option :value = "15"> 15 minutes </option>
@@ -244,7 +244,7 @@ const options = {
 
             <div>
                 <label for="limit" class="block text-sm">Range Length</label>
-                <select v-model="limit" id="limit" class = "border border-black/50 p-1 m-1 rounded bg-transparent font-normal">
+                <select v-model="limit" id="limit" class = "border border-black/50 p-1 m-1 rounded font-normal bg-gray-600">
                     <option v-for="n in 10" :value = "n * 10"> {{`${n * 10 * rangeMultiplier} ${unit}s`}} </option>
                 </select>
             </div>

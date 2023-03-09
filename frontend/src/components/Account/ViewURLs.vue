@@ -133,7 +133,7 @@ watch(sorting, async (oldSorting, newSorting) => {
             <p v-if="!doneLoading" class="text-white font-light mt-4">
                 Loading...
             </p>
-            <p v-else-if="shortUrls.length === 0" class="text-white font-light mt-4">
+            <p v-else-if="shortUrls.length === 0" class="text-white font-light my-4">
                 No URLs created. 
                 <span @click="$emit('close')" class="text-blue-200 hover:text-blue-300 font-light cursor-pointer">
                     Create your first!

@@ -1,5 +1,5 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
-import { CosmosClient } from "@azure/cosmos";
+import { CosmosClient, OperationInput } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 
@@ -112,6 +112,22 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     await urlsContainer.item(oldShort, oldShort).replace(urlResource);
 
     await userContainer.item(payload.username, payload.username).replace(userResource);
+
+    const dataPointsContainer = client.database("conditionalurl").container("dataPoints");
+    const { resources } = await dataPointsContainer.items
+                            .query(`SELECT * FROM c WHERE c.short = "${oldShort}"`).fetchAll();
+
+    const operations: OperationInput[] = resources.map((r: any) => {
+        r.short = newShort;
+        return {
+            id: r.id,
+            operationType: "Replace",
+            resourceBody: r
+        }
+    });
+
+    await dataPointsContainer.items.bulk(operations);
+
 
     context.res = {
         status: 200,

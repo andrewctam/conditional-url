@@ -64,7 +64,7 @@ const getCounts = async (retry: boolean = true, refreshData: boolean = false) =>
 }
 
 onMounted(async () => {
-    await getCounts()
+    await getCounts(true, true)
 })
 
 watch(selected, async () => {
@@ -108,7 +108,7 @@ const truncate = (str: string, maxLen: number = 50) => {
         </svg>
 
         <span class="mr-1 font-light">From:</span>
-        <select v-model="selectedUrl" class = "select-none text-white border border-black/50 p-1 m-1 w-[200px] rounded bg-transparent font-light">
+        <select v-model="selectedUrl" class = "select-none text-white border border-black/50 p-1 m-1 w-[200px] rounded font-light bg-gray-600">
             <option value = "-1">
                 All URLs
             </option>
@@ -121,12 +121,12 @@ const truncate = (str: string, maxLen: number = 50) => {
         <table class="w-[95%] mx-auto text-left text-whitep-2 m-5 font-light">
             <thead class="text-white bg-[#424242]">
                 <th class="w-1/2">
-                    <select v-model="selected" class = "select-none border border-black/50 p-1 m-1 rounded bg-transparent font-light">
+                    <select v-model="selected" class = "select-none border border-black/50 p-1 m-1 rounded font-light bg-gray-600">
                         <option v-for="variable in Variables">{{variable}}</option>
                     </select>
                 </th>
                 <th class="w-1/2">  
-                    <select v-model="sort" class = "select-none border border-black/50 p-1 m-1 rounded bg-transparent font-light">
+                    <select v-model="sort" class = "select-none border border-black/50 p-1 m-1 rounded font-light bg-gray-600">
                         <option value = "Decreasing">
                             Count ↓
                         </option>

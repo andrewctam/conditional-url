@@ -1,5 +1,5 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
-import { CosmosClient } from "@azure/cosmos";
+import { BulkOperationType, CosmosClient, OperationInput } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 import { Conditional, Operators } from "../types";
@@ -156,9 +156,10 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const endpoint = process.env["COSMOS_ENDPOINT"];
     
     const client = new CosmosClient({ endpoint, key });
-    const container = client.database("conditionalurl").container("urls");
+    const urlsContainer = client.database("conditionalurl").container("urls");
+    const dataPointsContainer = client.database("conditionalurl").container("dataPoints");
 
-    const { resource } = await container.item(short, short).read();
+    const { resource } = await urlsContainer.item(short, short).read();
 
     if (resource === undefined) {
         context.res = {
@@ -177,10 +178,23 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
 
     resource.conditionals = conditionals;
-    resource.redirects = new Array(parsedConditionals.length).fill({"count": 0});
-    resource.dataPoints = []
+    resource.redirects = new Array(parsedConditionals.length).fill(0);
+    resource.urlCount = parsedConditionals.length;
+    await urlsContainer.item(short, short).replace(resource);
 
-    await container.item(short, short).replace(resource);
+    const { resources } = await dataPointsContainer.items
+                            .query(`SELECT * FROM c WHERE c.short = "${short}"`).fetchAll();
+
+    const operations: OperationInput[] = resources.map((r: any) => {
+        return {
+            operationType: "Delete",
+            partitionKey: r.id,
+            id: r.id
+        }
+    });
+
+    await dataPointsContainer.items.bulk(operations);
+
 
     context.res = {
         status: 200,

@@ -1,5 +1,5 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
-import { CosmosClient } from "@azure/cosmos";
+import { CosmosClient, OperationInput } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as bcrypt from 'bcryptjs';
 
@@ -24,9 +24,9 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const client = new CosmosClient({ endpoint, key });
     const userContainer = client.database("conditionalurl").container("users");
     
-    const { resource } = await userContainer.item(username, username).read();
+    const { resource: userResource } = await userContainer.item(username, username).read();
 
-    if (resource === undefined) {
+    if (userResource === undefined) {
         context.res = {
             status: 404,
             body: JSON.stringify({"msg": "User not found"})
@@ -34,7 +34,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    if (await bcrypt.compare(password, resource.hashedPassword)) {
+    if (await bcrypt.compare(password, userResource.hashedPassword)) {
         await userContainer.item(username, username).delete();
     } else {
         context.res = {
@@ -45,31 +45,54 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
 
     const urlsContainer = client.database("conditionalurl").container("urls");
-    const { resources } = await urlsContainer.items.query({
-        query: "SELECT * FROM c WHERE c.owner = @username",
-        parameters: [
-            {
-                name: "@username",
-                value: username
-            }
-        ]
-    }).fetchAll();
+    const { resources: urlResources } = await urlsContainer.items
+        .query(`SELECT * FROM c WHERE c.owner = "${username}"`).fetchAll();
+        
 
     if (alsoDeleteURLs) {
-        for (const resource of resources) {
-            resource.deleted = true;
-            resource.redirects = [];
-            resource.dataPoints = [];
-            resource.conditionals = "";
-            resource.owner = ""; //disassociate the url from the user
-    
-            await urlsContainer.item(resource.short, resource.short).replace(resource);
-        }
+        const deleteUrls: OperationInput[] = urlResources.map((r: any) => {
+            r.deleted = true;
+            r.redirects = [];
+            r.conditionals = "";
+            r.urlCount = 0;
+            r.owner = ""; //disassociate the url from the user
+
+            return {
+                id: r.id,
+                operationType: "Replace",
+                resourceBody: r
+            }
+        });
+
+        await urlsContainer.items.bulk(deleteUrls);
+
+        const dataPointsContainer = client.database("conditionalurl").container("dataPoints");
+        const shorts = urlResources.map((r: any) => r.short);
+        const { resources: dataPoints } = await dataPointsContainer.items
+            .query(`SELECT * FROM c WHERE c.short IN ("${shorts.join('", "')}")`).fetchAll();
+
+        const deleteDataPoints: OperationInput[] = dataPoints.map((r: any) => {
+            return {
+                operationType: "Delete",
+                partitionKey: r.id,
+                id: r.id
+            }
+        });
+
+        await dataPointsContainer.items.bulk(deleteDataPoints);
+
+
     } else {
-        for (const resource of resources) {
-            resource.owner = ""; //disassociate the url from the user
-            await urlsContainer.item(resource.short, resource.short).replace(resource);
-        }
+        const removeOwner: OperationInput[] = urlResources.map((r: any) => {
+            r.owner = ""; //disassociate the url from the user
+            return {
+                id: r.id,
+                operationType: "Replace",
+                resourceBody: r
+            }
+        });
+
+        await urlsContainer.items.bulk(removeOwner);
     }
 
     context.res = {

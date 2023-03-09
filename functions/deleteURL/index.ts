@@ -1,5 +1,5 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
-import { CosmosClient } from "@azure/cosmos";
+import { CosmosClient, OperationInput } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 
@@ -43,9 +43,9 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     
     const client = new CosmosClient({ endpoint, key });
     const userContainer = client.database("conditionalurl").container("users");
-    const { resource } = await userContainer.item(payload.username, payload.username).read();
+    const { resource: userResource } = await userContainer.item(payload.username, payload.username).read();
     
-    if (resource === undefined) {   
+    if (userResource === undefined) {   
         context.res = {
             status: 404,
             body: JSON.stringify({"msg": "User not found"})
@@ -53,7 +53,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    if (!resource.urls.includes(short)) {
+    if (!userResource.urls.includes(short)) {
         context.res = {
             status: 401,
             body: JSON.stringify({"msg": "Unauthorized"})
@@ -62,6 +62,8 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
 
     const urlsContainer = client.database("conditionalurl").container("urls");
+    const dataPointsContainer = client.database("conditionalurl").container("dataPoints");
+
     const { resource: urlResource } = await urlsContainer.item(short, short).read();
 
     if (urlResource === undefined || urlResource.owner !== payload.username) {
@@ -71,16 +73,30 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     urlResource.deleted = true;
     urlResource.redirects = [];
-    urlResource.dataPoints = [];
     urlResource.conditionals = "";
-    
+        
     await urlsContainer.item(short, short).replace(urlResource);
+    
+    
+    const { resources } = await dataPointsContainer.items
+    .query(`SELECT * FROM c WHERE c.short = "${short}"`).fetchAll();
 
-    const index = resource.urls.indexOf(short);
-    resource.urls.splice(index, 1);
-    resource.urlCount--;
+    const operations: OperationInput[] = resources.map((r: any) => {
+        return {
+            operationType: "Delete",
+            partitionKey: r.short,
+            id: r.id
+        }
+    });
 
-    await userContainer.item(payload.username, payload.username).replace(resource);
+    await dataPointsContainer.items.bulk(operations);
+
+
+    const index = userResource.urls.indexOf(short);
+    userResource.urls.splice(index, 1);
+    userResource.urlCount--;
+
+    await userContainer.item(payload.username, payload.username).replace(userResource);
 
     context.res = {
         status: 200,

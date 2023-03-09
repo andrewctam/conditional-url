@@ -1,6 +1,10 @@
 
 export const Operators = ["=", "≠", ">", "≥", "<", "≤", "Contains"]
-export const Variables = ["Language", "Time", "Time Zone", "Date", "OS", "Browser", "URL Parameter", "Screen Width", "Screen Height", "Has Touchscreen", "Using Ad Blocker"]
+export const Variables = ["Language", "Time", "Time Zone", "Date", "OS", "Browser", "URL Parameter", "Screen Width", "Screen Height", "Has Touchscreen", "Using Ad Blocker"] as const
+
+export type Data = {
+    [key in typeof Variables[number]]: string
+}
 
 export type Condition = {
     variable: typeof Variables[number],
@@ -25,8 +29,4 @@ export const booleans = ["True", "False"]
 
 export const enum AccountAction {
     CreateURL, SignIn, SignUp, ViewURLs, Settings
-}
-
-export interface Data {
-    [key: typeof Variables[number]]: string
 }

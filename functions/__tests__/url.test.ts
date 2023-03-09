@@ -1,3 +1,4 @@
+import { CosmosClient } from "@azure/cosmos";
 import { Context } from "@azure/functions";
 
 import createUrl from "../createUrl/index";
@@ -6,7 +7,7 @@ import determineUrl from "../determineUrl/index";
 describe("Create and determine", () => {
     let context = ({ log: jest.fn() } as unknown) as Context;
     let randomShort = Math.random().toString(36).substring(2, 10);
-    
+
     it("should successfully be created", async () => {
         const req = {
             headers: {
@@ -140,15 +141,19 @@ describe("Create and determine", () => {
     })
 
     it("should be 1", async () => {
+
+        const data = {
+            Language: "English",
+            Browser: "Chrome",
+            Time: "13:00",
+            "URL Parameter": JSON.stringify("")
+        };
+
+
         const req = {
             body: {
                 short: randomShort,
-                data: JSON.stringify({
-                    Language: "English",
-                    Browser: "Chrome",
-                    Time: "13:00",
-                    params: JSON.stringify({})
-                })
+                data: JSON.stringify(data)
             }
         }
 
@@ -159,15 +164,18 @@ describe("Create and determine", () => {
     })
 
     it("should be 2", async () => {
+        const data = {
+            Language: "Spanish",
+            Browser: "Chrome",
+            Time: "01:00",
+            "URL Parameter": JSON.stringify("")
+        }
+
+
         const req = {
             body: {
                 short: randomShort,
-                data: JSON.stringify({
-                    Language: "Spanish",
-                    Browser: "Chrome",
-                    Time: "01:00",
-                    params: JSON.stringify({})
-                })
+                data: JSON.stringify(data)
             }
         }
 
@@ -178,15 +186,18 @@ describe("Create and determine", () => {
     })
 
     it("should also be 2", async () => {
+        const data = {
+            Language: "Spanish",
+            Browser: "Safari",
+            Time: "13:00",
+            "URL Parameter": JSON.stringify("")
+        }
+
+
         const req = {
             body: {
                 short: randomShort,
-                data: JSON.stringify({
-                    Language: "Spanish",
-                    Browser: "Safari",
-                    Time: "13:00",
-                    params: JSON.stringify({})
-                })
+                data: JSON.stringify(data)
             }
         }
 
@@ -197,15 +208,18 @@ describe("Create and determine", () => {
     })
 
     it("should be 3", async () => {
+        const data = {
+            Language: "Spanish",
+            Browser: "Safari",
+            Time: "01:00",
+            "URL Parameter": "Test=1"
+        }
+
+
         const req = {
             body: {
                 short: randomShort,
-                data: JSON.stringify({
-                    Language: "Spanish",
-                    Browser: "Safari",
-                    Time: "01:00",
-                    params: JSON.stringify({"Test": "1"})
-                })
+                data: JSON.stringify(data)
             }
         }
 
@@ -216,16 +230,19 @@ describe("Create and determine", () => {
     })
 
     it("should be 4", async () => {
+        const data = {
+            Language: "Spanish",
+            Browser: "Safari",
+            Time: "01:00",
+            "URL Parameter": JSON.stringify(""),
+            OS: "Windows"
+        }
+
+
         const req = {
             body: {
                 short: randomShort,
-                data: JSON.stringify({
-                    Language: "Spanish",
-                    Browser: "Safari",
-                    Time: "01:00",
-                    params: JSON.stringify({}),
-                    OS: "Windows"
-                })
+                data: JSON.stringify(data)
             }
         }
 
@@ -236,17 +253,20 @@ describe("Create and determine", () => {
     })
 
     it("should be 5", async () => {
+        const data = {
+            Language: "Spanish",
+            Browser: "Safari",
+            Time: "01:00",
+            "URL Parameter": JSON.stringify(""),
+            OS: "MacOS",
+            Date: "2020-01-01"
+        }
+
+
         const req = {
             body: {
                 short: randomShort,
-                data: JSON.stringify({
-                    Language: "Spanish",
-                    Browser: "Safari",
-                    Time: "01:00",
-                    params: JSON.stringify({}),
-                    OS: "MacOS",
-                    Date: "2020-01-01"
-                })
+                data: JSON.stringify(data)
             }
         }
 
@@ -257,18 +277,20 @@ describe("Create and determine", () => {
     })
 
     it("should be 6", async () => {
+        const data = {
+            Language: "Spanish",
+            Browser: "Safari",
+            Time: "01:00",
+            "URL Parameter": JSON.stringify(""),
+            OS: "MacOS",
+            Date: "2022-01-02",
+            "Screen Width": "1000"
+        }
+
         const req = {
             body: {
                 short: randomShort,
-                data: JSON.stringify({
-                    Language: "Spanish",
-                    Browser: "Safari",
-                    Time: "01:00",
-                    params: JSON.stringify({}),
-                    OS: "MacOS",
-                    Date: "2022-01-02",
-                    "Screen Width": "1000"
-                })
+                data: JSON.stringify(data)
             }
         }
 
@@ -279,19 +301,21 @@ describe("Create and determine", () => {
     })
 
     it("should be 7", async () => {
+        const data = {
+            Language: "Spanish",
+            Browser: "Safari",
+            Time: "01:00",
+            "URL Parameter": JSON.stringify(""),
+            OS: "MacOS",
+            Date: "2022-01-02",
+            "Screen Width": "999",
+            "Screen Height": "999"
+        }
+
         const req = {
             body: {
                 short: randomShort,
-                data: JSON.stringify({
-                    Language: "Spanish",
-                    Browser: "Safari",
-                    Time: "01:00",
-                    params: JSON.stringify({}),
-                    OS: "MacOS",
-                    Date: "2022-01-02",
-                    "Screen Width": "999",
-                    "Screen Height": "999"
-                })
+                data: JSON.stringify(data)
             }
         }
 
@@ -302,19 +326,21 @@ describe("Create and determine", () => {
     })
 
     it("should be 8", async () => {
+        const data = {
+            Language: "Spanish",
+            Browser: "Safari",
+            Time: "01:00",
+            "URL Parameter": JSON.stringify(""),
+            OS: "MacOS",
+            Date: "2022-01-02",
+            "Screen Width": "999",
+            "Screen Height": 1000
+        }
+
         const req = {
             body: {
                 short: randomShort,
-                data: JSON.stringify({
-                    Language: "Spanish",
-                    Browser: "Safari",
-                    Time: "01:00",
-                    params: JSON.stringify({}),
-                    OS: "MacOS",
-                    Date: "2022-01-02",
-                    "Screen Width": "999",
-                    "Screen Height": 1000
-                })
+                data: JSON.stringify(data)
             }
         }
 
@@ -324,5 +350,16 @@ describe("Create and determine", () => {
         expect(JSON.parse(context.res.body)).toBe("https://example.com/8");
     })
 
+
+    test("verify redirect nums", async () => {
+        const key = process.env["COSMOS_KEY"];
+        const endpoint = process.env["COSMOS_ENDPOINT"];
+        const client = new CosmosClient({ endpoint, key });
+        const container = client.database("conditionalurl").container("urls");
+
+        const { resource } = await container.item(randomShort, randomShort).read();
+
+        expect(resource.redirects).toStrictEqual([1, 2, 1, 1, 1, 1, 1, 1])
+    });
 
 })

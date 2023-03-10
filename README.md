@@ -1,10 +1,15 @@
 # Conditional URL
 
 ## Description
-[Conditional URL](https://conditionalurl.web.app) is a link shortener app that allows you to create a shortened URL that conditionally redirects visitors to different URLs based on some specified conditions. The user can create URLs as a guest, or create an account to later edit/rename their URL and view detailed analytics. The RESTful API runs serverless using Microsoft Azure Functions.
+[Conditional URL](https://conditionalurl.web.app) is a URL shortener app that allows you to create a shortened URL that conditionally redirects visitors to different URLs based on some specified conditions. The user can create URLs as a guest, or create an account to later edit/rename their URL and view detailed analytics. The RESTful API runs serverless using Microsoft Azure Functions.
+| ![Home Page](demo.png) | 
+|:--:| 
+| Home Page (Guest View) |
 
-![Conditional URL](demo.png)
-![Analytics View](analytics.png)
+| ![Analytics View](analytics.png) | 
+|:--:| 
+| Analytics View |
+
 
 ## Technologies
 - [Azure Functions](https://azure.microsoft.com/en-us/products/functions/)
@@ -20,21 +25,24 @@
 git clone https://github.com/tamandrew/conditional-url.git
 ```
 - Set up [Azure Functions Core Tools](https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local?tabs=windows%2Ccsharp%2Cbash). 
-- For the database, this project uses MongoDB hosted on Azure Cosmos DB.
+- Set up a MongoDB database. I used [Azure Cosmos DB for MongoDB](https://learn.microsoft.com/en-us/azure/cosmos-db/mongodb/introduction), but you can use other services such as [MongoDB Atlas](https://www.mongodb.com/atlas/database).
 - Set up environmental variables:
     - In `/frontend`, rename `.env.template` to `.env` and change the URLs if desired.
-    - In `/functions`, rename `.env.template` to `.env` and add your MongoDB connection string and a JWT Secret.
-        - GOOGLE_API_KEY is optional for scanning URLs with Google's Safe Browsing API. 
+    - In `/functions`, rename `.env.template` to `.env` and update the variables
+        - `MONGO_CONNECTION_STRING` and `JWT_Secret` are mandatory.
+        - `GOOGLE_API_KEY` is optional for scanning URLs with Google's Safe Browsing API. 
             - If not provided, URLs will not be scanned before creation.
-        - Redis credentials are optional for caching data.
+        - `REDIS_HOST`, `REDIS_PORT`, and `REDIS_PASSWORD` are optional for caching data using Redis.
             - If not provided, every query for analytics will have to make a database call and reprocess the data, which will be slower than using Redis.
-```
-cd functions
-npm start
-```
-- To start the frontend, in `/frontend` install npm dependencies and run `npm run dev`
+
+- To start the frontend, in `/frontend` install npm dependencies and run `npm run dev`.
 ```
 cd frontend
 npm install
 npm run dev
+```
+- To start the Azure Functions Core Tools, run `npm start` in `/functions`.
+```
+cd functions
+npm start
 ```

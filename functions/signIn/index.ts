@@ -1,9 +1,11 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import * as bcrypt from 'bcryptjs';
 import * as jwt from 'jsonwebtoken';
-import { CosmosClient } from "@azure/cosmos";
+import { connectDB } from '../database';
 import * as dotenv from 'dotenv';
 import { createHmac } from "crypto";
+import { ObjectId } from "mongodb";
+import { User } from "../signUp";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const username = req.body.username.toLowerCase();
@@ -17,22 +19,29 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
 
     dotenv.config();
-    const key = process.env["COSMOS_KEY"];
-    const endpoint = process.env["COSMOS_ENDPOINT"];
-    const client = new CosmosClient({ endpoint, key });
-    const container = client.database("conditionalurl").container("users");
+    const client = await connectDB();
+    const db = client.db("conditionalurl");
+
+    const userCollection = db.collection<User>("users");
 
     try {
-        const { resource } = await container.item(username, username).read();
-        if (await bcrypt.compare(password, resource.hashedPassword)) {
+        const user = await userCollection.findOne({ _id: username });
+
+        if (await bcrypt.compare(password, user.hashedPassword)) {
             const accessToken = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '15m' });
             const refreshToken = jwt.sign({ username }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-            resource.hashedRefresh = createHmac("sha256", process.env.JWT_SECRET)
-                                        .update(refreshToken)
-                                        .digest("hex");
-            await container.item(username, username).replace(resource);
+            const updateRefresh = {
+                $set: {
+                    hashedRefresh: createHmac("sha256", process.env.JWT_SECRET)
+                                    .update(refreshToken)
+                                    .digest("hex")
+                }
+            };
+            
 
+            await userCollection.updateOne({ _id: username }, updateRefresh);
+        
             context.res = {
                 status: 200,
                 body: JSON.stringify({

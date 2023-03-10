@@ -1,7 +1,7 @@
-import { CosmosClient } from "@azure/cosmos";
+import { connectDB, disconnectDB } from "../database";
 import { Context } from "@azure/functions";
 
-import createUrl from "../createUrl/index";
+import createUrl, { URL } from "../createUrl/index";
 import determineUrl from "../determineUrl/index";
 
 describe("Create and determine", () => {
@@ -352,14 +352,12 @@ describe("Create and determine", () => {
 
 
     test("verify redirect nums", async () => {
-        const key = process.env["COSMOS_KEY"];
-        const endpoint = process.env["COSMOS_ENDPOINT"];
-        const client = new CosmosClient({ endpoint, key });
-        const container = client.database("conditionalurl").container("urls");
+        const client = await connectDB();
+        const urlsCollection = client.db("conditionalurl").collection<URL>("urls");
+        const url = await urlsCollection.findOne({_id: randomShort});
+        await disconnectDB();
 
-        const { resource } = await container.item(randomShort, randomShort).read();
-
-        expect(resource.redirects).toStrictEqual([1, 2, 1, 1, 1, 1, 1, 1])
+        expect(url.redirects).toStrictEqual([1, 2, 1, 1, 1, 1, 1, 1])
     });
 
 })

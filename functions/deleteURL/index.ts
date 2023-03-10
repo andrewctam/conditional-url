@@ -1,7 +1,11 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
-import { CosmosClient, OperationInput } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
+import { connectDB } from "../database";
+import { User } from "../signUp";
+import { URL } from "../createUrl";
+import { DataPoint } from "../getDataPoints";
+
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     if (req.headers.authorization === "") {
@@ -38,14 +42,14 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     const short = req.body.short.toLowerCase();
 
-    const key = process.env["COSMOS_KEY"];
-    const endpoint = process.env["COSMOS_ENDPOINT"];
-    
-    const client = new CosmosClient({ endpoint, key });
-    const userContainer = client.database("conditionalurl").container("users");
-    const { resource: userResource } = await userContainer.item(payload.username, payload.username).read();
-    
-    if (userResource === undefined) {   
+    const client = await connectDB();
+    const db = client.db("conditionalurl");
+    const userCollection = db.collection<User>("users");
+
+
+    const user = await userCollection.findOne({_id: payload.username});
+
+    if (user === null) {   
         context.res = {
             status: 404,
             body: JSON.stringify({"msg": "User not found"})
@@ -53,7 +57,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    if (!userResource.urls.includes(short)) {
+    if (!user.urls.includes(short)) {
         context.res = {
             status: 401,
             body: JSON.stringify({"msg": "Unauthorized"})
@@ -61,43 +65,42 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    const urlsContainer = client.database("conditionalurl").container("urls");
-    const dataPointsContainer = client.database("conditionalurl").container("dataPoints");
+    const urlsCollection = db.collection<URL>("urls")
 
-    const { resource: urlResource } = await urlsContainer.item(short, short).read();
+    const url = await urlsCollection.findOne({_id: short})
 
-    if (urlResource === undefined || urlResource.owner !== payload.username) {
+    if (url === undefined || url.owner !== payload.username) {
         //already checked to see if on user's list above, but not found in DB
         throw Error("URL from user list not found");
     }
 
-    urlResource.deleted = true;
-    urlResource.redirects = [];
-    urlResource.conditionals = "";
-        
-    await urlsContainer.item(short, short).replace(urlResource);
-    
-    
-    const { resources } = await dataPointsContainer.items
-    .query(`SELECT * FROM c WHERE c.short = "${short}"`).fetchAll();
-
-    const operations: OperationInput[] = resources.map((r: any) => {
-        return {
-            operationType: "Delete",
-            partitionKey: r.short,
-            id: r.id
+    const deleteUrl = {
+        $set: {
+            deleted: true,
+            redirects: [],
+            conditionals: "",
+            urlCount: 0
         }
-    });
+    }
+        
+    await urlsCollection.updateOne({_id: short}, deleteUrl);
+    
+    const removeFromList = {
+        $pull: {
+            urls: short
+        },
+        $inc: {
+            urlCount: -1
+        }
+    }
+   
+    await userCollection.updateOne({_id: payload.username}, removeFromList);
 
-    await dataPointsContainer.items.bulk(operations);
+    //delete data points
+    const dpCollection = db.collection<DataPoint>("datapoints");
+    await dpCollection.deleteMany({urlUID: url.uid })
 
-
-    const index = userResource.urls.indexOf(short);
-    userResource.urls.splice(index, 1);
-    userResource.urlCount--;
-
-    await userContainer.item(payload.username, payload.username).replace(userResource);
-
+       
     context.res = {
         status: 200,
         body: JSON.stringify("URL deleted")

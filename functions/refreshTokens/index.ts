@@ -1,18 +1,13 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
-import { CosmosClient } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 import { createHmac, timingSafeEqual } from "crypto";
+import { connectDB } from "../database"
+import { User } from "../signUp";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const refreshToken = req.body.refreshToken;
 
-    dotenv.config();
-    const key = process.env["COSMOS_KEY"];
-    const endpoint = process.env["COSMOS_ENDPOINT"];
-
-    const client = new CosmosClient({ endpoint, key });
-    const container = client.database("conditionalurl").container("users");
 
     let payload;
     try {
@@ -35,9 +30,15 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    const { resource } = await container.item(payload.username, payload.username).read();
+    dotenv.config();
+    const client = await connectDB();
+    const db = client.db("conditionalurl");
 
-    if (resource === undefined) {
+    const userCollection = db.collection<User>("users");
+
+    const user = await userCollection.findOne({ _id: payload.username });
+
+    if (user === null) {
         context.res = {
             status: 404,
             body: JSON.stringify({"msg": "User not found"})
@@ -49,7 +50,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                         .update(refreshToken)
                         .digest("hex");
 
-    if (!timingSafeEqual(Buffer.from(resource.hashedRefresh), Buffer.from(providedRefresh))) {
+    if (!timingSafeEqual(Buffer.from(user.hashedRefresh), Buffer.from(providedRefresh))) {
         context.res = {
             status: 401,
             body: JSON.stringify({"msg": "Invalid token"})
@@ -61,12 +62,18 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     //if the token will expire in less than a day, refresh it
     const ONE_DAY = 60 * 60 * 24;
     if (payload.exp - Date.now() / 1000 < ONE_DAY) { 
-        returnedRefreshToken = jwt.sign({ username: payload.username }, process.env.JWT_SECRET, { expiresIn: "1d" });
-        resource.hashedRefresh = createHmac("sha256", process.env.JWT_SECRET)
-                                    .update(returnedRefreshToken)
-                                    .digest("hex");
+        returnedRefreshToken = jwt.sign({ username: payload.username }, process.env.JWT_SECRET, { expiresIn: "7d" });
+        
+        const updateRefresh = {
+            $set: {
+                hashedRefresh: createHmac("sha256", process.env.JWT_SECRET)
+                                .update(returnedRefreshToken)
+                                .digest("hex")
+            }
+        };
+        
 
-        await container.item(payload.username, payload.username).replace(resource);
+        await userCollection.updateOne({ _id: payload.username }, updateRefresh);
     }
 
     context.res = {

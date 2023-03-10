@@ -1,9 +1,21 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import * as bcrypt from 'bcryptjs';
-import { CosmosClient } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 import { createHmac } from "crypto";
+import { connectDB } from "../database";
+import { ObjectId } from "mongodb";
+
+export type User = {
+    _id: string,
+    uid: ObjectId,
+    urls: string[],
+    urlCount: number,
+    hashedPassword: string,
+    hashedRefresh: string
+}
+
+
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const username = req.body.username.toLowerCase();
     const password = req.body.password;
@@ -17,10 +29,11 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
 
     dotenv.config();
-    const key = process.env["COSMOS_KEY"];
-    const endpoint = process.env["COSMOS_ENDPOINT"];
-    const client = new CosmosClient({ endpoint, key });
-    const container = client.database("conditionalurl").container("users");
+
+    const client = await connectDB();
+    const db = client.db("conditionalurl");
+
+    const usersCollection = db.collection<User>("users");
 
     const hashedPassword = await bcrypt.hash(password, 10);
     
@@ -32,14 +45,18 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                                     .update(refreshToken)
                                     .digest("hex");
 
-        await container.items.create({
-            id: username,
-            username,
+
+        const createUser: User = {
+            _id: username,
+            uid: new ObjectId(),
             hashedPassword: hashedPassword,
             urls: [],
             urlCount: 0,
             hashedRefresh: hashedRefresh
-        });
+        }
+        
+
+        await usersCollection.insertOne(createUser)
 
 
         context.res = {
@@ -52,6 +69,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         }
 
     } catch (e) {
+        console.log(e)
         context.res = {
             status: 400,
             body: JSON.stringify({"msg": "Username already exists"})

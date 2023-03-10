@@ -1,7 +1,8 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
-import { CosmosClient } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
+import { URL } from "../createUrl";
+import { connectDB } from "../database"
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     if (req.headers.authorization === "") {
@@ -43,17 +44,14 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    const key = process.env["COSMOS_KEY"];
-    const endpoint = process.env["COSMOS_ENDPOINT"];
-    
-    const client = new CosmosClient({ endpoint, key });
-    const container = client.database("conditionalurl").container("urls");
-    
+    const client = await connectDB();
+    const db = client.db("conditionalurl");
 
+    const urlsCollection = db.collection<URL>("urls");
 
-    const { resource } = await container.item(short, short).read();
+    const url = await urlsCollection.findOne({ _id: short });
 
-    if (resource === undefined) {
+    if (url === null) {
         context.res = {
             status: 404,
             body: JSON.stringify({"msg": "Short URL not found"})
@@ -61,7 +59,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    if (resource.owner !== payload.username) {
+    if (url.owner !== payload.username) {
         context.res = {
             status: 401,
             body: JSON.stringify({"msg": "You do not own this URL"})
@@ -72,8 +70,8 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     context.res = {
         status: 200,
         body: JSON.stringify({
-            conditionals: resource.conditionals,
-            redirects: resource.redirects
+            conditionals: url.conditionals,
+            redirects: url.redirects
         })
     }
 };

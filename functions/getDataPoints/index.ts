@@ -1,13 +1,18 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
-import { CosmosClient } from "@azure/cosmos";
+import { connectDB } from "../database"
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 import { createClient, RedisClientType } from 'redis';
+import { URL } from "../createUrl";
+import { ObjectId } from "mongodb";
 
 export type DataPoint = {
-    info: {
-        unixMin: number
-    }
+    _id: ObjectId,
+    urlUID: ObjectId,
+    unixMin: number,
+    i: number, // index of redirected
+    owner: string
+    values: string[]
 };
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
@@ -109,7 +114,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
             
             if (info.length === 0) {
-                throw new Error("No cached data. Fetch from DB");
+                throw new Error("No cached data. Fetch from DB");   
             }
 
             const cacheSpan = parseInt(info[0]);
@@ -147,15 +152,14 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             earliestPoint = new Date(cacheStart * 60000).toISOString()
         }
     } catch (error) {
-        const key = process.env["COSMOS_KEY"];
-        const endpoint = process.env["COSMOS_ENDPOINT"];
-        
-        const client = new CosmosClient({ endpoint, key });
-        const container = client.database("conditionalurl").container("urls");
-        
-        const { resource } = await container.item(short, short).read();
+        const client = await connectDB();
+        const db = client.db("conditionalurl");
 
-        if (resource === undefined) {
+        const urlsCollection = db.collection<URL>("urls");
+        
+        const url = await urlsCollection.findOne({_id: short})
+
+        if (url === null) {
             context.res = {
                 status: 400,
                 body: JSON.stringify({"msg": "Short URL not found"})
@@ -163,7 +167,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             return;
         }
 
-        if (resource.owner !== payload.username) {
+        if (url.owner !== payload.username) {
             context.res = {
                 status: 400,
                 body: JSON.stringify({"msg": "You do not own this URL"})
@@ -171,12 +175,11 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             return;
         }
 
-        const dataPointsContainer = client.database("conditionalurl").container("dataPoints");
-        
-        const { resources: dataPoints } = await dataPointsContainer.items
-                .query(`SELECT * FROM c 
-                        WHERE c.short = "${short}" 
-                        ORDER BY c.info.unixMin ASC`).fetchAll();
+        const dpCollection = db.collection<DataPoint>("datapoints");
+
+        const dataPoints = await dpCollection.find({urlUID: url.uid})
+                                             .sort({unixMin: 1})
+                                             .toArray();
 
 
         if (dataPoints.length === 0) {
@@ -187,16 +190,16 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             return;
         }
 
-        earliestPoint = new Date(dataPoints[0].info.unixMin * 60000).toISOString()
+        earliestPoint = new Date(dataPoints[0].unixMin * 60000).toISOString()
         
         if (usingRedis) { //cache data for faster access
-            points = groupPoints(dataPoints[0].info.unixMin, span, limit, dataPoints, true);
+            points = groupPoints(dataPoints[0].unixMin, span, limit, dataPoints, true);
 
             const cachedData: string[] = [
                     span.toString(),
-                    dataPoints[0].info.unixMin.toString(), 
-                    dataPoints[dataPoints.length - 1].info.unixMin.toString(),
-                    resource.owner, 
+                    dataPoints[0].unixMin.toString(), 
+                    dataPoints[dataPoints.length - 1].unixMin.toString(),
+                    url.owner, 
                     ...points
                 ]
 
@@ -207,14 +210,14 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 console.log(error)
             }
 
-            const firstIndex = Math.floor((start - dataPoints[0].info.unixMin) / span);
+            const firstIndex = Math.floor((start - dataPoints[0].unixMin) / span);
 
             points = points.slice(
                     Math.max(firstIndex, 0),
                     Math.min(firstIndex + limit, points.length));
 
-            if (start < dataPoints[0].info.unixMin && points.length < limit) {
-                const numPoints = Math.min(Math.floor((dataPoints[0].info.unixMin - start) / span), limit - points.length);
+            if (start < dataPoints[0].unixMin && points.length < limit) {
+                const numPoints = Math.min(Math.floor((dataPoints[0].unixMin - start) / span), limit - points.length);
                 points = new Array(numPoints).fill("0").concat(points);
             }
             
@@ -252,12 +255,12 @@ function groupPoints(start: number, span: number, limit: number, dataPoints: Dat
     let currentSpan;
     let points: string[] = []
 
-    if (start > dataPoints[dataPoints.length - 1].info.unixMin) {
+    if (start > dataPoints[dataPoints.length - 1].unixMin) {
         //greater than all, so just send all 0s
         return new Array(limit).fill("0");
         
-    } else if (start < dataPoints[0].info.unixMin) {
-        const spansBeforeStart = Math.floor((dataPoints[0].info.unixMin - start) / span);
+    } else if (start < dataPoints[0].unixMin) {
+        const spansBeforeStart = Math.floor((dataPoints[0].unixMin - start) / span);
 
         if (spansBeforeStart >= limit) {
             //if there are more spans than the limit, then just send all 0s
@@ -267,15 +270,15 @@ function groupPoints(start: number, span: number, limit: number, dataPoints: Dat
             points = new Array(spansBeforeStart).fill("0");
         }
 
-        currentSpan = dataPoints[0].info.unixMin;
+        currentSpan = dataPoints[0].unixMin;
         index = 0;
-    } else if (start === dataPoints[0].info.unixMin) {
+    } else if (start === dataPoints[0].unixMin) {
         index = 0;
-        currentSpan = dataPoints[0].info.unixMin;
+        currentSpan = dataPoints[0].unixMin;
     } else {
         index = getFirstGEQ(dataPoints, start);
-        if (start < dataPoints[index].info.unixMin) {
-            const spansBeforeStart = Math.floor((dataPoints[index].info.unixMin - start) / span);
+        if (start < dataPoints[index].unixMin) {
+            const spansBeforeStart = Math.floor((dataPoints[index].unixMin - start) / span);
             if (spansBeforeStart >= limit) {
                 //if there are more spans than the limit, then just send all 0s
                 return new Array(limit).fill("0");
@@ -283,7 +286,7 @@ function groupPoints(start: number, span: number, limit: number, dataPoints: Dat
 
             points = new Array(spansBeforeStart).fill("0");
         }
-        currentSpan = dataPoints[index].info.unixMin;
+        currentSpan = dataPoints[index].unixMin;
     }
     let compare: (a: number, b: number) => boolean;
     switch (span) {
@@ -305,7 +308,7 @@ function groupPoints(start: number, span: number, limit: number, dataPoints: Dat
     while ((allData || points.length < limit) && index < dataPoints.length) {
         const nextPoint = dataPoints[index];
 
-        if (compare(currentSpan, nextPoint.info.unixMin)) {
+        if (compare(currentSpan, nextPoint.unixMin)) {
             //if the two times are the same span, add the count
             count++;
             index++;
@@ -338,15 +341,15 @@ function getFirstGEQ(dataPoints: DataPoint[], start: number) {
     let low = 0;
     let high = dataPoints.length - 1;
 
-    if (dataPoints.length === 0 || dataPoints[high].info.unixMin < start) {
+    if (dataPoints.length === 0 || dataPoints[high].unixMin < start) {
         return -1;
     }
 
     while (low < high) {
         let mid = Math.floor((high + low) / 2);
-        if (dataPoints[mid].info.unixMin < start) {
+        if (dataPoints[mid].unixMin < start) {
             low = mid + 1;
-        } else if (dataPoints[mid].info.unixMin === start && (mid == 0 || dataPoints[mid - 1].info.unixMin < start)) {
+        } else if (dataPoints[mid].unixMin === start && (mid == 0 || dataPoints[mid - 1].unixMin < start)) {
             return mid;
         } else {
             high = mid;

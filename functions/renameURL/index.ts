@@ -1,7 +1,10 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
-import { CosmosClient, OperationInput } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
+import { ObjectId } from "mongodb";
+import { URL } from "../createUrl";
+import { connectDB } from "../database";
+import { User } from "../signUp";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const oldShort = req.body.oldShort.toLowerCase();
@@ -49,16 +52,14 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
 
 
-    const key = process.env["COSMOS_KEY"];
-    const endpoint = process.env["COSMOS_ENDPOINT"];
+    const client = await connectDB();
+    const db = client.db("conditionalurl");
     
-    const client = new CosmosClient({ endpoint, key });
+    const userCollection = db.collection<User>("users")
 
+    const user = await userCollection.findOne({ _id: payload.username })
     
-    const userContainer = client.database("conditionalurl").container("users");
-    const { resource: userResource } = await userContainer.item(payload.username, payload.username).read();
-    
-    if (userResource === undefined) {   
+    if (user === null) {   
         context.res = {
             status: 404,
             body: JSON.stringify({"msg": "User not found"})
@@ -66,7 +67,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    if (!userResource.urls.includes(oldShort)) {
+    if (!user.urls.includes(oldShort)) {
         context.res = {
             status: 401,
             body: JSON.stringify({"msg": "Unauthorized"})
@@ -75,23 +76,21 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
     
 
-    const urlsContainer = client.database("conditionalurl").container("urls");
-    const { resource: urlResource } = await urlsContainer.item(oldShort, oldShort).read();
+    const urlsCollection = db.collection<URL>("urls")
+    const url = await urlsCollection.findOne({ _id: oldShort })
 
-    if (urlResource === undefined || urlResource.owner !== payload.username) {
+    if (url === null || url.owner !== payload.username) {
         //already checked to see if on user's list above, but not found in DB
         throw Error("URL from user list not found");
     }
 
-    const index = userResource.urls.indexOf(oldShort);
-    userResource.urls[index] = newShort;
-
     try {
-        urlResource.id = newShort;
-        urlResource.short = newShort;
-        
+        url._id = newShort;
+        //clone old one with new uid
+        url.uid = new ObjectId();
+    
         //create new one
-        await urlsContainer.items.create(urlResource);
+        await urlsCollection.insertOne(url);
     } catch (e) {
         context.res = {
             status: 409,
@@ -100,33 +99,27 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    //delete old one
-    urlResource.id = oldShort;
-    urlResource.short = oldShort;
-
-    urlResource.deleted = true;
-    urlResource.redirects = [];
-    urlResource.dataPoints = [];
-    urlResource.conditionals = "";
-
-    await urlsContainer.item(oldShort, oldShort).replace(urlResource);
-
-    await userContainer.item(payload.username, payload.username).replace(userResource);
-
-    const dataPointsContainer = client.database("conditionalurl").container("dataPoints");
-    const { resources } = await dataPointsContainer.items
-                            .query(`SELECT * FROM c WHERE c.short = "${oldShort}"`).fetchAll();
-
-    const operations: OperationInput[] = resources.map((r: any) => {
-        r.short = newShort;
-        return {
-            id: r.id,
-            operationType: "Replace",
-            resourceBody: r
+    const deleteOld = {
+        $set: {
+            deleted: true,
+            conditionals: "",
+            urlCount: 0,
+            redirects: [] as number[],
         }
-    });
+    }
+    
+    await urlsCollection.updateOne({ _id: oldShort }, deleteOld)
+    
+    const index = user.urls.indexOf(oldShort);
+    user.urls[index] = newShort;
 
-    await dataPointsContainer.items.bulk(operations);
+    const updateInList = {
+        $set: {
+            "urls.$": newShort
+        },
+    }
+    
+    await userCollection.updateOne({ _id: payload.username, "urls": oldShort }, updateInList)
 
 
     context.res = {

@@ -1,9 +1,11 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
-import { CosmosClient } from "@azure/cosmos";
+import { connectDB } from "../database"
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
-import { Data, Variables } from "../types";
+import { Variables } from "../types";
 import { createClient } from "redis";
+import { URL } from "../createUrl";
+import { DataPoint } from "../getDataPoints";
 
 
 type VarValueCounts = { [key: string]: number }
@@ -137,14 +139,13 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     } catch (error) {
         console.log("Fetching from DB")
-        const key = process.env["COSMOS_KEY"];
-        const endpoint = process.env["COSMOS_ENDPOINT"];
-        
-        const client = new CosmosClient({ endpoint, key });
-        const urlsContainer = client.database("conditionalurl").container("urls");
-        const { resource: urlResource } = await urlsContainer.item(short, short).read();
+        const client = await connectDB();
+        const db = client.db("conditionalurl");
+        const urlsCollection = db.collection<URL>("urls");
 
-        if (urlResource === undefined) {
+        const url = await urlsCollection.findOne({_id: short});
+
+        if (url === undefined) {
             context.res = {
                 status: 400,
                 body: JSON.stringify({"msg": "Short URL not found"})
@@ -152,7 +153,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             return;
         }
 
-        if (urlResource.owner !== payload.username) {
+        if (url.owner !== payload.username) {
             context.res = {
                 status: 400,
                 body: JSON.stringify({"msg": "You do not own this URL"})
@@ -160,19 +161,19 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             return;
         }
 
+        const now = Date.now();
+        const dpCollection = db.collection<DataPoint>("datapoints");
+        const dataPoints = await dpCollection.find({urlUID: url.uid}).toArray();
 
-        const dataPointsContainer = client.database("conditionalurl").container("dataPoints");
-        const { resources: dataPoints } = await dataPointsContainer.items
-                .query(`SELECT * FROM c WHERE c.short = "${short}"`).fetchAll();
-
-
-        dataTable = new Array(urlResource.urlCount).fill(null).map(_ => { 
+        dataTable = new Array(url.urlCount).fill(null).map(_ => { 
             return Object.fromEntries(Variables.map(v => [v, {}])) as DataTables[number]
         });
 
+        console.log(Date.now() - now);
+
 
         for (const datum of dataPoints) {
-            const dataForUrl = dataTable[datum.info.url as number];
+            const dataForUrl = dataTable[datum.i as number];
 
             Variables.forEach((variable, i) => {
                 const observedVal = datum.values[i];
@@ -189,7 +190,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             try {
                 await redisClient.del(short + "_table");
                 await redisClient.rPush(short + "_table", [
-                    urlResource.owner, 
+                    url.owner, 
                     JSON.stringify(dataTable)
                 ]);
             } catch (error) {

@@ -1,7 +1,10 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import { Condition, Conditional, Data, Variables } from "../types"
-import { CosmosClient } from "@azure/cosmos";
+import { connectDB } from "../database"
 import * as dotenv from 'dotenv';
+import { URL } from "../createUrl";
+import { DataPoint } from "../getDataPoints";
+import { ObjectId } from "mongodb";
 
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
@@ -16,15 +19,14 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     } else {
         dotenv.config();
-        const key = process.env["COSMOS_KEY"];
-        const endpoint = process.env["COSMOS_ENDPOINT"];
-        
-        const client = new CosmosClient({ endpoint, key });
-        const container = client.database("conditionalurl").container("urls");
+        const client = await connectDB();
+        const db = client.db("conditionalurl");
+        const urlsCollection = db.collection<URL>("urls");
 
-        const { resource: urlResource } = await container.item(short, short).read();
 
-        if (urlResource === undefined || urlResource.deleted) {
+        const url = await urlsCollection.findOne({ _id: short });
+
+        if (url === null || url.deleted) {
             context.res = {
                 status: 404,
                 body: JSON.stringify({"msg": "Short URL not found"})
@@ -32,29 +34,35 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             return;
         }
         
-        const conditionals = JSON.parse(urlResource.conditionals);
-        const [url, i] = determineUrl(conditionals, data)
+        const conditionals = JSON.parse(url.conditionals);
+        const [redirect, i] = determineUrl(conditionals, data)
+
+        const incrementCount = {
+            $inc: {
+                [`redirects.${i}`]: 1
+            }
+        }
+        await urlsCollection.updateOne({_id: short}, incrementCount)
 
 
-        urlResource.redirects[i]++;
-        await container.item(short, short).replace(urlResource);
-
-
-        const dataPointsContainer = client.database("conditionalurl").container("dataPoints");
-        await dataPointsContainer.items.create({
-            short: short,
-            info: {
-                "url": i,
-                "unixMin": Math.floor(Date.now() / 60000)
-            },
+        const dpCollection = db.collection<DataPoint>("datapoints");
+        const dp = {
+            _id: new ObjectId(),
+            urlUID: url.uid,
+            i: i as number,
+            unixMin: Math.floor(Date.now() / 60000),
+            owner: url.owner,
             values: Variables.map(v => data[v]),
-        })
+        }
+
+        await dpCollection.insertOne(dp)
 
         context.res = {
             status: 200,
-            body: JSON.stringify(url)
+            body: JSON.stringify(redirect)
         }
     }
+
 
 };
 

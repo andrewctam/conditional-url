@@ -1,7 +1,8 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
-import { CosmosClient } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as bcrypt from 'bcryptjs';
+import { connectDB } from "../database";
+import { User } from "../signUp";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const username = req.body.username.toLowerCase();
@@ -17,15 +18,14 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
 
     dotenv.config();
-    const key = process.env["COSMOS_KEY"];
-    const endpoint = process.env["COSMOS_ENDPOINT"];
-    const client = new CosmosClient({ endpoint, key });
+    const client = await connectDB();
+    const db = client.db("conditionalurl");
 
-    const container = client.database("conditionalurl").container("users");
+    const usersCollection = db.collection<User>("users")
 
-    const { resource } = await container.item(username, username).read();
+    const user = await usersCollection.findOne({ _id: username })
 
-    if (resource === undefined) {
+    if (user === null) {
         context.res = {
             status: 404,
             body: JSON.stringify({"msg": "User not found"})
@@ -33,10 +33,14 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    if (await bcrypt.compare(oldPassword, resource.hashedPassword)) {
-        const hashedPassword = await bcrypt.hash(newPassword, 10);
-        resource.hashedPassword = hashedPassword;
-        await container.item(username, username).replace(resource);
+    if (await bcrypt.compare(oldPassword, user.hashedPassword)) {
+        const updatePassword = {
+            $set: {
+                hashedPassword: await bcrypt.hash(newPassword, 10)
+            }
+        }
+        
+        await usersCollection.updateOne({_id: username}, updatePassword)
 
         context.res = {
             status: 200,

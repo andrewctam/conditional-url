@@ -1,7 +1,9 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
-import { CosmosClient, OperationInput } from "@azure/cosmos";
+import { connectDB } from "../database"
 import * as dotenv from 'dotenv';
 import * as bcrypt from 'bcryptjs';
+import { User } from "../signUp";
+import { DataPoint } from "../getDataPoints";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const username = req.body.username;
@@ -18,15 +20,15 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
 
     dotenv.config();
-    const key = process.env["COSMOS_KEY"];
-    const endpoint = process.env["COSMOS_ENDPOINT"];
-    
-    const client = new CosmosClient({ endpoint, key });
-    const userContainer = client.database("conditionalurl").container("users");
-    
-    const { resource: userResource } = await userContainer.item(username, username).read();
 
-    if (userResource === undefined) {
+    const client = await connectDB();
+    const db = client.db("conditionalurl");
+
+    const usersCollection = db.collection<User>("users")
+    
+    const user = await usersCollection.findOne({ _id: username });
+
+    if (user === null) {
         context.res = {
             status: 404,
             body: JSON.stringify({"msg": "User not found"})
@@ -34,8 +36,8 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    if (await bcrypt.compare(password, userResource.hashedPassword)) {
-        await userContainer.item(username, username).delete();
+    if (await bcrypt.compare(password, user.hashedPassword)) {
+        await usersCollection.deleteOne({ _id: username })
     } else {
         context.res = {
             status: 401,
@@ -44,55 +46,31 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    const urlsContainer = client.database("conditionalurl").container("urls");
-    const { resources: urlResources } = await urlsContainer.items
-        .query(`SELECT * FROM c WHERE c.owner = "${username}"`).fetchAll();
-        
-
+    const urlsCollection = db.collection<URL>("urls");
     if (alsoDeleteURLs) {
-        const deleteUrls: OperationInput[] = urlResources.map((r: any) => {
-            r.deleted = true;
-            r.redirects = [];
-            r.conditionals = "";
-            r.urlCount = 0;
-            r.owner = ""; //disassociate the url from the user
-
-            return {
-                id: r.id,
-                operationType: "Replace",
-                resourceBody: r
+        const deleteUrl = {
+            $set: {
+                deleted: true,
+                redirects: [],
+                conditionals: "",
+                urlCount: 0,
+                owner: "" //disassociate the url from the user
             }
-        });
+        }
 
-        await urlsContainer.items.bulk(deleteUrls);
-
-        const dataPointsContainer = client.database("conditionalurl").container("dataPoints");
-        const shorts = urlResources.map((r: any) => r.short);
-        const { resources: dataPoints } = await dataPointsContainer.items
-            .query(`SELECT * FROM c WHERE c.short IN ("${shorts.join('", "')}")`).fetchAll();
-
-        const deleteDataPoints: OperationInput[] = dataPoints.map((r: any) => {
-            return {
-                operationType: "Delete",
-                partitionKey: r.id,
-                id: r.id
-            }
-        });
-
-        await dataPointsContainer.items.bulk(deleteDataPoints);
-
+        await urlsCollection.updateMany({owner: username}, deleteUrl);
+        
+        const dpCollection = db.collection<DataPoint>("datapoints");
+        await dpCollection.deleteMany({owner: username});
 
     } else {
-        const removeOwner: OperationInput[] = urlResources.map((r: any) => {
-            r.owner = ""; //disassociate the url from the user
-            return {
-                id: r.id,
-                operationType: "Replace",
-                resourceBody: r
+        const removeOwner = {
+            $set: {
+                owner: "" //disassociate the url from the user
             }
-        });
+        }
 
-        await urlsContainer.items.bulk(removeOwner);
+        await urlsCollection.updateMany({owner: username}, removeOwner);
     }
 
     context.res = {

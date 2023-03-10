@@ -142,7 +142,7 @@ describe("Delete account tests", () => {
         await deleteAllURLs(context, req);
 
         expect(context.res.status).toBe(404);
-        expect(JSON.parse(context.res.body)).toBe("No URLs to delete");
+        expect(JSON.parse(context.res.body).msg).toBe("No URLs to delete");
     })
 
     test("Successfully not find URLs", async () => {

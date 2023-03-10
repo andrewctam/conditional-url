@@ -220,7 +220,7 @@ const options = {
             <div>
                 <label for="start" class="block text-sm">Range Start</label>
                 <input v-model = "start" 
-                    type = "datetime-local" id="start" class = "border border-black/50 p-1 m-1 rounded bg-transparent font-normal inline"
+                    type = "datetime-local" id="start" class = "bg-gray-600 border border-black/50 p-1 m-1 rounded my-auto font-normal inline"
                     :min="earliestPoint"
                     :max="new Date().toISOString().slice(0, -8)"
                     :step="span * 60"

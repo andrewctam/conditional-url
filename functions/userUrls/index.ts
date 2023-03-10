@@ -1,7 +1,8 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
-import { CosmosClient } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
+import { connectDB } from "../database";
+import { User } from "../signUp";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     if (req.headers.authorization === "") {
@@ -36,14 +37,15 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    const key = process.env["COSMOS_KEY"];
-    const endpoint = process.env["COSMOS_ENDPOINT"];
-    
-    const client = new CosmosClient({ endpoint, key });
-    const userContainer = client.database("conditionalurl").container("users");
-    
-    const { resource } = await userContainer.item(payload.username, payload.username).read();
-    if (resource === undefined) {
+
+    const client = await connectDB();
+    const db = client.db("conditionalurl");
+
+    const userCollection = db.collection<User>("users");
+
+    const user = await userCollection.findOne({ _id: payload.username });
+
+    if (user === null) {
         context.res = {
             status: 401,
             body: JSON.stringify({"msg": "User not found"})
@@ -60,7 +62,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
 
     const sort = req.query.sort;
-    let urls = resource.urls;
+    let urls = user.urls;
 
     if (sort === "Newest") {
         urls = urls.reverse();
@@ -71,7 +73,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         status: 200,
         body: JSON.stringify({
             page: page,
-            pageCount: Math.ceil(resource.urls.length / 10),
+            pageCount: Math.ceil(user.urls.length / 10),
             paginatedUrls: urls.slice(page * 10, (page + 1) * 10)
         })
     };

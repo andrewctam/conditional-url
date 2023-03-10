@@ -1,9 +1,9 @@
 import { Context } from "@azure/functions";
 
-import signUp from "../signUp/index";
+import signUp, { User } from "../signUp/index";
 import refreshTokens from "./index";
 import jwt from "jsonwebtoken";
-import { CosmosClient } from "@azure/cosmos";
+import  { connectDB, disconnectDB } from "../database";
 import { createHmac } from "crypto";
 
 describe("Refresh token tests", () => {
@@ -134,15 +134,14 @@ describe("Refresh token tests", () => {
                                     .update(almostExpiredRefresh)
                                     .digest("hex");
 
-        
-        const key = process.env["COSMOS_KEY"];
-        const endpoint = process.env["COSMOS_ENDPOINT"];
-        const client = new CosmosClient({ endpoint, key });
-        const container = client.database("conditionalurl").container("users");
+        const client = await connectDB();
+        const usersColleciton = client.db("conditionalurl").collection<User>("users");
+        await usersColleciton.updateOne({_id: username}, {
+            $set: {
+                hashedRefresh: hashed
+            }
+        });
 
-        const { resource } = await container.item(username, username).read();
-        resource.hashedRefresh = hashed;
-        await container.item(username, username).replace(resource);
 
 
         //refresh tokens, and verify that a new one is issued to us
@@ -195,6 +194,9 @@ describe("Refresh token tests", () => {
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body).refreshToken).toBe(newRefeshToken);
+
+        await disconnectDB();
+
     })
 
     

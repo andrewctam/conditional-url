@@ -1,9 +1,11 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
-import { BulkOperationType, CosmosClient, OperationInput } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 import { Conditional, Operators } from "../types";
 import axios from "axios";
+import { connectDB } from "../database"
+import { URL } from "../createUrl";
+import { DataPoint } from "../getDataPoints";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const short = req.body.short.toLowerCase();
@@ -151,17 +153,14 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
          
 
+    const client = await connectDB();
+    const db = client.db("conditionalurl");
 
-    const key = process.env["COSMOS_KEY"];
-    const endpoint = process.env["COSMOS_ENDPOINT"];
-    
-    const client = new CosmosClient({ endpoint, key });
-    const urlsContainer = client.database("conditionalurl").container("urls");
-    const dataPointsContainer = client.database("conditionalurl").container("dataPoints");
+    const urlsCollection = db.collection<URL>("urls");
 
-    const { resource } = await urlsContainer.item(short, short).read();
+    const url = await urlsCollection.findOne({_id: short})
 
-    if (resource === undefined) {
+    if (url === null) {
         context.res = {
             status: 404,
             body: JSON.stringify({"msg": "Short URL not found"})
@@ -169,7 +168,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    if (resource.owner !== payload.username) {
+    if (url.owner !== payload.username) {
         context.res = {
             status: 401,
             body: JSON.stringify({"msg": "You do not own this URL"})
@@ -177,24 +176,20 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    resource.conditionals = conditionals;
-    resource.redirects = new Array(parsedConditionals.length).fill(0);
-    resource.urlCount = parsedConditionals.length;
-    await urlsContainer.item(short, short).replace(resource);
-
-    const { resources } = await dataPointsContainer.items
-                            .query(`SELECT * FROM c WHERE c.short = "${short}"`).fetchAll();
-
-    const operations: OperationInput[] = resources.map((r: any) => {
-        return {
-            operationType: "Delete",
-            partitionKey: r.id,
-            id: r.id
+    const updateUrl = {
+        $set: {
+            conditionals: conditionals,
+            redirects: new Array(parsedConditionals.length).fill(0),
+            urlCount: parsedConditionals.length
         }
-    });
+    }
 
-    await dataPointsContainer.items.bulk(operations);
+    await urlsCollection.updateOne({_id: short}, updateUrl);
 
+
+    //delete data points
+    const dpCollection = db.collection<DataPoint>("datapoints");
+    await dpCollection.deleteMany({urlUID: url.uid })
 
     context.res = {
         status: 200,

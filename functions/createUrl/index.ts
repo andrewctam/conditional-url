@@ -1,9 +1,21 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
-import { CosmosClient } from "@azure/cosmos";
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 import { Conditional, Operators } from "../types";
 import axios from "axios";
+import { connectDB } from "../database";
+import { ObjectId } from "mongodb";
+import { User } from "../signUp";
+
+export type URL = {
+    _id: string, //short url, can change
+    uid: ObjectId, //never changes
+    conditionals: string,
+    urlCount: number,
+    owner: string,
+    redirects: number[],
+    deleted: boolean
+}
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const short = req.body.short.toLowerCase();
@@ -118,10 +130,8 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
             
 
-    const key = process.env["COSMOS_KEY"];
-    const endpoint = process.env["COSMOS_ENDPOINT"];
-    
-    const client = new CosmosClient({ endpoint, key });
+    const client = await connectDB();
+    const db = client.db("conditionalurl");
 
     let owner: string | null = null;
     
@@ -146,13 +156,12 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
 
 
-    const userContainer = client.database("conditionalurl").container("users");
-    let userResource = undefined;
+    const userCollection = db.collection<User>("users");
+    let user = undefined;
     if (owner) {
-        const { resource: user } = await userContainer.item(owner, owner).read();
-        userResource = user;
+        user = await userCollection.findOne({ _id: owner });
 
-        if (userResource === undefined) {
+        if (user === null) {
             context.res = {
                 status: 400,
                 body: JSON.stringify({"msg": "User not found"})
@@ -160,29 +169,39 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             return;
         }
 
-        userResource.urls.push(short);
-        userResource.urlCount++;
     } 
 
-    const urlsContainer = client.database("conditionalurl").container("urls");
-    const { resource: existing } = await urlsContainer.item(short, short).read();
+    const urlsColleciton = db.collection<URL>("urls");
 
-    if (existing !== undefined) {
+    const existingUrl = await urlsColleciton.findOne({_id: short});
+
+    if (existingUrl !== null) {
         //owner deleted an old url and is now trying to recreate it
-        if (existing.deleted && existing.owner !== "" && existing.owner === owner) {
-            existing.conditionals = conditionals;
-            existing.redirects = new Array(parsedConditionals.length).fill(0);
-            existing.urlCount = parsedConditionals.length;
-            existing.deleted = false;
+        if (existingUrl.deleted && existingUrl.owner !== "" && existingUrl.owner === owner) {
+            const updateDoc = {
+                $set: { //reinitialize the deleted url
+                    deleted: false,
+                    conditionals: conditionals,
+                    urlCount: parsedConditionals.length,
+                    redirects: new Array(parsedConditionals.length).fill(0)
+                }
+            }
 
-            await urlsContainer.item(short, short).replace(existing);
+            await urlsColleciton.updateOne({_id: short}, updateDoc);
+
+
+            const updateUser = {
+                $push: { urls: short },
+                $inc: { urlCount: 1 }
+            }
+
+            await userCollection.updateOne({_id: owner}, updateUser);
 
             context.res = {
                 status: 200,
                 body: JSON.stringify(short)
             }
 
-            await userContainer.item(owner, owner).replace(userResource);
             return;
 
         } else { 
@@ -196,19 +215,26 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         }
     } else {
         //url doesn't exist, create it
-        await urlsContainer.items.create({
-            id: short,
-            short,
+        const doc = {
+            _id: short,
+            uid: new ObjectId(),
             conditionals,
             urlCount: parsedConditionals.length,
             owner: owner ?? "",
             redirects: new Array(parsedConditionals.length).fill(0),
             deleted: false
-        });    
+        }; 
+
+        await urlsColleciton.insertOne(doc);
 
         //if logged in, update the user's list
-        if (userResource) {
-            await userContainer.item(owner, owner).replace(userResource);
+        if (user) {
+            const updateUser = {
+                $push: { urls: short },
+                $inc: { urlCount: 1 }
+            }
+
+            await userCollection.updateOne({_id: owner}, updateUser);
         }
 
         context.res = {

@@ -4,6 +4,8 @@ import * as dotenv from 'dotenv';
 import * as bcrypt from 'bcryptjs';
 import { User } from "../signUp";
 import { DataPoint } from "../getDataPoints";
+import { ObjectId } from "mongodb";
+import { URL } from "../createUrl";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const username = req.body.username;
@@ -51,6 +53,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         const deleteUrl = {
             $set: {
                 deleted: true,
+                uid: new ObjectId(), //disassociate the data with this url
                 redirects: [],
                 conditionals: "",
                 urlCount: 0,
@@ -60,9 +63,6 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
         await urlsCollection.updateMany({owner: username}, deleteUrl);
         
-        const dpCollection = db.collection<DataPoint>("datapoints");
-        await dpCollection.deleteMany({owner: username});
-
     } else {
         const removeOwner = {
             $set: {

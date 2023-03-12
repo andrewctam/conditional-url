@@ -8,12 +8,6 @@ import { URL } from "../createUrl";
 import { DataPoint } from "../getDataPoints";
 
 
-type VarValueCounts = { [key: string]: number }
-
-type DataTables = {
-    [key in typeof Variables[number]]: VarValueCounts
-}[]
-
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     if (req.headers.authorization === "") {
         context.res = {
@@ -80,22 +74,25 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         }
     }
 
-    let pageSize = 10;
-    if (req.query.pageSize !== undefined) {
-        pageSize = parseInt(req.query.pageSize);
+    let sortDirection: 1 | -1 = 1;
+    if (req.query.sort === "Decreasing")
+        sortDirection = -1;
 
-        if (isNaN(pageSize) || pageSize < 1) {
-            pageSize = 10;
-        }
-
-        pageSize = Math.min(pageSize, 100)
-    }
     
-
-    let dataTable: DataTables;
+    const pageSize = 10;
+    // cache some adjacent pages in redis for faster access
+    //                          5___
+    // 0___ 1___ 2___ 3___ 4___ 5___ 6___ 7___ 8___ 9___ 10___
+    const extraPages = 5; //in one direction
+    const extendedPage = Math.max(0, page - extraPages);
+    const extendedPageSize = pageSize + 2 * extraPages; 
+    
+    let pageCount = 0;
+    let counts: { key: string, count: string }[];
 
     let usingRedis = process.env["REDIS_HOST"] !== undefined && process.env["REDIS_PORT"] !== undefined && process.env["REDIS_PASSWORD"] !== undefined
     let redisClient;
+    let fromCache = true;
     if (usingRedis) {
         try {
             redisClient = createClient({
@@ -118,10 +115,19 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         } else {
             redisClient.on('error', err => {throw new Error(err + " Fetch from DB")});
 
-            const info = await redisClient.lRange(short + "_table", 0, 0)
+            const info = await redisClient.lRange(short + "_table", 0, 5)
             const owner = info[0];
+            const cachedSortDirection = parseInt(info[1]);
+            const cachedVariable = info[2];
+            const cachedFirstPage = parseInt(info[3]);
+            const cachedLastPage = parseInt(info[4]);
+            pageCount = parseInt(info[5]);
 
-            if (owner === undefined) {
+            if (owner === undefined ||
+                variable !== cachedVariable ||
+                sortDirection !== cachedSortDirection ||
+                page < cachedFirstPage ||
+                page > cachedLastPage) {
                 throw new Error("No data found. Fetch from DB");
             } else if (owner !== payload.username) {
                 context.res = {
@@ -133,12 +139,15 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 return;
             }
             
-            const cachedData = await redisClient.lRange(short + "_table", 1, -1);
-            dataTable = JSON.parse(cachedData);
+            const cachedData = await redisClient.lRange(short + "_table", 6, -1);
+
+            const firstPage = Math.max(0, page - cachedFirstPage);
+            counts = cachedData.slice(firstPage * pageSize, (firstPage + 1) * pageSize)
+                               .map((d) => JSON.parse(d));
         }
 
     } catch (error) {
-        console.log("Fetching from DB")
+        fromCache = false;
         const client = await connectDB();
         const db = client.db("conditionalurl");
         const urlsCollection = db.collection<URL>("urls");
@@ -161,38 +170,68 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             return;
         }
 
-        const now = Date.now();
         const dpCollection = db.collection<DataPoint>("datapoints");
-        const dataPoints = await dpCollection.find({urlUID: url.uid}).toArray();
+        const pipeline = [
+            {
+                $match: {
+                    urlUID: url.uid,
+                    i: selectedUrl === -1 ? {$exists: true} : selectedUrl
+                }
+            },
+            {
+                $project: {
+                    value: { $arrayElemAt: ["$values", Variables.indexOf(variable)] }
+                }
+            },
+            {
+                $group: {
+                    _id: "$value",
+                    count: { $sum: 1 }
+                }
+            },
+            {
+                $sort: {
+                    count: sortDirection,
+                    _id: 1
+                }
+            },
+            {
+                $facet: {
+                    metadata: [ { $count: "total" } ],
+                    data: usingRedis ?
+                        [ { $skip: extendedPage * extendedPageSize }, { $limit: extendedPageSize } ] : 
+                        [ { $skip: page * pageSize }, { $limit: pageSize } ]
+                }
+            }
+        ]
 
-        dataTable = new Array(url.urlCount).fill(null).map(_ => { 
-            return Object.fromEntries(Variables.map(v => [v, {}])) as DataTables[number]
-        });
+        const doc = await dpCollection.aggregate(pipeline).toArray();
+        const data = doc[0].data;
+        pageCount = Math.ceil(doc[0].metadata[0].total / pageSize);
 
-        console.log(Date.now() - now);
+        counts = data.map((v) => {
+            return {
+                key: v._id,
+                count: v.count.toString()
+            }
+        })
 
-
-        for (const datum of dataPoints) {
-            const dataForUrl = dataTable[datum.i as number];
-
-            Variables.forEach((variable, i) => {
-                const observedVal = datum.values[i];
-
-                if (dataForUrl[variable][observedVal] === undefined)
-                    dataForUrl[variable][observedVal] = 1;
-                else
-                    dataForUrl[variable][observedVal] += 1;     
-            })
-        }
-        
-
-        if (usingRedis) { //cache data for faster access
+        if (usingRedis) { //cache extra pages for faster access
             try {
+                const lastCachedPage = Math.max(page + extraPages, pageCount);
                 await redisClient.del(short + "_table");
                 await redisClient.rPush(short + "_table", [
-                    url.owner, 
-                    JSON.stringify(dataTable)
+                    url.owner,
+                    sortDirection.toString(),
+                    variable, //variable cached
+                    extendedPage.toString(), //first page cached
+                    lastCachedPage.toString(), //last page cached
+                    pageCount.toString(), 
+                    ...counts.map((d) =>  JSON.stringify(d))
                 ]);
+
+                const firstPage = Math.max(0, page - extendedPage);
+                counts = counts.slice(firstPage * pageSize, (firstPage + 1) * pageSize);
             } catch (error) {
                 console.log(error)
             }
@@ -201,72 +240,19 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     if (usingRedis)
         await redisClient.disconnect();
-
-    let counts: VarValueCounts = {};
-
-    if (selectedUrl === -1) {
-        for (const urlData of dataTable) {
-            for (const [key, value] of Object.entries(urlData[variable])) {
-                if (counts[key] === undefined)
-                    counts[key] = value;
-                else
-                    counts[key] += value;
-            }
-        }
-    } else
-        counts = dataTable[selectedUrl][variable];
-
-    let compare: (a: string, b: string) => number;
-    switch (req.query.sort) {
-        case "Increasing":
-            compare = (a, b) => {
-                if (counts[a] < counts[b])
-                    return -1;
-                else if (counts[a] > counts[b])
-                    return 1;
-                else 
-                    return a.localeCompare(b);
-            }
-            break;
-
-        case "Decreasing":
-        default:
-            compare = (a, b) => {
-                if (counts[a] > counts[b])
-                    return -1;
-                else if (counts[a] < counts[b])
-                    return 1;
-                else
-                    return a.localeCompare(b);
-                    
-            }
-            break;
-    }
     
-    const sortedPaginatedData = Object.keys(counts)
-                                .sort(compare)
-                                .slice(page * pageSize, (page + 1) * pageSize)
-                                .map((key) => {
-                                    return {
-                                        key: key,
-                                        count: counts[key].toString()
-                                    }
-                                });
 
-
-    for (let i = sortedPaginatedData.length; i < pageSize; i++) {
-        sortedPaginatedData.push({
-            key: "-",
-            count: "-"
-        });
+    for (let i = counts.length; i < pageSize; i++) {
         //pad with empty data to make sure the table is the same size
+        counts.push({ key: "-", count: "-" });
     }
 
     context.res = {
         status: 200,
         body: JSON.stringify({
-            counts: sortedPaginatedData,
-            pageCount: Math.ceil(Object.keys(counts).length / pageSize)
+            counts: counts,
+            pageCount: pageCount,
+            fromCache: fromCache
         })
     }
 };

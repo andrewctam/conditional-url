@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 import { createClient, RedisClientType } from 'redis';
 import { URL } from "../createUrl";
-import { ObjectId } from "mongodb";
+import { Collection, ObjectId } from "mongodb";
 
 export type DataPoint = {
     _id: ObjectId,
@@ -188,7 +188,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         earliestPoint = new Date(url.firstPoint * 60000).toISOString();
 
         //data is split into 3 collections to increase aggregate speed
-        let collection;
+        let collection: Collection;
         if (span === 1440) {
             collection = db.collection("datadays");
         } else if (span === 60) {
@@ -198,20 +198,17 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
         //construct an aggregate query to count points in DB.
         //if usingRedis, then extend the range to cache more points
-        let aggregate;
+        let pipeline;
 
         if (usingRedis) {
-            aggregate = constructAggregate(extendedStart, extendedLimit, span, url.uid);
+            pipeline = constructAggregate(extendedStart, extendedLimit, span, url.uid);
             points = new Array(extendedLimit).fill("0")
         } else {
-            aggregate = constructAggregate(start, limit, span, url.uid);
+            pipeline = constructAggregate(start, limit, span, url.uid);
             points = new Array(limit).fill("0")
         }
         
-        const docs: {
-            _id: string,
-            count: number
-        }[] = await collection.aggregate(aggregate).toArray();
+        const docs = await collection.aggregate(pipeline).toArray();
 
         Object.keys(docs).forEach((key) => {
             const info = docs[parseInt(key)]

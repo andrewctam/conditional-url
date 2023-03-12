@@ -12,7 +12,8 @@ jest.setTimeout(10000000)
 
 
 describe("Get requested analytics", () => {
-    const NUM_POINTS = 1000;
+    const NUM_POINTS = 100000;
+    const UNIQUE_VALS = 100;
 
     let context = ({ log: jest.fn() } as unknown) as Context;
     let randomShort = Math.random().toString(36).substring(2, 10);
@@ -124,7 +125,7 @@ describe("Get requested analytics", () => {
                 i: i,
                 owner: username,
                 values: Variables.map(v => {
-                    const val = Math.floor(Math.random() * 10).toString()
+                    const val = Math.floor(Math.random() * UNIQUE_VALS).toString()
 
                     if (expCountsTotal[v][val] === undefined)
                         expCountsTotal[v][val] = 1
@@ -254,7 +255,6 @@ describe("Get requested analytics", () => {
                     short: randomShort,
                     variable: v,
                     page: 0,
-                    pageSize: 10,
                     selectedUrl: -1,
                     sort: "Increasing",
                     refresh: true
@@ -294,7 +294,6 @@ describe("Get requested analytics", () => {
                     short: randomShort,
                     variable: v,
                     page: 0,
-                    pageSize: 10,
                     selectedUrl: -1,
                     sort: "Increasing",
                     refresh: false
@@ -322,6 +321,116 @@ describe("Get requested analytics", () => {
         }
     });
 
+
+    it("should successfully get all pages of data", async () => {
+        for (const v of Variables) {
+            const pages = Math.ceil(expCountsTotal[v] / 10);
+
+            let prev: {
+                key: string,
+                count: string
+            };
+            for (let page = 0; page < pages; page++) {
+                const req = {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "authorization": "Bearer " + accessToken
+                    },
+                    query: {
+                        short: randomShort,
+                        variable: v,
+                        page: page,
+                        selectedUrl: -1,
+                        sort: "Increasing",
+                        refresh: true
+                    }
+                }
+
+                await getData(context, req);
+
+                expect(context.res.status).toBe(200);
+                
+                const pg: {
+                    key: string,
+                    count: string
+                }[] = JSON.parse(context.res.body).counts;
+
+                for (let i = 0; i < pg.length; i++) {
+                    if (pg[i].key == "-")
+                        continue;
+
+                    expect(pg[i].count).toBe(expCountsTotal[v][pg[i].key].toString());
+
+                    if (i === 0) {
+                        expect(pg[i]).not.toBe(prev);
+                        expect(parseInt(pg[i].count)).toBeGreaterThanOrEqual(parseInt(prev.count))
+                    } else  {
+                        if (i === pg.length - 1) {
+                            prev = pg[i];
+                        } 
+
+                        expect(parseInt(pg[i].count)).toBeGreaterThanOrEqual(parseInt(pg[i - 1].count))
+                    }
+                }
+            }
+        }
+    });
+
+
+    it("should successfully get all pages of data with redis", async () => {
+        for (const v of Variables) {
+            const pages = Math.ceil(expCountsTotal[v] / 10);
+
+            let prev: {
+                key: string,
+                count: string
+            };
+            for (let page = 0; page < pages; page++) {
+                const req = {
+                    headers: {
+                        "Content-Type": "application/json",
+                        "authorization": "Bearer " + accessToken
+                    },
+                    query: {
+                        short: randomShort,
+                        variable: v,
+                        page: page,
+                        selectedUrl: -1,
+                        sort: "Increasing",
+                        refresh: false
+                    }
+                }
+
+                await getData(context, req);
+
+                expect(context.res.status).toBe(200);
+                
+                const pg: {
+                    key: string,
+                    count: string
+                }[] = JSON.parse(context.res.body).counts;
+
+                for (let i = 0; i < pg.length; i++) {
+                    if (pg[i].key == "-")
+                        continue;
+
+                    expect(pg[i].count).toBe(expCountsTotal[v][pg[i].key].toString());
+
+                    if (i === 0) {
+                        expect(pg[i]).not.toBe(prev);
+                        expect(parseInt(pg[i].count)).toBeGreaterThanOrEqual(parseInt(prev.count))
+                    } else  {
+                        if (i === pg.length - 1) {
+                            prev = pg[i];
+                        } 
+
+                        expect(parseInt(pg[i].count)).toBeGreaterThanOrEqual(parseInt(pg[i - 1].count))
+                    }
+                }
+            }
+        }
+    });
+
     it("should successfully get data for individual url", async () => {
         for (const v of Variables) {
             const req = {
@@ -333,7 +442,6 @@ describe("Get requested analytics", () => {
                     short: randomShort,
                     variable: v,
                     page: 0,
-                    pageSize: 10,
                     selectedUrl: 0,
                     sort: "Decreasing",
                     refresh: true
@@ -373,7 +481,6 @@ describe("Get requested analytics", () => {
                     short: randomShort,
                     variable: v,
                     page: 0,
-                    pageSize: 10,
                     selectedUrl: 0,
                     sort: "Decreasing",
                     refresh: false

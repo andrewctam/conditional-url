@@ -81,7 +81,7 @@ const getDataPoints = async (retry: boolean = true, refreshData = false) => {
 
     if (response.msg === "Invalid token") {
         if (retry && await refresh()) {
-            await getDataPoints(false);
+            await getDataPoints(false, refreshData);
         } else {
             doneLoading.value = true;
         }
@@ -210,7 +210,10 @@ const options = {
            
         </div>
 
-        <Line :data="data" :options="options" />
+        <Line v-if="data" :data="data" :options="options" />
+        <div v-else class="flex justify-center text-white font-light mx-2">
+            Loading...
+        </div>
     </div>
 
 </template>

@@ -5,6 +5,7 @@ import { connectDB } from "../database";
 import { User } from "../signUp";
 import { URL } from "../createUrl";
 import { DataPoint } from "../getDataPoints";
+import { ObjectId } from "mongodb";
 
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
@@ -78,6 +79,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         $set: {
             deleted: true,
             redirects: [],
+            uid: new ObjectId(), //disassociate the data with this url
             conditionals: "",
             urlCount: 0
         }
@@ -95,11 +97,6 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
    
     await userCollection.updateOne({_id: payload.username}, removeFromList);
-
-    //delete data points
-    const dpCollection = db.collection<DataPoint>("datapoints");
-    await dpCollection.deleteMany({urlUID: url.uid })
-
        
     context.res = {
         status: 200,

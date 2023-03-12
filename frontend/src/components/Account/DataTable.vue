@@ -29,11 +29,10 @@ const getCounts = async (retry: boolean = true, refreshData: boolean = false) =>
         return;
 
     let url;
-    const pageSize = 10;
     if (import.meta.env.PROD) {
-        url = `${import.meta.env.VITE_PROD_API_URL}/api/getData?short=${props.short}&variable=${selected.value}&selectedUrl=${selectedUrl.value}&page=${page.value}&pageSize=${pageSize}&sort=${sort.value}&refresh=${refreshData}`;
+        url = `${import.meta.env.VITE_PROD_API_URL}/api/getData?short=${props.short}&variable=${selected.value}&selectedUrl=${selectedUrl.value}&page=${page.value}&sort=${sort.value}&refresh=${refreshData}`;
     } else {
-        url = `${import.meta.env.VITE_DEV_API_URL}/api/getData?short=${props.short}&variable=${selected.value}&selectedUrl=${selectedUrl.value}&page=${page.value}&pageSize=${pageSize}&sort=${sort.value}&refresh=${refreshData}`;
+        url = `${import.meta.env.VITE_DEV_API_URL}/api/getData?short=${props.short}&variable=${selected.value}&selectedUrl=${selectedUrl.value}&page=${page.value}&sort=${sort.value}&refresh=${refreshData}`;
     }
 
     doneLoading.value = false;
@@ -51,7 +50,7 @@ const getCounts = async (retry: boolean = true, refreshData: boolean = false) =>
     console.log(response)
     if (response.msg === "Invalid token") {
         if (retry && await refresh()) {
-            await getCounts(false);
+            await getCounts(false, refreshData);
         } else {
             doneLoading.value = true;
         }
@@ -96,7 +95,7 @@ const truncate = (str: string, maxLen: number = 50) => {
 </script>
 
 <template>
-    <div class="bg-black/10 p-2 mb-6 rounded select-none text-white relative">
+    <div class="bg-black/10 p-2 mb-8 pb-4 rounded select-none text-white relative">
         <p class = "text-white text-xl font-extralight select-none mt-4">
             Data Counts
         </p>
@@ -161,7 +160,9 @@ const truncate = (str: string, maxLen: number = 50) => {
             </tbody>
         </table>
 
+        
         <PageArrows 
+            v-if="doneLoading"
             :hasNext="hasNext" 
             :hasPrev="hasPrev" 
             :page="page" 
@@ -169,6 +170,11 @@ const truncate = (str: string, maxLen: number = 50) => {
             @next="page++"
             @prev="page--"
         />
+
+        <div v-else class="flex justify-center text-white font-light mx-2">
+            Loading...
+        </div>
+
     </div>
 
 </template>

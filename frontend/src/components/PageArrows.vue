@@ -16,7 +16,9 @@ const emits = defineEmits<{
 
 <template>
     <div class="flex justify-center">
-        <span v-if="props.hasPrev" @click="$emit('prev')" class = "text-white hover:text-red-200 cursor-pointer font-light select-none">
+        <span @click="() => props.hasPrev ? $emit('prev') : null" class = "font-light select-none mr-1"
+            :class= "props.hasPrev ? 'text-white hover:text-red-200 cursor-pointer'
+                                   : 'text-gray-200/50'">
             ←
         </span>
 
@@ -24,7 +26,9 @@ const emits = defineEmits<{
             {{`Page ${props.page + 1} of ${props.pageCount}`}}
         </span>
         
-        <span v-if="hasNext" @click="$emit('next')" class = "text-white hover:text-green-200 cursor-pointer font-light select-none">
+        <span @click="() => props.hasNext ? $emit('next') : null" class = "font-light select-none ml-1"
+            :class= "props.hasNext ? 'text-white hover:text-green-200 cursor-pointer'
+                                   : 'text-gray-200/50'">
             →
         </span>
     </div>

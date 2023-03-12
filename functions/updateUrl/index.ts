@@ -6,6 +6,7 @@ import axios from "axios";
 import { connectDB } from "../database"
 import { URL } from "../createUrl";
 import { DataPoint } from "../getDataPoints";
+import { ObjectId } from "mongodb";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const short = req.body.short.toLowerCase();
@@ -179,6 +180,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const updateUrl = {
         $set: {
             conditionals: conditionals,
+            uid: new ObjectId(), //disassociate the data with this url
             redirects: new Array(parsedConditionals.length).fill(0),
             urlCount: parsedConditionals.length
         }

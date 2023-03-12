@@ -60,11 +60,10 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             _id: new ObjectId(),
             urlUID: url.uid,
             i: i as number,
-            owner: url.owner,
             values: Variables.map(v => data[v]),
         }
 
-        await dpCollection.insertOne(dp)
+        await dpCollection.insertOne(dp);
 
 
         const inc = { 
@@ -74,21 +73,18 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         const minsCollection = db.collection("datamins");
         await minsCollection.updateOne({
             urlUID: url.uid, 
-            owner: url.owner,
             unixMin: Math.floor(Date.now() / 60000)
         }, inc, {upsert: true});
         
         const hoursCollection = db.collection("datahours");
         await hoursCollection.updateOne({
             urlUID: url.uid,
-            owner: url.owner,
             unixHour: Math.floor(Date.now() / 3600000)
         }, inc, {upsert: true});
         
         const daysCollection = db.collection("datadays");
         await daysCollection.updateOne({
             urlUID: url.uid, 
-            owner: url.owner,
             unixDay: Math.floor(Date.now() / 86400000)
         }, inc, {upsert: true});
 

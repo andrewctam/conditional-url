@@ -15,7 +15,7 @@ const doneLoading = ref(false);
 const selected = ref<Variable>("Language");
 const sort = ref<"Increasing" | "Decreasing">("Decreasing");
 
-const counts = ref< {key: string, count: number}[] | null>(null);
+const counts = ref< {key: string, count: number}[]>(new Array(10).fill({key: "-", count: "-"}));
 const page = ref(0);
 const pageCount = ref(0);
 const selectedUrl = ref<number>(-1);
@@ -100,11 +100,14 @@ const truncate = (str: string, maxLen: number = 50) => {
             Data Counts
         </p>
 
-        <svg @click="getCounts(true, true)" class="absolute top-2 right-2 cursor-pointer" xmlns="http://www.w3.org/2000/svg"  width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <svg v-if = "doneLoading" @click="getCounts(true, true)" class="absolute top-2 right-2 cursor-pointer" xmlns="http://www.w3.org/2000/svg"  width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
             <path d="M19.933 13.041a8 8 0 1 1 -9.925 -8.788c3.899 -1 7.935 1.007 9.425 4.747"></path>
             <path d="M20 4v5h-5"></path>
         </svg>
+        <div v-else class="absolute top-1 right-0 text-white font-light mx-2">
+            ...
+        </div>
 
         <span class="mr-1 font-light">From:</span>
         <select v-model="selectedUrl" class = "select-none text-white border border-black/50 p-1 m-1 w-[200px] rounded font-light bg-gray-600">
@@ -135,10 +138,8 @@ const truncate = (str: string, maxLen: number = 50) => {
                     </select>        
                 </th>
             </thead>
-
-
             
-            <tbody v-if="doneLoading" class="px-6 py-4 whitespace-nowrap text-white select-text">
+            <tbody class="px-6 py-4 whitespace-nowrap text-white select-text">
                 <tr v-for="(datum, index) in counts" 
                     :key="datum.key + index" 
                     class="hover:bg-white/5" :class="index % 2 === 0 ? 'bg-black/30' : 'bg-black/40'">
@@ -147,22 +148,10 @@ const truncate = (str: string, maxLen: number = 50) => {
                     <td class="p-2 select">{{datum.count}}</td>
                 </tr>
             </tbody>
-
-
-            <tbody v-else class="px-6 py-4 whitespace-nowrap text-white select-text">
-                <tr v-for="i in 10" 
-                    :key="i" 
-                    class="hover:bg-white/5" :class="i % 2 === 1 ? 'bg-black/30' : 'bg-black/40'">
-
-                    <td class="p-2">-</td>
-                    <td class="p-2">-</td>
-                </tr>
-            </tbody>
         </table>
-
         
+
         <PageArrows 
-            v-if="doneLoading"
             :hasNext="hasNext" 
             :hasPrev="hasPrev" 
             :page="page" 
@@ -171,9 +160,7 @@ const truncate = (str: string, maxLen: number = 50) => {
             @prev="page--"
         />
 
-        <div v-else class="flex justify-center text-white font-light mx-2">
-            Loading...
-        </div>
+
 
     </div>
 

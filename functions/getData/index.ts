@@ -81,11 +81,11 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     
     const pageSize = 10;
     // cache some adjacent pages in redis for faster access
-    //                          5___
-    // 0___ 1___ 2___ 3___ 4___ 5___ 6___ 7___ 8___ 9___ 10___
-    const extraPages = 5; //in one direction
-    const extendedPage = Math.max(0, page - extraPages);
-    const extendedPageSize = pageSize + 2 * extraPages; 
+    //                     4___
+    // 0___ 1___ 2___ 3___ 4___ 5___ 6___ 7___ 8___
+    const extraPages = 4; //in one direction
+    const extendedPageStart = Math.max(0, page - extraPages);
+    const extendedPageSize = pageSize + 2 * extraPages * pageSize; 
     
     let pageCount = 0;
     let counts: { key: string, count: string }[];
@@ -115,7 +115,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         } else {
             redisClient.on('error', err => {throw new Error(err + " Fetch from DB")});
 
-            const info = await redisClient.lRange(short + "_table", 0, 5)
+            const info = await redisClient.lRange(short + "_table", 0, 6)
             const owner = info[0];
             const cachedSortDirection = parseInt(info[1]);
             const cachedVariable = info[2];
@@ -201,7 +201,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 $facet: {
                     metadata: [ { $count: "total" } ],
                     data: usingRedis ?
-                        [ { $skip: extendedPage * extendedPageSize }, { $limit: extendedPageSize } ] : 
+                        [ { $skip: extendedPageStart * pageSize }, { $limit: extendedPageSize } ] : 
                         [ { $skip: page * pageSize }, { $limit: pageSize } ]
                 }
             }
@@ -210,19 +210,23 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         const doc = await dpCollection.aggregate(pipeline).toArray();
 
         const data = doc[0].data;
+        
+        if (doc[0].metadata[0])
+            pageCount = Math.ceil(doc[0].metadata[0].total / pageSize);
+        else
+            pageCount = 0;
 
         if (data.length === 0) {
             context.res = {
                 status: 200,
                 body: JSON.stringify({
                     counts: new Array(pageSize).fill({key: "-", count: "-"}),
-                    pageCount: 0,
+                    pageCount: pageCount,
                     fromCache: fromCache
                 })
             };
             return;
         }
-        pageCount = Math.ceil(doc[0].metadata[0].total / pageSize);
 
         counts = data.map((v) => {
             return {
@@ -233,20 +237,20 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
         if (usingRedis) { //cache extra pages for faster access
             try {
-                const lastCachedPage = Math.max(page + extraPages, pageCount);
+                const lastCachedPage = Math.min(extendedPageStart + 2 * extraPages, pageCount);
                 await redisClient.del(short + "_table");
                 await redisClient.rPush(short + "_table", [
                     url.owner,
                     sortDirection.toString(),
                     variable, //variable cached
                     selectedUrl.toString(), //selectedUrl cached
-                    extendedPage.toString(), //first page cached
+                    extendedPageStart.toString(), //first page cached
                     lastCachedPage.toString(), //last page cached
                     pageCount.toString(), 
                     ...counts.map((d) =>  JSON.stringify(d))
                 ]);
 
-                const firstPage = Math.max(0, page - extendedPage);
+                const firstPage = Math.max(0, page - extendedPageStart);
                 counts = counts.slice(firstPage * pageSize, (firstPage + 1) * pageSize);
             } catch (error) {
                 console.log(error)

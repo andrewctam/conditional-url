@@ -10,7 +10,6 @@ export type DataPoint = {
     _id: ObjectId,
     urlUID: ObjectId,
     i: number, // index of redirected
-    owner: string
     values: string[]
 };
 

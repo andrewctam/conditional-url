@@ -12,7 +12,7 @@ jest.setTimeout(10000000)
 
 
 describe("Get requested analytics", () => {
-    const NUM_POINTS = 1000;
+    const NUM_POINTS = 100000;
     const UNIQUE_VALS = 95;
 
     let context = ({ log: jest.fn() } as unknown) as Context;
@@ -28,17 +28,19 @@ describe("Get requested analytics", () => {
     let end = -1;
     
     const redirects = [0, 0, 0, 0]
-    const expCountsTotal = {}
-    const expCounts0 = {}
+    const counts = {}
+    const expCounts = {}
+    let langDescending = null;
+
+    const countsURL0 = {}
+    const expCountsURL0 = {}
 
     for (const v of Variables) {
-        expCountsTotal[v] = {}
-        expCounts0[v] = {}
+        counts[v] = {}
+        countsURL0[v] = {}
     }
 
     let expDataPoints = []
-    
-
 
     it("should successfully sign up", async () => {
         const req = {
@@ -124,20 +126,19 @@ describe("Get requested analytics", () => {
                 _id: new ObjectId(),
                 urlUID: shortUrl.uid,
                 i: i,
-                owner: username,
                 values: Variables.map(v => {
                     const val = Math.floor(Math.random() * UNIQUE_VALS).toString()
 
-                    if (expCountsTotal[v][val] === undefined)
-                        expCountsTotal[v][val] = 1
+                    if (counts[v][val] === undefined)
+                        counts[v][val] = 1
                     else
-                        expCountsTotal[v][val]++;
+                        counts[v][val]++;
                     
                     if (i === 0) {
-                        if (expCounts0[v][val] === undefined)
-                            expCounts0[v][val] = 1
+                        if (countsURL0[v][val] === undefined)
+                            countsURL0[v][val] = 1
                         else
-                            expCounts0[v][val]++;
+                            countsURL0[v][val]++;
                     }
 
                     return val;
@@ -244,10 +245,79 @@ describe("Get requested analytics", () => {
         const dayCollection = db.collection("datadays")
         await dayCollection.insertMany(days);
 
-
         await disconnectDB();
-    })
 
+        Variables.map((v) => {
+            expCounts[v] = Object.keys(counts[v]).map((k) => {
+                return {
+                    key: k,
+                    count: counts[v][k].toString()
+                }
+            })
+
+            if (v === "Language") {
+                langDescending = [...expCounts[v]]
+                langDescending.sort((a, b) => {
+                    let aCount = parseInt(a.count);
+                    let bCount = parseInt(b.count);
+    
+                    if (aCount === bCount) {
+                        return a.key.localeCompare(b.key)
+                    } else {
+                        return bCount - aCount
+                    }
+                })
+
+                while(langDescending.length % 10 !== 0) {
+                    langDescending.push({ key: "-", count: "-" })
+                }
+            }
+
+
+            expCounts[v].sort((a, b) => {
+                let aCount = parseInt(a.count);
+                let bCount = parseInt(b.count);
+
+                if (aCount === bCount) {
+                    return a.key.localeCompare(b.key)
+                } else {
+                    return aCount - bCount
+                }
+            })
+
+
+
+            while(expCounts[v].length % 10 !== 0) {
+                expCounts[v].push({ key: "-", count: "-" })
+            }
+
+
+
+            expCountsURL0[v] = Object.keys(countsURL0[v]).map((k) => {
+                return {
+                    key: k,
+                    count: countsURL0[v][k].toString()
+                }
+            })
+
+            expCountsURL0[v].sort((a, b) => {
+                let aCount = parseInt(a.count);
+                let bCount = parseInt(b.count);
+
+                if (aCount === bCount) {
+                    return a.key.localeCompare(b.key)
+                } else {
+                    return aCount - bCount
+                }
+            })
+
+            while(expCountsURL0[v].length % 10 !== 0) {
+                expCountsURL0[v].push({ key: "-", count: "-" })
+            }
+
+            
+        })
+    })
 
     it("should successfully get data (test all vars)", async () => {
         for (const v of Variables) {
@@ -270,21 +340,43 @@ describe("Get requested analytics", () => {
 
             expect(context.res.status).toBe(200);
             
-            const table: {
+            const page: {
                 key: string,
                 count: string
             }[] = JSON.parse(context.res.body).counts;
 
-            for (let i = 0; i < table.length; i++) {
-                if (table[i].key == "-")
-                    continue;
-                expect(table[i].count).toBe(expCountsTotal[v][table[i].key].toString());
+            expect(page).toStrictEqual(expCounts[v].slice(0, 10));
+        }
+    });
 
-                if (i !== 0) {
-                    expect(parseInt(table[i].count)).toBeGreaterThanOrEqual(parseInt(table[i - 1].count))
-                }
+
+    it("should successfully get data in decreasing order (test all vars)", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                variable: "Language",
+                page: 0,
+                selectedUrl: -1,
+                sort: "Decreasing",
+                refresh: true
             }
         }
+
+        await getData(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const page: {
+            key: string,
+            count: string
+        }[] = JSON.parse(context.res.body).counts;
+
+        expect(page).toStrictEqual(langDescending.slice(0, 10));
+    
     });
 
 
@@ -300,7 +392,7 @@ describe("Get requested analytics", () => {
                     variable: v,
                     page: 0,
                     selectedUrl: 0,
-                    sort: "Decreasing",
+                    sort: "Increasing",
                     refresh: true
                 }
             }
@@ -309,26 +401,18 @@ describe("Get requested analytics", () => {
 
             expect(context.res.status).toBe(200);
             
-            const table: {
+            const page: {
                 key: string,
                 count: string
             }[] = JSON.parse(context.res.body).counts;
-            for (let i = 0; i < table.length; i++) {
-                if (table[i].key == "-")
-                    continue;
-                expect(table[i].count).toBe(expCounts0[v][table[i].key].toString());
 
-                if (i !== 0) {
-                    expect(parseInt(table[i].count)).toBeLessThanOrEqual(parseInt(table[i - 1].count))
-                }
-            }
-
+            expect(page).toStrictEqual(expCountsURL0[v].slice(0, 10));
         }
     });
 
     it("should successfully get all pages of data", async () => {
         const v = Variables[0];
-        const pages = Math.ceil( Object.keys(expCountsTotal[v]).length / 10);
+        const pages = Math.ceil( Object.keys(counts[v]).length / 10);
 
         let prev: {
             key: string,
@@ -360,32 +444,14 @@ describe("Get requested analytics", () => {
                 count: string
             }[] = JSON.parse(context.res.body).counts;
 
-            for (let i = 0; i < pg.length; i++) {
-                if (pg[i].key == "-")
-                    continue;
-
-                expect(pg[i].count).toBe(expCountsTotal[v][pg[i].key].toString());
-
-                if (page !== 0)
-                    expect(parseInt(pg[i].count)).toBeGreaterThanOrEqual(parseInt(prev.count))
-
-                if (i === 0) {
-                    expect(pg[i]).not.toBe(prev);
-                } else  {
-                    if (i === pg.length - 1) {
-                        prev = pg[i];
-                    } 
-
-                    expect(parseInt(pg[i].count)).toBeGreaterThanOrEqual(parseInt(pg[i - 1].count))
-                }
-            }
+            expect(pg).toStrictEqual(expCounts[v].slice(page * 10, (page + 1) * 10));
         }
     });
 
 
     it("should successfully get all pages of data with redis", async () => {
         const v = Variables[0];
-        const pages = Math.ceil( Object.keys(expCountsTotal[v]).length / 10);
+        const pages = Math.ceil( Object.keys(counts[v]).length / 10);
 
         let prev: {
             key: string,
@@ -416,25 +482,7 @@ describe("Get requested analytics", () => {
                 count: string
             }[] = JSON.parse(context.res.body).counts;
 
-            for (let i = 0; i < pg.length; i++) {
-                if (pg[i].key == "-")
-                    continue;
-
-                expect(pg[i].count).toBe(expCountsTotal[v][pg[i].key].toString());
-
-                if (page !== 0)
-                    expect(parseInt(pg[i].count)).toBeGreaterThanOrEqual(parseInt(prev.count))
-
-                if (i === 0) {
-                    expect(pg[i]).not.toBe(prev);
-                } else  {
-                    if (i === pg.length - 1) {
-                        prev = pg[i];
-                    } 
-
-                    expect(parseInt(pg[i].count)).toBeGreaterThanOrEqual(parseInt(pg[i - 1].count))
-                }
-            }
+            expect(pg).toStrictEqual(expCounts[v].slice(page * 10, (page + 1) * 10));
         }
     });
 

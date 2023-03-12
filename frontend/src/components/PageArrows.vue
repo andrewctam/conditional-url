@@ -22,7 +22,7 @@ const emits = defineEmits<{
             ←
         </span>
 
-        <span v-if="props.pageCount > 0" class = "text-white font-light mx-2">
+        <span class = "text-white font-light mx-2">
             {{`Page ${props.page + 1} of ${props.pageCount}`}}
         </span>
         

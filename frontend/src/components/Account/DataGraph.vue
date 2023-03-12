@@ -176,11 +176,15 @@ const options = {
             Redirects Over Time
         </p>
 
-        <svg @click="getDataPoints(true, true)" class="absolute top-2 right-2 cursor-pointer" xmlns="http://www.w3.org/2000/svg"  width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        
+        <svg v-if="doneLoading" @click="getDataPoints(true, true)" class="absolute top-2 right-2 cursor-pointer" xmlns="http://www.w3.org/2000/svg"  width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
             <path d="M19.933 13.041a8 8 0 1 1 -9.925 -8.788c3.899 -1 7.935 1.007 9.425 4.747"></path>
             <path d="M20 4v5h-5"></path>
         </svg>
+        <div v-else class="absolute top-1 right-0 text-white font-light mx-2">
+            ...
+        </div>
 
         <div class="sm:flex justify-around bg-[#424242] rounded mx-6 my-2 p-2">
             <div>
@@ -210,10 +214,7 @@ const options = {
            
         </div>
 
-        <Line v-if="data" :data="data" :options="options" />
-        <div v-else class="flex justify-center text-white font-light mx-2">
-            Loading...
-        </div>
+        <Line :data="data" :options="options" />
     </div>
 
 </template>

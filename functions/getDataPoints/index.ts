@@ -50,7 +50,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     if (short === undefined || short === "") {
         context.res = {
             status: 400,
-            body: JSON.stringify({"msg": "Missing infromation"})
+            body: JSON.stringify({"msg": "No short URL provided"})
         };
         return;
     }
@@ -171,7 +171,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
         if (url === null) {
             context.res = {
-                status: 400,
+                status: 404,
                 body: JSON.stringify({"msg": "Short URL not found"})
             };
             return;
@@ -264,54 +264,6 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
 
 };
-
-
-function getPointsInRange(first: number, dataPoints: string[], start: number, limit: number, span: number) {
-    if (span === 1440) {
-        first = Math.floor(first / 1440);
-        start = Math.floor(start / 1440);
-        span = Math.floor(span / 1440);
-    } else if (span === 60) {
-        first = Math.floor(first / 60);
-        start = Math.floor(start / 60);
-        span = Math.floor(span / 60);
-    }
-
-    const outputPoints = []
-
-    let i = 0;
-
-    //if first req point is less than first data point
-    while (first < start) {
-        outputPoints.push("0");
-        first += span
-
-        if (outputPoints.length >= limit)
-            return outputPoints;
-    }
-
-    //if first data point is before first req point
-    while (start < first)  {
-        i ++;
-        start += span;
-
-        if (i >= dataPoints.length)
-            return new Array(limit).fill("0")
-    }
-
-    //copy over
-    while (outputPoints.length < limit && i < dataPoints.length) {
-        outputPoints.push(dataPoints[i++]);
-    }
-
-    //padding at end
-    while (outputPoints.length < limit) {
-        outputPoints.push("0");
-    }
-
-    return outputPoints
-}
-
 
 
 function constructAggregate(start: number, limit: number, span: number, urlUID: ObjectId) {

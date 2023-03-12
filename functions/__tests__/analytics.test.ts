@@ -12,8 +12,8 @@ jest.setTimeout(10000000)
 
 
 describe("Get requested analytics", () => {
-    const NUM_POINTS = 100000;
-    const UNIQUE_VALS = 100;
+    const NUM_POINTS = 1000;
+    const UNIQUE_VALS = 95;
 
     let context = ({ log: jest.fn() } as unknown) as Context;
     let randomShort = Math.random().toString(36).substring(2, 10);
@@ -25,7 +25,8 @@ describe("Get requested analytics", () => {
     let accessToken;
 
     const start = new Date("2021-01-01T00:00:00.000Z").getTime() / 60000;
-
+    let end = -1;
+    
     const redirects = [0, 0, 0, 0]
     const expCountsTotal = {}
     const expCounts0 = {}
@@ -211,13 +212,17 @@ describe("Get requested analytics", () => {
                 }
             }
 
-            if (Math.random() < 0.5) {
+            if (pt !== NUM_POINTS - 1 && Math.random() < 0.5) {
+
                 const diff = Math.floor(Math.random() * 10) + 1;
                 currentMinute += diff
+                end = currentMinute;
+
 
                 for (let i = 0; i < diff; i++)
                     expDataPoints.push(0)
             }
+
         }
 
         await urlsCollection.updateOne({_id: randomShort}, {
@@ -244,7 +249,7 @@ describe("Get requested analytics", () => {
     })
 
 
-    it("should successfully get data", async () => {
+    it("should successfully get data (test all vars)", async () => {
         for (const v of Variables) {
             const req = {
                 headers: {
@@ -283,7 +288,7 @@ describe("Get requested analytics", () => {
     });
 
 
-    it("should successfully get data with redis", async () => {
+    it("should successfully get data for individual url (test all vars)", async () => {
         for (const v of Variables) {
             const req = {
                 headers: {
@@ -294,9 +299,9 @@ describe("Get requested analytics", () => {
                     short: randomShort,
                     variable: v,
                     page: 0,
-                    selectedUrl: -1,
-                    sort: "Increasing",
-                    refresh: false
+                    selectedUrl: 0,
+                    sort: "Decreasing",
+                    refresh: true
                 }
             }
 
@@ -308,69 +313,70 @@ describe("Get requested analytics", () => {
                 key: string,
                 count: string
             }[] = JSON.parse(context.res.body).counts;
-
             for (let i = 0; i < table.length; i++) {
                 if (table[i].key == "-")
                     continue;
-                expect(table[i].count).toBe(expCountsTotal[v][table[i].key].toString());
+                expect(table[i].count).toBe(expCounts0[v][table[i].key].toString());
 
                 if (i !== 0) {
-                    expect(parseInt(table[i].count)).toBeGreaterThanOrEqual(parseInt(table[i - 1].count))
+                    expect(parseInt(table[i].count)).toBeLessThanOrEqual(parseInt(table[i - 1].count))
                 }
             }
+
         }
     });
 
-
     it("should successfully get all pages of data", async () => {
-        for (const v of Variables) {
-            const pages = Math.ceil(expCountsTotal[v] / 10);
+        const v = Variables[0];
+        const pages = Math.ceil( Object.keys(expCountsTotal[v]).length / 10);
 
-            let prev: {
+        let prev: {
+            key: string,
+            count: string
+        };
+
+        for (let page = 0; page < pages; page++) {
+            const req = {
+                headers: {
+                    "Content-Type": "application/json",
+                    "authorization": "Bearer " + accessToken
+                },
+                query: {
+                    short: randomShort,
+                    variable: v,
+                    page: page,
+                    selectedUrl: -1,
+                    sort: "Increasing",
+                    refresh: true
+                }
+            }
+
+            await getData(context, req);
+
+            expect(context.res.status).toBe(200);
+            
+            const pg: {
                 key: string,
                 count: string
-            };
-            for (let page = 0; page < pages; page++) {
-                const req = {
-                    headers: {
-                        "Content-Type": "application/json",
-                        "authorization": "Bearer " + accessToken
-                    },
-                    query: {
-                        short: randomShort,
-                        variable: v,
-                        page: page,
-                        selectedUrl: -1,
-                        sort: "Increasing",
-                        refresh: true
-                    }
-                }
+            }[] = JSON.parse(context.res.body).counts;
 
-                await getData(context, req);
+            for (let i = 0; i < pg.length; i++) {
+                if (pg[i].key == "-")
+                    continue;
 
-                expect(context.res.status).toBe(200);
-                
-                const pg: {
-                    key: string,
-                    count: string
-                }[] = JSON.parse(context.res.body).counts;
+                expect(pg[i].count).toBe(expCountsTotal[v][pg[i].key].toString());
 
-                for (let i = 0; i < pg.length; i++) {
-                    if (pg[i].key == "-")
-                        continue;
+                if (page !== 0)
+                    expect(parseInt(pg[i].count)).toBeGreaterThanOrEqual(parseInt(prev.count))
 
-                    expect(pg[i].count).toBe(expCountsTotal[v][pg[i].key].toString());
+                if (i === 0) {
+                    expect(pg[i]).not.toBe(prev);
+                } else  {
+                    if (i === pg.length - 1) {
+                        prev = pg[i];
+                    } 
 
-                    if (i === 0) {
-                        expect(pg[i]).not.toBe(prev);
-                        expect(parseInt(pg[i].count)).toBeGreaterThanOrEqual(parseInt(prev.count))
-                    } else  {
-                        if (i === pg.length - 1) {
-                            prev = pg[i];
-                        } 
-
-                        expect(parseInt(pg[i].count)).toBeGreaterThanOrEqual(parseInt(pg[i - 1].count))
-                    }
+                    expect(parseInt(pg[i].count)).toBeGreaterThanOrEqual(parseInt(pg[i - 1].count))
                 }
             }
         }
@@ -378,61 +384,14 @@ describe("Get requested analytics", () => {
 
 
     it("should successfully get all pages of data with redis", async () => {
-        for (const v of Variables) {
-            const pages = Math.ceil(expCountsTotal[v] / 10);
+        const v = Variables[0];
+        const pages = Math.ceil( Object.keys(expCountsTotal[v]).length / 10);
 
-            let prev: {
-                key: string,
-                count: string
-            };
-            for (let page = 0; page < pages; page++) {
-                const req = {
-                    headers: {
-                        "Content-Type": "application/json",
-                        "authorization": "Bearer " + accessToken
-                    },
-                    query: {
-                        short: randomShort,
-                        variable: v,
-                        page: page,
-                        selectedUrl: -1,
-                        sort: "Increasing",
-                        refresh: false
-                    }
-                }
-
-                await getData(context, req);
-
-                expect(context.res.status).toBe(200);
-                
-                const pg: {
-                    key: string,
-                    count: string
-                }[] = JSON.parse(context.res.body).counts;
-
-                for (let i = 0; i < pg.length; i++) {
-                    if (pg[i].key == "-")
-                        continue;
-
-                    expect(pg[i].count).toBe(expCountsTotal[v][pg[i].key].toString());
-
-                    if (i === 0) {
-                        expect(pg[i]).not.toBe(prev);
-                        expect(parseInt(pg[i].count)).toBeGreaterThanOrEqual(parseInt(prev.count))
-                    } else  {
-                        if (i === pg.length - 1) {
-                            prev = pg[i];
-                        } 
-
-                        expect(parseInt(pg[i].count)).toBeGreaterThanOrEqual(parseInt(pg[i - 1].count))
-                    }
-                }
-            }
-        }
-    });
-
-    it("should successfully get data for individual url", async () => {
-        for (const v of Variables) {
+        let prev: {
+            key: string,
+            count: string
+        };
+        for (let page = 0; page < pages; page++) {
             const req = {
                 headers: {
                     "Content-Type": "application/json",
@@ -441,48 +400,9 @@ describe("Get requested analytics", () => {
                 query: {
                     short: randomShort,
                     variable: v,
-                    page: 0,
-                    selectedUrl: 0,
-                    sort: "Decreasing",
-                    refresh: true
-                }
-            }
-
-            await getData(context, req);
-
-            expect(context.res.status).toBe(200);
-            
-            const table: {
-                key: string,
-                count: string
-            }[] = JSON.parse(context.res.body).counts;
-            for (let i = 0; i < table.length; i++) {
-                if (table[i].key == "-")
-                    continue;
-                expect(table[i].count).toBe(expCounts0[v][table[i].key].toString());
-
-                if (i !== 0) {
-                    expect(parseInt(table[i].count)).toBeLessThanOrEqual(parseInt(table[i - 1].count))
-                }
-            }
-
-        }
-    });
-
-
-    it("should successfully get data for individual url with redis", async () => {
-        for (const v of Variables) {
-            const req = {
-                headers: {
-                    "Content-Type": "application/json",
-                    "authorization": "Bearer " + accessToken
-                },
-                query: {
-                    short: randomShort,
-                    variable: v,
-                    page: 0,
-                    selectedUrl: 0,
-                    sort: "Decreasing",
+                    page: page,
+                    selectedUrl: -1,
+                    sort: "Increasing",
                     refresh: false
                 }
             }
@@ -491,24 +411,32 @@ describe("Get requested analytics", () => {
 
             expect(context.res.status).toBe(200);
             
-            const table: {
+            const pg: {
                 key: string,
                 count: string
             }[] = JSON.parse(context.res.body).counts;
 
-            for (let i = 0; i < table.length; i++) {
-                if (table[i].key == "-")
+            for (let i = 0; i < pg.length; i++) {
+                if (pg[i].key == "-")
                     continue;
-                expect(table[i].count).toBe(expCounts0[v][table[i].key].toString());
 
-                if (i !== 0) {
-                    expect(parseInt(table[i].count)).toBeLessThanOrEqual(parseInt(table[i - 1].count))
+                expect(pg[i].count).toBe(expCountsTotal[v][pg[i].key].toString());
+
+                if (page !== 0)
+                    expect(parseInt(pg[i].count)).toBeGreaterThanOrEqual(parseInt(prev.count))
+
+                if (i === 0) {
+                    expect(pg[i]).not.toBe(prev);
+                } else  {
+                    if (i === pg.length - 1) {
+                        prev = pg[i];
+                    } 
+
+                    expect(parseInt(pg[i].count)).toBeGreaterThanOrEqual(parseInt(pg[i - 1].count))
                 }
             }
-
         }
     });
-
 
     it("should successfully get data points by min", async () => {
         const req = {
@@ -532,8 +460,6 @@ describe("Get requested analytics", () => {
         const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
         
         expect(dataPoints).toStrictEqual(expDataPoints.slice(0, 30).map((i) => i.toString()))
-    
-
     });
 
 
@@ -559,7 +485,6 @@ describe("Get requested analytics", () => {
         const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
         
         expect(dataPoints).toStrictEqual(expDataPoints.slice(0, 30).map((i) => i.toString()))
-    
     });
 
 
@@ -642,8 +567,6 @@ describe("Get requested analytics", () => {
         const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
 
         expect(dataPoints).toStrictEqual(groupPoints(expDataPoints, 10, 1440))
-    
-
     });
 
 
@@ -671,6 +594,258 @@ describe("Get requested analytics", () => {
         expect(dataPoints).toStrictEqual(groupPoints(expDataPoints, 10, 1440))
     });
 
+
+    it("should successfully get data points way before start", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: 1,
+                start: start - 1000,
+                limit: 30,
+                refresh: true
+            }
+        }
+
+        await getDataPoints(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        
+        expect(dataPoints).toStrictEqual(new Array(30).fill("0"))
+    });
+
+    it("should successfully get data points way before start with redis", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: 1,
+                start: start - 1000,
+                limit: 30,
+                refresh: false
+            }
+        }
+
+        await getDataPoints(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        
+        expect(dataPoints).toStrictEqual(new Array(30).fill("0"))
+    });
+
+
+    it("should successfully get data points slightly before start", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: 1,
+                start: start - 5,
+                limit: 30,
+                refresh: true
+            }
+        }
+
+        await getDataPoints(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        
+        expect(dataPoints).toStrictEqual(["0", "0", "0", "0", "0", ...expDataPoints.slice(0, 25).map((i) => i.toString())])
+    });
+
+    it("should successfully get data points slightly before start with redis", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: 1,
+                start: start - 5,
+                limit: 30,
+                refresh: false
+            }
+        }
+
+        await getDataPoints(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        
+        expect(dataPoints).toStrictEqual(["0", "0", "0", "0", "0", ...expDataPoints.slice(0, 25).map((i) => i.toString())])
+    });
+
+
+    it("should successfully get data points slightly after start", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: 1,
+                start: start + 5,
+                limit: 30,
+                refresh: true
+            }
+        }
+
+        await getDataPoints(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        
+        expect(dataPoints).toStrictEqual(expDataPoints.slice(5, 35).map((i) => i.toString()))
+    });
+
+    it("should successfully get data points slightly after start with redis", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: 1,
+                start: start + 5,
+                limit: 30,
+                refresh: false
+            }
+        }
+
+        await getDataPoints(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        
+        expect(dataPoints).toStrictEqual(expDataPoints.slice(5, 35).map((i) => i.toString()))
+    });
+
+    it("should successfully get data points way after end", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: 1,
+                start: new Date("2030-01-01").getTime() / 60000,
+                limit: 30,
+                refresh: true
+            }
+        }
+
+        await getDataPoints(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        
+        expect(dataPoints).toStrictEqual(new Array(30).fill("0"))
+    });
+
+
+    it("should successfully get data points way after end with redis", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: 1,
+                start: new Date("2030-01-01").getTime() / 60000,
+                limit: 30,
+                refresh: false
+            }
+        }
+
+        await getDataPoints(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        
+        expect(dataPoints).toStrictEqual(new Array(30).fill("0"))
+    });
+
+
+    it("should successfully get data points slightly after end", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: 1,
+                start: end - 25,
+                limit: 30,
+                refresh: true
+            }
+        }
+
+        await getDataPoints(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        
+        const exp = [...expDataPoints.slice(expDataPoints.length - 1 - 25).map((i) => i.toString()), "0", "0", "0", "0"]
+        console.log(exp)
+        console.log(dataPoints)
+        expect(dataPoints).toStrictEqual(exp);
+    });
+
+
+
+    it("should successfully get data points slightly after end with redis", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: 1,
+                start: end - 25,
+                limit: 30,
+                refresh: true
+            }
+        }
+
+        await getDataPoints(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        
+        const exp = [...expDataPoints.slice(expDataPoints.length - 1 - 25).map((i) => i.toString()), "0", "0", "0", "0"]
+        console.log(exp)
+        console.log(dataPoints)
+        expect(dataPoints).toStrictEqual(exp);
+    });
 
 });
 

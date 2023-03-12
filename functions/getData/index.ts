@@ -119,12 +119,14 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             const owner = info[0];
             const cachedSortDirection = parseInt(info[1]);
             const cachedVariable = info[2];
-            const cachedFirstPage = parseInt(info[3]);
-            const cachedLastPage = parseInt(info[4]);
-            pageCount = parseInt(info[5]);
+            const cachedSelectedUrl = parseInt(info[3]);
+            const cachedFirstPage = parseInt(info[4]);
+            const cachedLastPage = parseInt(info[5]);
+            pageCount = parseInt(info[6]);
 
             if (owner === undefined ||
                 variable !== cachedVariable ||
+                selectedUrl !== cachedSelectedUrl || 
                 sortDirection !== cachedSortDirection ||
                 page < cachedFirstPage ||
                 page > cachedLastPage) {
@@ -139,7 +141,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 return;
             }
             
-            const cachedData = await redisClient.lRange(short + "_table", 6, -1);
+            const cachedData = await redisClient.lRange(short + "_table", 7, -1);
 
             const firstPage = Math.max(0, page - cachedFirstPage);
             counts = cachedData.slice(firstPage * pageSize, (firstPage + 1) * pageSize)
@@ -154,9 +156,9 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
         const url = await urlsCollection.findOne({_id: short});
 
-        if (url === undefined) {
+        if (url === null) {
             context.res = {
-                status: 400,
+                status: 404,
                 body: JSON.stringify({"msg": "Short URL not found"})
             };
             return;
@@ -206,7 +208,20 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         ]
 
         const doc = await dpCollection.aggregate(pipeline).toArray();
+
         const data = doc[0].data;
+
+        if (data.length === 0) {
+            context.res = {
+                status: 200,
+                body: JSON.stringify({
+                    counts: new Array(pageSize).fill({key: "-", count: "-"}),
+                    pageCount: 0,
+                    fromCache: fromCache
+                })
+            };
+            return;
+        }
         pageCount = Math.ceil(doc[0].metadata[0].total / pageSize);
 
         counts = data.map((v) => {
@@ -224,6 +239,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                     url.owner,
                     sortDirection.toString(),
                     variable, //variable cached
+                    selectedUrl.toString(), //selectedUrl cached
                     extendedPage.toString(), //first page cached
                     lastCachedPage.toString(), //last page cached
                     pageCount.toString(), 

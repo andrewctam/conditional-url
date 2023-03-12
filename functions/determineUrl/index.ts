@@ -35,7 +35,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         }
         
         const conditionals = JSON.parse(url.conditionals);
-        const [redirect, i] = determineUrl(conditionals, data)
+        const [redirect, i] = determine(conditionals, data)
 
         let incrementCount;
         if (url.firstPoint === -1) {
@@ -102,7 +102,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 };
 
 
-const determineUrl = (conditionals: Conditional[], data: Data) => {
+function determine(conditionals: Conditional[], data: Data): [url: string, i: number] {
     const parsedParams: {[key: string]: string} = data["URL Parameter"].split("&")
             .reduce((acc, cur) => {
                 const [key, value] = cur.split("=");
@@ -115,14 +115,8 @@ const determineUrl = (conditionals: Conditional[], data: Data) => {
                 return acc;
             }, {} );
 
-    for (let i = 0; i < conditionals.length; i++) {
+    for (let i = 0; i < conditionals.length - 1; i++) {
         const conditional = conditionals[i];
-
-        //else statement
-        if (i === conditionals.length - 1) {
-            return [conditional.url, conditionals.length - 1];
-        }
-        
         const conditions: Condition[] = conditional.conditions;
 
         //if AND, start as true and break on first false. 
@@ -194,6 +188,9 @@ const determineUrl = (conditionals: Conditional[], data: Data) => {
         else
             return [conditional.url, i]
     }
+
+    //else statement
+    return [conditionals[conditionals.length - 1].url, conditionals.length - 1];
 }
 
 export default httpTrigger;

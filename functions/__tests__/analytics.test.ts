@@ -8,11 +8,11 @@ import { DataPoint } from "../getDataPoints/index";
 import { Variables } from "../types";
 import { connectDB, disconnectDB } from "../database";
 import { ObjectId } from "mongodb";
-jest.setTimeout(100000)
+jest.setTimeout(10000000)
 
 
 describe("Get requested analytics", () => {
-    const NUM_POINTS = 100;
+    const NUM_POINTS = 1000;
 
     let context = ({ log: jest.fn() } as unknown) as Context;
     let randomShort = Math.random().toString(36).substring(2, 10);
@@ -109,6 +109,9 @@ describe("Get requested analytics", () => {
         //artificially create some data
         let currentMinute = start;
         const data = []
+        const mins = []
+        const hrs = []
+        const days = []
 
         
         for (let pt = 0; pt < NUM_POINTS; pt++) {
@@ -120,7 +123,6 @@ describe("Get requested analytics", () => {
                 urlUID: shortUrl.uid,
                 i: i,
                 owner: username,
-                unixMin: currentMinute,
                 values: Variables.map(v => {
                     const val = Math.floor(Math.random() * 10).toString()
 
@@ -140,14 +142,72 @@ describe("Get requested analytics", () => {
                 })
             }
 
+            const unixHr = Math.floor(currentMinute / 60);
+            const unixDay = Math.floor(currentMinute / 60 / 24);
+
+            
             data.push(datum)
             
-
-                
             if (pt === 0) {
                 expDataPoints.push(1);
+
+                mins.push({
+                    urlUID: shortUrl.uid, 
+                    owner: username,
+                    unixMin: currentMinute,
+                    count: 1
+                })
+
+                hrs.push({
+                    urlUID: shortUrl.uid,
+                    owner: username,
+                    unixHour: unixHr,
+                    count: 1
+                })
+
+                days.push({
+                    urlUID: shortUrl.uid,
+                    owner: username,
+                    unixDay: unixDay,
+                    count: 1
+
+                })
+
             } else {
                 expDataPoints[expDataPoints.length - 1]++
+
+                if (mins[mins.length - 1].unixMin !== currentMinute) {
+                    mins.push({
+                        urlUID: shortUrl.uid,
+                        owner: username,
+                        unixMin: currentMinute,
+                        count: 1
+                    })
+                } else {
+                    mins[mins.length - 1].count++
+                }
+
+                if (hrs[hrs.length - 1].unixHr !== unixHr) {
+                    hrs.push({
+                        urlUID: shortUrl.uid,
+                        owner: username,
+                        unixHour: unixHr,
+                        count: 1
+                    })
+                } else {
+                    hrs[hrs.length - 1].count++
+                }
+
+                if (days[days.length - 1].unixDay !== unixDay) {
+                    days.push({
+                        urlUID: shortUrl.uid,
+                        owner: username,
+                        unixDay: unixDay,
+                        count: 1
+                    })
+                } else {
+                    days[days.length - 1].count++
+                }
             }
 
             if (Math.random() < 0.5) {
@@ -161,12 +221,23 @@ describe("Get requested analytics", () => {
 
         await urlsCollection.updateOne({_id: randomShort}, {
             $set: {
-                redirects: redirects
+                redirects: redirects,
+                firstPoint: start
             }
         })
 
         const dpCollection = db.collection<DataPoint>("datapoints")
         await dpCollection.insertMany(data);
+
+        const minCollection = db.collection("datamins")
+        await minCollection.insertMany(mins);
+
+        const hrCollection = db.collection("datahours")
+        await hrCollection.insertMany(hrs);
+
+        const dayCollection = db.collection("datadays")
+        await dayCollection.insertMany(days);
+
 
         await disconnectDB();
     })
@@ -332,215 +403,187 @@ describe("Get requested analytics", () => {
     });
 
 
-    it("should successfully get data points", async () => {
-        for (const v of Variables) {
-            const req = {
-                headers: {
-                    "Content-Type": "application/json",
-                    "authorization": "Bearer " + accessToken
-                },
-                query: {
-                    short: randomShort,
-                    span: 1,
-                    start: start,
-                    limit: 30,
-                    refresh: true
-                }
+    it("should successfully get data points by min", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: 1,
+                start: start,
+                limit: 30,
+                refresh: true
             }
-
-            await getDataPoints(context, req);
-
-            expect(context.res.status).toBe(200);
-            
-            const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
-            
-            expect(dataPoints).toStrictEqual(expDataPoints.slice(0, 30).map((i) => i.toString()))
         }
 
-    });
+        await getDataPoints(context, req);
 
-
-    it("should successfully get data points with redis", async () => {
-        for (const v of Variables) {
-            const req = {
-                headers: {
-                    "Content-Type": "application/json",
-                    "authorization": "Bearer " + accessToken
-                },
-                query: {
-                    short: randomShort,
-                    span: 1,
-                    start: start,
-                    limit: 30,
-                    refresh: false
-                }
-            }
-
-            await getDataPoints(context, req);
-
-            expect(context.res.status).toBe(200);
-            
-            const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
-            
-            expect(dataPoints).toStrictEqual(expDataPoints.slice(0, 30).map((i) => i.toString()))
-        }
-
-    });
-
-
-
-
-    it("should successfully get data points with span 3", async () => {
-        for (const v of Variables) {
-            const req = {
-                headers: {
-                    "Content-Type": "application/json",
-                    "authorization": "Bearer " + accessToken
-                },
-                query: {
-                    short: randomShort,
-                    span: 3,
-                    start: start,
-                    limit: 30,
-                    refresh: true
-                }
-            }
-
-            await getDataPoints(context, req);
-
-            expect(context.res.status).toBe(200);
-            
-            const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
-            
-            const expGrouped = []
-            let i = 0;
-            while (expGrouped.length < 30) {
-                expGrouped.push((expDataPoints[i] + expDataPoints[i + 1] + expDataPoints[i + 2]).toString())
-                i += 3;
-            }
-
-            expect(dataPoints).toStrictEqual(expGrouped)
-        }
-
-    });
-
-
-    it("should successfully get data points with redis", async () => {
-        for (const v of Variables) {
-            const req = {
-                headers: {
-                    "Content-Type": "application/json",
-                    "authorization": "Bearer " + accessToken
-                },
-                query: {
-                    short: randomShort,
-                    span: 3,
-                    start: start,
-                    limit: 30,
-                    refresh: false
-                }
-            }
-
-            await getDataPoints(context, req);
-
-            expect(context.res.status).toBe(200);
-            
-            const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
-            
-            const expGrouped = []
-            let i = 0;
-            while (expGrouped.length < 30) {
-                expGrouped.push((expDataPoints[i] + expDataPoints[i + 1] + expDataPoints[i + 2]).toString())
-                i += 3;
-            }
-
-            expect(dataPoints).toStrictEqual(expGrouped)
-        }
-
-    });
-
-
-
-    it("should successfully get data points with span 10", async () => {
-        for (const v of Variables) {
-            const req = {
-                headers: {
-                    "Content-Type": "application/json",
-                    "authorization": "Bearer " + accessToken
-                },
-                query: {
-                    short: randomShort,
-                    span: 10,
-                    start: start,
-                    limit: 10,
-                    refresh: true
-                }
-            }
-
-            await getDataPoints(context, req);
-
-            expect(context.res.status).toBe(200);
-            
-            const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
-            
-            const expGrouped = []
-            let i = 0;
-            while (expGrouped.length < 10) {
-                let sum = 0
-                for (let j = 0; j < 10; j++)
-                    sum += expDataPoints[j + i];
-                    
-                expGrouped.push(sum.toString())
-                i += 10;
-            }
-
-            expect(dataPoints).toStrictEqual(expGrouped)
-        }
-
-    });
-
-
-    it("should successfully get data points with redis", async () => {
-        for (const v of Variables) {
-            const req = {
-                headers: {
-                    "Content-Type": "application/json",
-                    "authorization": "Bearer " + accessToken
-                },
-                query: {
-                    short: randomShort,
-                    span: 10,
-                    start: start,
-                    limit: 10,
-                    refresh: false
-                }
-            }
-
-            await getDataPoints(context, req);
-
-            expect(context.res.status).toBe(200);
-            
-            const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
-            
-            const expGrouped = []
-            let i = 0;
-            while (expGrouped.length < 10) {
-                let sum = 0
-                for (let j = 0; j < 10; j++)
-                    sum += expDataPoints[j + i];
-                    
-                expGrouped.push(sum.toString())
-                i += 10;
-            }
-
-            expect(dataPoints).toStrictEqual(expGrouped)
-        }
-
-    });
-
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        
+        expect(dataPoints).toStrictEqual(expDataPoints.slice(0, 30).map((i) => i.toString()))
     
 
+    });
+
+
+    it("should successfully get data points by min with redis", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: 1,
+                start: start,
+                limit: 30,
+                refresh: false
+            }
+        }
+
+        await getDataPoints(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        
+        expect(dataPoints).toStrictEqual(expDataPoints.slice(0, 30).map((i) => i.toString()))
     
+    });
+
+
+
+
+    it("should successfully get data points by hour", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: 60,
+                start: start,
+                limit: 30,
+                refresh: true
+            }
+        }
+
+        await getDataPoints(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        
+        expect(dataPoints).toStrictEqual(groupPoints(expDataPoints, 30, 60))
+    
+
+    });
+
+
+    it("should successfully get data points by hour with redis", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: 60,
+                start: start,
+                limit: 30,
+                refresh: false
+            }
+        }
+
+        await getDataPoints(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+    
+        expect(dataPoints).toStrictEqual(groupPoints(expDataPoints, 30, 60))
+    
+
+    });
+
+
+
+    it("should successfully get data points by day", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: 1440,
+                start: start,
+                limit: 10,
+                refresh: true
+            }
+        }
+
+        await getDataPoints(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+
+        expect(dataPoints).toStrictEqual(groupPoints(expDataPoints, 10, 1440))
+    
+
+    });
+
+
+    it("should successfully get data points by day with redis", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: 1440,
+                start: start,
+                limit: 10,
+                refresh: false
+            }
+        }
+
+        await getDataPoints(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        
+        expect(dataPoints).toStrictEqual(groupPoints(expDataPoints, 10, 1440))
+    });
 
 
 });
+
+
+function groupPoints(expDataPoints: number[], limit: number, groupSize: number) {
+    const expGrouped: string[] = []
+        let i = 0;
+        while (expGrouped.length < limit) {
+            let sum = 0
+            for (let j = 0; j < groupSize; j++) {
+                if (j + i >= expDataPoints.length) {
+                    expGrouped.push(sum.toString())
+                    return expGrouped.concat(new Array(limit - expGrouped.length).fill("0"));
+                }
+
+                sum += expDataPoints[j + i];
+            }
+                
+            expGrouped.push(sum.toString())
+            i += groupSize;
+        }
+    return expGrouped;
+}

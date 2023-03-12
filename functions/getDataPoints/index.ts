@@ -9,7 +9,6 @@ import { ObjectId } from "mongodb";
 export type DataPoint = {
     _id: ObjectId,
     urlUID: ObjectId,
-    unixMin: number,
     i: number, // index of redirected
     owner: string
     values: string[]
@@ -79,7 +78,10 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     //round down to nearest span
     start = start - start % span; 
 
-    let end = start + span * limit;
+    const end = start + span * limit;
+
+    const extendedStart = start - limit * span;
+    const extendedEnd = extendedStart + 3 * limit * span
 
     
     let points: string[];
@@ -88,6 +90,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     //redis caching if env vars are set (and span > 1 since its unnecessary to cache by the minute)
     let usingRedis = process.env["REDIS_HOST"] !== undefined && process.env["REDIS_PORT"] !== undefined && process.env["REDIS_PASSWORD"] !== undefined
     let redisClient;
+    let fromCache = true;
     if (usingRedis) {
         try {
             redisClient = createClient({
@@ -110,7 +113,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         } else {
             redisClient.on('error', err => {throw new Error(err + " Fetch from DB")});
 
-            const info = await redisClient.lRange(short + "_graph", 0, 3)
+            const info = await redisClient.lRange(short + "_graph", 0, 4)
 
             
             if (info.length === 0) {
@@ -120,7 +123,8 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             const cacheSpan = parseInt(info[0]);
             const cacheStart = parseInt(info[1]);
             const cacheEnd = parseInt(info[2]);
-            const username = info[3];
+            const cacheFirstPoint = parseInt(info[3])
+            const username = info[4];
 
             if (username !== payload.username) {
                 context.res = {
@@ -132,26 +136,18 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 return;
             }
 
-            if (cacheSpan !== span || end < cacheStart || start > cacheEnd) {
+            if (cacheSpan !== span || start < cacheStart || end > cacheEnd) {
                 throw new Error("Data outside cache requested. Fetch from DB");
             }
 
-            //get indexes to get cached data, offset of 4 for meta data
-            const firstIndex = 4 + Math.floor((Math.max(start, cacheStart) - cacheStart) / cacheSpan);
-            points = await redisClient.lRange(short + "_graph", firstIndex, firstIndex + limit - 1);
+            earliestPoint = new Date(cacheFirstPoint * 60000).toISOString()
 
-            if (start < cacheStart && points.length < limit) {
-                const numPoints = Math.min(Math.floor((cacheStart - start) / span), limit - points.length);
-                points = new Array(numPoints).fill("0").concat(points);
-            }
-            
-            if (points.length < limit) {
-                points = points.concat(new Array(limit - points.length).fill("0"))
-            }
+            const cachedPoints = await redisClient.lRange(short + "_graph", 5, -1);
 
-            earliestPoint = new Date(cacheStart * 60000).toISOString()
+            points = getPointsInRange(start, cachedPoints, cacheStart, limit, span);
         }
     } catch (error) {
+        fromCache = false;
         const client = await connectDB();
         const db = client.db("conditionalurl");
 
@@ -175,66 +171,81 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             return;
         }
 
-        const dpCollection = db.collection<DataPoint>("datapoints");
-
-        const dataPoints = await dpCollection.find({urlUID: url.uid})
-                                             .sort({unixMin: 1})
-                                             .toArray();
+        earliestPoint = new Date(url.firstPoint * 60000).toISOString();
 
 
-        if (dataPoints.length === 0) {
-            context.res = {
-                status: 200,
-                body: JSON.stringify({"msg": "No Data Found"})
-            }
-            return;
-        }
+        let collection;
+        if (span === 1440) {
+            collection = db.collection("datadays");
+        } else if (span === 60) {
+            collection = db.collection("datahours");
+        } else
+            collection = db.collection("datamins");
 
-        earliestPoint = new Date(dataPoints[0].unixMin * 60000).toISOString()
+        //construct an aggregate query to count points in DB.
+        //if usingRedis, then extend the range to cache more points
+        let aggregate;
+
+        if (usingRedis) {
+            //extend the range
+            //      ____
+            // ____ ____ ____
         
-        if (usingRedis) { //cache data for faster access
-            points = groupPoints(dataPoints[0].unixMin, span, limit, dataPoints, true);
+            aggregate = constructAggregate(extendedStart, limit * 3, span, url.uid);
+            points = new Array(3 * limit).fill("0")
+        } else {
+            aggregate = constructAggregate(start, limit, span, url.uid);
+            points = new Array(limit).fill("0")
+        }
+        
+        const docs: {
+            _id: string,
+            count: number
+        }[] = await collection.aggregate(aggregate).toArray();
 
-            const cachedData: string[] = [
+        Object.keys(docs).forEach((key) => {
+            const info = docs[parseInt(key)]
+
+            let i;
+            if (span === 1440) {
+                i = Math.floor(parseInt(info._id) - (usingRedis ? extendedStart : start) / 1440);
+            } else if (span === 60) {
+                i = Math.floor(parseInt(info._id) - (usingRedis ? extendedStart : start) / 60);
+            } else
+                i = Math.floor(parseInt(info._id) - (usingRedis ? extendedStart : start));
+    
+
+            points[i] = info.count.toString()
+        })
+    
+
+        if (usingRedis) { //cache data for faster access
+            try {
+                const cachedData: string[] = [
                     span.toString(),
-                    dataPoints[0].unixMin.toString(), 
-                    dataPoints[dataPoints.length - 1].unixMin.toString(),
-                    url.owner, 
+                    extendedStart.toString(),
+                    extendedEnd.toString(),
+                    url.firstPoint.toString(),
+                    url.owner,
                     ...points
                 ]
 
-            try {
                 await redisClient.del(short + "_graph");
                 await redisClient.rPush(short + "_graph", cachedData);
             } catch (error) {
                 console.log(error)
             }
 
-            const firstIndex = Math.floor((start - dataPoints[0].unixMin) / span);
+            points = points.slice(limit, 2 * limit);
 
-            points = points.slice(
-                    Math.max(firstIndex, 0),
-                    Math.min(firstIndex + limit, points.length));
-
-            if (start < dataPoints[0].unixMin && points.length < limit) {
-                const numPoints = Math.min(Math.floor((dataPoints[0].unixMin - start) / span), limit - points.length);
-                points = new Array(numPoints).fill("0").concat(points);
-            }
-            
-            if (points.length < limit) {
-                points = points.concat(new Array(limit - points.length).fill("0"))
-            }
-
-        } else { //just get requested data
-            points = groupPoints(start, span, limit, dataPoints);
         }
-
     }
+
+
 
     if (usingRedis)
         await redisClient.disconnect();
-            
-
+        
     context.res = {
         status: 200,
         body: JSON.stringify({
@@ -243,122 +254,94 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             start,
             limit,
             earliestPoint,
+            fromCache
         })
     }
 
 };
 
 
-
-function groupPoints(start: number, span: number, limit: number, dataPoints: DataPoint[], allData: boolean = false): string[] {
-    let index;
-    let currentSpan;
-    let points: string[] = []
-
-    if (start > dataPoints[dataPoints.length - 1].unixMin) {
-        //greater than all, so just send all 0s
-        return new Array(limit).fill("0");
-        
-    } else if (start < dataPoints[0].unixMin) {
-        const spansBeforeStart = Math.floor((dataPoints[0].unixMin - start) / span);
-
-        if (spansBeforeStart >= limit) {
-            //if there are more spans than the limit, then just send all 0s
-            return new Array(limit).fill("0");
-        } else {
-            //otherwise, send padding of 0s and then the data
-            points = new Array(spansBeforeStart).fill("0");
-        }
-
-        currentSpan = dataPoints[0].unixMin;
-        index = 0;
-    } else if (start === dataPoints[0].unixMin) {
-        index = 0;
-        currentSpan = dataPoints[0].unixMin;
-    } else {
-        index = getFirstGEQ(dataPoints, start);
-        if (start < dataPoints[index].unixMin) {
-            const spansBeforeStart = Math.floor((dataPoints[index].unixMin - start) / span);
-            if (spansBeforeStart >= limit) {
-                //if there are more spans than the limit, then just send all 0s
-                return new Array(limit).fill("0");
-            }
-
-            points = new Array(spansBeforeStart).fill("0");
-        }
-        currentSpan = dataPoints[index].unixMin;
-    }
-    let compare: (a: number, b: number) => boolean;
-    switch (span) {
-        case 1:
-            compare = (a, b) => { return a === b; } //already stored in unix time in minutes
-            break;
-        default:
-            //in span => [a, a + span)
-            compare = (a, b) => {
-               return a <= b && b < a + span;
-            }
-            break;
+function getPointsInRange(first: number, dataPoints: string[], start: number, limit: number, span: number) {
+    if (span === 1440) {
+        first = Math.floor(first / 1440);
+        start = Math.floor(start / 1440);
+        span = Math.floor(span / 1440);
+    } else if (span === 60) {
+        first = Math.floor(first / 60);
+        start = Math.floor(start / 60);
+        span = Math.floor(span / 60);
     }
 
-    let count = 0;
-    currentSpan -= currentSpan % span
-    //if limit is -1, then get all data in the dataPoints
-    //group the data points into the same time spans
-    while ((allData || points.length < limit) && index < dataPoints.length) {
-        const nextPoint = dataPoints[index];
+    const outputPoints = []
 
-        if (compare(currentSpan, nextPoint.unixMin)) {
-            //if the two times are the same span, add the count
-            count++;
-            index++;
-        } else {
-            //once we reach a new time span, push the sum and reset
-            points.push(count.toString());
-            count = 0;
+    let i = 0;
 
-            currentSpan += span;
-        }
+    //if first req point is less than first data point
+    while (first < start) {
+        outputPoints.push("0");
+        first += span
+
+        if (outputPoints.length >= limit)
+            return outputPoints;
     }
 
-    //push the last span, and pad extra zeroes if the end of array is reached
-    if (allData) {
-        points.push(count.toString());
-    } else {
-        while (points.length < limit) { 
-            points.push(count.toString());
-            currentSpan += span;
-            count = 0;
-        }
+    //if first data point is before first req point
+    while (start < first)  {
+        i ++;
+        start += span;
+
+        if (i >= dataPoints.length)
+            return new Array(limit).fill("0")
     }
 
-    return points;
-}
-
-//search for the index of the first element with unixMinutes start,
-//or the closest element that is greater than or equal to start
-function getFirstGEQ(dataPoints: DataPoint[], start: number) {
-    let low = 0;
-    let high = dataPoints.length - 1;
-
-    if (dataPoints.length === 0 || dataPoints[high].unixMin < start) {
-        return -1;
+    //copy over
+    while (outputPoints.length < limit && i < dataPoints.length) {
+        outputPoints.push(dataPoints[i++]);
     }
 
-    while (low < high) {
-        let mid = Math.floor((high + low) / 2);
-        if (dataPoints[mid].unixMin < start) {
-            low = mid + 1;
-        } else if (dataPoints[mid].unixMin === start && (mid == 0 || dataPoints[mid - 1].unixMin < start)) {
-            return mid;
-        } else {
-            high = mid;
-        }
+    //padding at end
+    while (outputPoints.length < limit) {
+        outputPoints.push("0");
     }
 
-    return low;
+    return outputPoints
 }
 
 
 
+function constructAggregate(start: number, limit: number, span: number, urlUID: ObjectId) {
+    let field;
+    if (span === 1440) {
+        field = "unixDay";
+        start = Math.floor(start / 1440);
+        span = Math.floor(span / 1440);
+    } else if (span === 60) {
+        field = "unixHour";
+        start = Math.floor(start / 60);
+        span = Math.floor(span / 60);
+    } else {
+        field = "unixMin";
+    }
+
+   
+
+    return [
+        { 
+            $match: {
+                [field]: { "$gte": start, "$lt": start + limit * span },
+                urlUID: urlUID
+            }
+        },
+        {
+            $bucket: { 
+                groupBy: "$" + field,
+                boundaries: new Array(limit + 1).fill(0).map((_, i) => start + i * span),
+                output: {
+                    "count": { $sum: "$count" }
+                }
+            }
+        }
+    ]
+    
+}
 export default httpTrigger;

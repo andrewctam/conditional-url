@@ -14,6 +14,7 @@ export type URL = {
     urlCount: number,
     owner: string,
     redirects: number[],
+    firstPoint: number,
     deleted: boolean
 }
 
@@ -222,6 +223,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             urlCount: parsedConditionals.length,
             owner: owner ?? "",
             redirects: new Array(parsedConditionals.length).fill(0),
+            firstPoint: -1,
             deleted: false
         }; 
 

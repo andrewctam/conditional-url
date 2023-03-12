@@ -37,25 +37,60 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         const conditionals = JSON.parse(url.conditionals);
         const [redirect, i] = determineUrl(conditionals, data)
 
-        const incrementCount = {
-            $inc: {
-                [`redirects.${i}`]: 1
+        let incrementCount;
+        if (url.firstPoint === -1) {
+            incrementCount = {
+                $inc: {
+                    [`redirects.${i}`]: 1
+                },
+                $set: {
+                    firstPoint: Math.floor(Date.now() / 60000)
+                }
             }
-        }
+        } else
+            incrementCount = {
+                $inc: {
+                    [`redirects.${i}`]: 1
+                }
+            }
         await urlsCollection.updateOne({_id: short}, incrementCount)
-
 
         const dpCollection = db.collection<DataPoint>("datapoints");
         const dp = {
             _id: new ObjectId(),
             urlUID: url.uid,
             i: i as number,
-            unixMin: Math.floor(Date.now() / 60000),
             owner: url.owner,
             values: Variables.map(v => data[v]),
         }
 
         await dpCollection.insertOne(dp)
+
+
+        const inc = { 
+            $inc: { count: 1 }
+        }
+
+        const minsCollection = db.collection("datamins");
+        await minsCollection.updateOne({
+            urlUID: url.uid, 
+            owner: url.owner,
+            unixMin: Math.floor(Date.now() / 60000)
+        }, inc, {upsert: true});
+        
+        const hoursCollection = db.collection("datahours");
+        await hoursCollection.updateOne({
+            urlUID: url.uid,
+            owner: url.owner,
+            unixHour: Math.floor(Date.now() / 3600000)
+        }, inc, {upsert: true});
+        
+        const daysCollection = db.collection("datadays");
+        await daysCollection.updateOne({
+            urlUID: url.uid, 
+            owner: url.owner,
+            unixDay: Math.floor(Date.now() / 86400000)
+        }, inc, {upsert: true});
 
         context.res = {
             status: 200,

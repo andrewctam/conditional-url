@@ -25,7 +25,7 @@
 git clone https://github.com/tamandrew/conditional-url.git
 ```
 - Set up [Azure Functions Core Tools](https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local?tabs=windows%2Ccsharp%2Cbash). 
-- Set up a MongoDB database. I used [Azure Cosmos DB for MongoDB](https://learn.microsoft.com/en-us/azure/cosmos-db/mongodb/introduction), but you can use other services such as [MongoDB Atlas](https://www.mongodb.com/atlas/database).
+- Set up a MongoDB database, such as on [MongoDB Atlas](https://www.mongodb.com/atlas/database).
 - Set up environmental variables:
     - In `/frontend`, rename `.env.template` to `.env` and change the URLs if desired.
     - In `/functions`, rename `.env.template` to `.env` and update the variables

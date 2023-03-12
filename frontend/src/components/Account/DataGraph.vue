@@ -19,9 +19,19 @@ const props = defineProps<{
     short: string
 }>();
 
+const enum Span {
+    Minute = "min",
+    Hour = "hour",
+    Day = "day"
+}
 
-const start = ref<string | undefined>(undefined);
-const span = ref<number>(60);
+
+const start = ref<string>(
+    //1 day ago
+    new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString().slice(0, -8)
+);
+
+const span = ref<Span>(Span.Hour);
 const limit = ref<number>(30);
 
 const earliestPoint = ref<string | undefined>(undefined);
@@ -31,41 +41,24 @@ const accessToken = inject(accessTokenKey);
 const refresh = inject(refreshTokensKey) as () => Promise<boolean>;
 const doneLoading = ref(false);
 
-
 onMounted(async () => {
     await getDataPoints(true, true);
 })
 
-watch([span, limit], async () => {
+watch([span, limit, start], async () => {
         await getDataPoints();
 })
-
-watch(start, async (newStart, oldStart) => {
-    if (oldStart !== undefined) // don't run again after setting oldStart in first load
-        await getDataPoints();
-
-})
-
-
-const zeroesIfNecessary = (num: number) => {
-    if (num < 10)
-        return `0${num}`;
-    return num;
-}
 
 const getDataPoints = async (retry: boolean = true, refreshData = false) => {
     if (!accessToken || !accessToken.value)
         return;
 
-    const unixInMins = start.value ? Math.floor(new Date(start.value).getTime() / 60000) : "undefined";
+    const unixInMins = Math.floor(new Date(start.value).getTime() / 60000);
     
     if (unixInMins < 15778380) // year is before 2000
         return;
     
     doneLoading.value = false;
-
-    
-
 
     let url;
     if (import.meta.env.PROD) {
@@ -97,55 +90,13 @@ const getDataPoints = async (retry: boolean = true, refreshData = false) => {
         dataPoints.value = response.dataPoints;
         doneLoading.value = true;
 
-        //on initial load, set start to earliest point
-        if (start.value === undefined && dataPoints.value.length > 0) {
-            const day = new Date(response.start * 60000);
-
-            const y = day.getFullYear();
-            const m = zeroesIfNecessary(day.getMonth() + 1);
-            const d = zeroesIfNecessary(day.getDate());
-            const h = zeroesIfNecessary(day.getHours());
-            const min = zeroesIfNecessary(day.getMinutes());
-
-            start.value = `${y}-${m}-${d}T${h}:${min}`;
-        }
-
-        //on initial load, set earliest point to earliest point
+        //on initial load, set earliest point
         if (earliestPoint.value === undefined && dataPoints.value.length > 0) {
-            const day = new Date(response.earliestPoint);
-
-            const y = day.getFullYear();
-            const m = zeroesIfNecessary(day.getMonth() + 1);
-            const d = zeroesIfNecessary(day.getDate());
-            const h = zeroesIfNecessary(day.getHours());
-            const min = zeroesIfNecessary(day.getMinutes());
-
-            earliestPoint.value = `${y}-${m}-${d}T${h}:${min}`;
+            earliestPoint.value = response.earliestPoint.slice(0, -8);
         }
-
     }
 }
 
-
-const unit = computed(() => {
-    if (span.value >= 1440)
-        return "day"
-    else if (span.value >= 60)
-        return "hour"
-    else if (span.value >= 1)
-        return "minute"
-
-    return "";
-})
-
-const rangeMultiplier = computed(() => {
-    if (span.value >= 1440)
-        return span.value / 1440;
-    else if (span.value >= 60)
-        return span.value / 60;
-    else
-        return span.value;
-})
 
 
 const data = computed(() => {
@@ -155,11 +106,26 @@ const data = computed(() => {
             datasets: []
         };
 
+    let spanMins: number;
+    switch(span.value) {
+        case Span.Minute:
+            spanMins = 1;
+            break;
+        case Span.Hour:
+            spanMins = 60;
+            break;
+        case Span.Day:
+            spanMins = 1440;
+            break;
+        default:
+            spanMins = 1;
+    }
+    
     let firstDate = new Date(start.value).getTime();
-    firstDate -= firstDate % (span.value * 60000);
+    firstDate -= firstDate % (spanMins * 60000); //round down to nearest span
 
     let labels = new Array(limit.value).fill(null).map((_, i) => {
-        return new Date(firstDate + (span.value * 60000 * i)).toLocaleString();
+        return new Date(firstDate + (spanMins * 60000 * i)).toLocaleString();
     });
 
     return {
@@ -221,25 +187,23 @@ const options = {
                 <label for="start" class="block text-sm">Range Start</label>
                 <input v-model = "start" 
                     type = "datetime-local" id="start" class = "bg-gray-600 border border-black/50 p-1 m-1 rounded my-auto font-normal inline"
-                    :min="earliestPoint"
                     :max="new Date().toISOString().slice(0, -8)"
-                    :step="span * 60"
                     />
             </div>
 
             <div>
                 <label for="span" class="block text-sm">Time Span</label>
                 <select v-model="span" id="span" class = "border border-black/50 p-1 m-1 rounded font-normal bg-gray-600">
-                    <option :value = "1"> 1 minute </option>
-                     <option :value = "60"> 1 hour </option>
-                    <option :value = "1440"> 1 day </option>
+                    <option :value = "Span.Minute"> 1 minute </option>
+                     <option :value = "Span.Hour"> 1 hour </option>
+                    <option :value = "Span.Day"> 1 day </option>
                 </select>
             </div>
 
             <div>
                 <label for="limit" class="block text-sm">Range Length</label>
                 <select v-model="limit" id="limit" class = "border border-black/50 p-1 m-1 rounded font-normal bg-gray-600">
-                    <option v-for="n in 10" :value = "n * 10"> {{`${n * 10 * rangeMultiplier} ${unit}s`}} </option>
+                    <option v-for="n in 10" :value = "n * 10"> {{`${n * 10} ${span}s`}} </option>
                 </select>
             </div>
 

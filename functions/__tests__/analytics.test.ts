@@ -466,7 +466,7 @@ describe("Get requested analytics", () => {
             },
             query: {
                 short: randomShort,
-                span: 60,
+                span: "hour",
                 start: start,
                 limit: 30,
                 refresh: true
@@ -493,7 +493,7 @@ describe("Get requested analytics", () => {
             },
             query: {
                 short: randomShort,
-                span: 60,
+                span: "hour",
                 start: start,
                 limit: 30,
                 refresh: false
@@ -521,7 +521,7 @@ describe("Get requested analytics", () => {
             },
             query: {
                 short: randomShort,
-                span: 1440,
+                span: "day",
                 start: start,
                 limit: 10,
                 refresh: true
@@ -548,7 +548,7 @@ describe("Get requested analytics", () => {
             },
             query: {
                 short: randomShort,
-                span: 1440,
+                span: "day",
                 start: start,
                 limit: 10,
                 refresh: false

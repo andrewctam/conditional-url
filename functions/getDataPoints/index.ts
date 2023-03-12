@@ -14,6 +14,7 @@ export type DataPoint = {
     values: string[]
 };
 
+
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     if (req.headers.authorization === "") {
         context.res = {
@@ -55,33 +56,44 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
     
     let span: number;
-    if (req.query.span === undefined || req.query.span === "undefined") {
-        span = 1;
-    } else {
-        span = Math.min(10080, parseInt(req.query.span));
+    switch (req.query.span) {
+        case "hour":
+            span = 60;
+            break;
+        case "day":
+            span = 1440;
+            break;
+        case "min":
+        default:
+            span = 1;
+            break;
     }
     
     let limit: number;
     if (req.query.limit === undefined || req.query.limit === "undefined") {
         limit = 30;
     } else {
-        limit = Math.min(10000, parseInt(req.query.limit));
+        limit = Math.min(100, parseInt(req.query.limit));
     }
 
     let start: number;
     if (req.query.start === undefined || req.query.start === "undefined") {
-        start = Math.floor(Date.now() / 60000) - span * (limit - 2)
+        start = Math.floor(Date.now() / 60000) - span * limit; //make now the rightmost point
     } else {
-        start = Math.max(15778380, parseInt(req.query.start));
-    } //26297280 is 1/1/2000
+        start = Math.max(parseInt(req.query.start), new Date("2020-01-01").getTime() / 60000);
+    }
 
     //round down to nearest span
     start = start - start % span; 
-
     const end = start + span * limit;
 
-    const extendedStart = start - limit * span;
-    const extendedEnd = extendedStart + 3 * limit * span
+
+    //cache an extended range in redis
+    //           ____
+    // ____ ____ ____ ____ ____
+    const extendedLimit = limit * 5;
+    const extendedStart = start - 2 * limit * span;
+    const extendedEnd = extendedStart + extendedLimit * span
 
     
     let points: string[];
@@ -109,6 +121,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
    
     try {
         if (req.query.refresh === "true" || !usingRedis) {
+            //if user requested a refresh, or no creds provided
             throw new Error("Force Refresh!")
         } else {
             redisClient.on('error', err => {throw new Error(err + " Fetch from DB")});
@@ -144,15 +157,16 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
             const cachedPoints = await redisClient.lRange(short + "_graph", 5, -1);
 
-            points = getPointsInRange(start, cachedPoints, cacheStart, limit, span);
+            const i = (start - cacheStart) / span
+            points = cachedPoints.slice(i, i + limit);
         }
-    } catch (error) {
+        
+    } catch (error) { //error while fetching from redis, or force refresh, or redis not used
         fromCache = false;
         const client = await connectDB();
         const db = client.db("conditionalurl");
 
         const urlsCollection = db.collection<URL>("urls");
-        
         const url = await urlsCollection.findOne({_id: short})
 
         if (url === null) {
@@ -173,7 +187,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
         earliestPoint = new Date(url.firstPoint * 60000).toISOString();
 
-
+        //data is split into 3 collections to increase aggregate speed
         let collection;
         if (span === 1440) {
             collection = db.collection("datadays");
@@ -187,12 +201,8 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         let aggregate;
 
         if (usingRedis) {
-            //extend the range
-            //      ____
-            // ____ ____ ____
-        
-            aggregate = constructAggregate(extendedStart, limit * 3, span, url.uid);
-            points = new Array(3 * limit).fill("0")
+            aggregate = constructAggregate(extendedStart, extendedLimit, span, url.uid);
+            points = new Array(extendedLimit).fill("0")
         } else {
             aggregate = constructAggregate(start, limit, span, url.uid);
             points = new Array(limit).fill("0")
@@ -206,7 +216,8 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         Object.keys(docs).forEach((key) => {
             const info = docs[parseInt(key)]
 
-            let i;
+            //index of the point where points[0] = start, points[1] = start + span...
+            let i: number;
             if (span === 1440) {
                 i = Math.floor(parseInt(info._id) - (usingRedis ? extendedStart : start) / 1440);
             } else if (span === 60) {
@@ -219,10 +230,10 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         })
     
 
-        if (usingRedis) { //cache data for faster access
+        if (usingRedis) { //cache extended range for faster access of nearby data
             try {
                 const cachedData: string[] = [
-                    span.toString(),
+                    span.toString(), //some meta data to verify cache should be used and user is correct
                     extendedStart.toString(),
                     extendedEnd.toString(),
                     url.firstPoint.toString(),
@@ -230,14 +241,14 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                     ...points
                 ]
 
-                await redisClient.del(short + "_graph");
+                await redisClient.del(short + "_graph"); //delete old cache
                 await redisClient.rPush(short + "_graph", cachedData);
             } catch (error) {
                 console.log(error)
             }
 
-            points = points.slice(limit, 2 * limit);
-
+            //only return the points in the range requested
+            points = points.slice(2 * limit, 3 * limit)
         }
     }
 
@@ -250,9 +261,6 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         status: 200,
         body: JSON.stringify({
             dataPoints: points,
-            span,
-            start,
-            limit,
             earliestPoint,
             fromCache
         })
@@ -322,8 +330,6 @@ function constructAggregate(start: number, limit: number, span: number, urlUID: 
     } else {
         field = "unixMin";
     }
-
-   
 
     return [
         { 

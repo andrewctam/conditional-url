@@ -8,7 +8,7 @@
 
 | ![Analytics View](analytics.png) | 
 |:--:| 
-| Analytics View |
+| Analytics View (Logged In)|
 
 
 ## Technologies

@@ -97,67 +97,69 @@ watch(sorting, async (oldSorting, newSorting) => {
         await fetchUrls(Direction.Same);
 })
 
+watch(selected, () => {
+    if (selected.value)
+        router.push({query: { view: selected.value }})
+    else
+        router.push({ query: { action: 'viewurls' }});
+})
+
 
 </script>
 
 <template>
-    <div class="xl:w-1/2 lg:w-2/3 md:w-5/6 w-[95%] bg-black/10 my-8 pb-4 mx-auto border border-black/25 rounded-xl text-center relative">
-        <URLEditor 
-            v-if="selected !== ''"
-            
-            :short="selected"
-            @close="selected = ''"
-            @closeAndFetch="() => {
-                selected = '';
-                fetchUrls(Direction.Same);
-            }"
-        />    
-
-        <div v-else>
-            <div class="mx-auto mt-4 text-white font-extralight md:text-2xl text-lg select-none">
-                Your URLs
-            </div>
-
-            <div v-if="doneLoading && shortUrls.length > 0" class="mt-1 mb-4">
-                <span @click="sorting=Sorting.Newest" class="cursor-pointer select-none" :class="sorting===Sorting.Newest ? 'text-blue-200' : 'text-white'" >
-                    Newest
-                </span>
-                <span class="text-white text-xl select-none">
-                    •
-                </span>
-                <span @click="sorting=Sorting.Oldest" class="cursor-pointer select-none" :class="sorting===Sorting.Oldest ? 'text-blue-200' : 'text-white'" >
-                    Oldest
-                </span>
-            </div>
-
-            <p v-if="!doneLoading" class="text-white font-light mt-4">
-                Loading...
-            </p>
-            <p v-else-if="shortUrls.length === 0" class="text-white font-light my-4">
-                No URLs created. 
-                <span @click="$emit('close')" class="text-blue-200 hover:text-blue-300 font-light cursor-pointer">
-                    Create your first!
-                </span>
-            </p>
-            <ul v-else v-for="short in shortUrls" :key="short" class="my-3">
-                <ShortBlock 
-                    :short="short" 
-                    @select="() => {
-                        selected = short
-                        router.push({query: {view: short}})
-                    }" />
-            </ul>
-
-            <PageArrows
-                :hasNext="hasNext"
-                :hasPrev="hasPrev"
-                :page="page"
-                :pageCount="pageCount"
-                @prev="fetchUrls(Direction.Prev)"
-                @next="fetchUrls(Direction.Next)"
-            />
+    <div v-if="selected === ''" class="xl:w-1/2 lg:w-2/3 md:w-5/6 w-[95%] bg-black/10 my-8 pb-4 mx-auto border border-black/25 rounded-xl text-center relative">
+        <div class="mx-auto mt-4 text-white font-extralight md:text-2xl text-lg select-none">
+            Your URLs
         </div>
 
+        <div v-if="doneLoading && shortUrls.length > 0" class="mt-1 mb-4">
+            <span @click="sorting=Sorting.Newest" class="cursor-pointer select-none" :class="sorting===Sorting.Newest ? 'text-blue-200' : 'text-white'" >
+                Newest
+            </span>
+            <span class="text-white text-xl select-none">
+                •
+            </span>
+            <span @click="sorting=Sorting.Oldest" class="cursor-pointer select-none" :class="sorting===Sorting.Oldest ? 'text-blue-200' : 'text-white'" >
+                Oldest
+            </span>
+        </div>
+
+        <p v-if="!doneLoading" class="text-white font-light mt-4">
+            Loading...
+        </p>
+        <p v-else-if="shortUrls.length === 0" class="text-white font-light my-4">
+            No URLs created. 
+            <span @click="$emit('close')" class="text-blue-200 hover:text-blue-300 font-light cursor-pointer">
+                Create your first!
+            </span>
+        </p>
+        <ul v-else v-for="short in shortUrls" :key="short" class="my-3">
+            <ShortBlock 
+                :short="short" 
+                @select="() => { selected = short }" 
+            />
+        </ul>
+
+        <PageArrows
+            v-if="pageCount > 0"
+            :hasNext="hasNext"
+            :hasPrev="hasPrev"
+            :page="page"
+            :pageCount="pageCount"
+            @prev="fetchUrls(Direction.Prev)"
+            @next="fetchUrls(Direction.Next)"
+        />
     </div>
+
+    <URLEditor 
+        v-else
+        :short="selected"
+        @close="selected = ''"
+        @closeAndFetch="() => {
+            selected = '';
+            fetchUrls(Direction.Same);
+        }"
+    />    
 
 </template>

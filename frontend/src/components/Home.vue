@@ -208,31 +208,32 @@ provide(updateMsgKey, updateMsg);
                 Welcome <span class="select-text">{{username}}</span>!
             </div>
             
+            <div class="flex flex-wrap justify-center">
+                <NavText 
+                    text="Create URL"
+                    :active="accountAction === AccountAction.CreateURL"
+                    @setActive="openAccountAction(AccountAction.CreateURL)" />
 
-            <NavText 
-                text="Create URL"
-                :active="accountAction === AccountAction.CreateURL"
-                @setActive="openAccountAction(AccountAction.CreateURL)" />
+                <span class="font-bold mx-1">•</span>
 
-            <span class="font-bold mx-1">•</span>
+                <NavText
+                    text="Your URLs"
+                    :active="accountAction === AccountAction.ViewURLs"
+                    @setActive="openAccountAction(AccountAction.ViewURLs)" />
 
-            <NavText
-                text="Your URLs"
-                :active="accountAction === AccountAction.ViewURLs"
-                @setActive="openAccountAction(AccountAction.ViewURLs)" />
+                <span class="font-bold mx-1">•</span>
 
-            <span class="font-bold mx-1">•</span>
+                <NavText
+                    text="Account Settings"
+                    :active="accountAction === AccountAction.Settings"
+                    @setActive="openAccountAction(AccountAction.Settings)" />
 
-            <NavText
-                text="Account Settings"
-                :active="accountAction === AccountAction.Settings"
-                @setActive="openAccountAction(AccountAction.Settings)" />
+                <span class="font-bold mx-1">•</span>
 
-            <span class="font-bold mx-1">•</span>
-
-            <span class = "cursor-pointer font-semibold m-0 relative text-blue-100 hover:text-red-200" @click="updateUser('', '', '')">
-                {{"Sign Out"}}
-            </span>
+                <span class = "cursor-pointer font-semibold m-0 relative text-blue-100 hover:text-red-200" @click="updateUser('', '', '')">
+                    {{"Sign Out"}}
+                </span>
+            </div>
         </div>
 
         <div v-else>

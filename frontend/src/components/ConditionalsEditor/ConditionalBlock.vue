@@ -55,7 +55,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <div class = "bg-white/5 hover:bg-black/5 border border-black/20 my-4 mx-2 p-3 relative rounded cursor-move select-none">
+    <div class = "bg-white/5 hover:bg-black/5 border border-black/20 my-4 mx-2 p-3 relative rounded cursor-move select-none text-sm md:text-base">
         <button tabindex="-1" v-if="!onlyOne" @click = "$emit('delete', props.i)" class = "absolute top-0 right-2 text-lg text-red-400 hover:text-red-500">
             × 
         </button>
@@ -98,15 +98,21 @@ const emit = defineEmits<{
         </div>
 
         <div class="flex mt-1 relative">
-            <span v-if="redirects !== undefined" class = "text-green-200 text-xs font-light absolute -top-4 right-0">
-                {{  `${props.redirects} redirect${props.redirects === 1 ? "" : "s"}` }}
-            </span>
             <p class = "my-auto mr-1 font-light text-white"> Redirect to</p>
             <input 
                 :value="props.url" 
                 @input="handleUpdateUrl" 
-                type = "text" class = "flex-grow pl-1 text-white font-light bg-white/10 focus:outline-none placeholder:text-white/50" placeholder="https://example.com"/>
+                type = "text" 
+                class = "flex-grow pl-1 pr-10 text-white font-light bg-white/10 focus:outline-none placeholder:text-white/50" 
+                placeholder="https://example.com"
+            />
+
+            <div class="absolute top-1 right-1 text-gray-400 text-xs font-light">
+                {{"URL " + (i + 1)}}
+            </div>
         </div>
+
+        
     </div>
     
 </template>

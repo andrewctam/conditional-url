@@ -2,7 +2,7 @@
 import { ref, watch, computed, inject, onMounted } from 'vue';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
 import { Line } from 'vue-chartjs'
-import { accessTokenKey, refreshTokensKey } from '../../types';
+import { accessTokenKey, refreshTokensKey } from '../../../types';
 
 ChartJS.register(
   CategoryScale,
@@ -171,7 +171,7 @@ const options = {
 
 
 <template>
-    <div class="w-full p-2 text-white bg-black/10 rounded font-light select-none relative">
+    <div class="w-full p-2 mb-8 text-white bg-black/10 rounded font-light select-none relative">
         <p class="my-4 font-extralight text-xl inline">
             Redirects Over Time
         </p>
@@ -186,32 +186,32 @@ const options = {
             ...
         </div>
 
-        <div class="sm:flex justify-around bg-[#424242] rounded mx-6 my-2 p-2">
-            <div>
-                <label for="start" class="block text-sm">Range Start</label>
-                <input v-model = "start" 
-                    type = "datetime-local" id="start" class = "bg-gray-600 border border-black/50 p-1 m-1 rounded my-auto font-normal inline"
-                    :max="new Date().toISOString().slice(0, -8)"
-                    />
-            </div>
+        <div class="bg-[#424242] rounded mx-6 my-2 p-2">
+            <div class="sm:flex justify-around">
+                <div>
+                    <label for="start" class="block text-sm">Range Start</label>
+                    <input v-model = "start" 
+                        type = "datetime-local" id="start" class = "bg-gray-600/50 border border-black/50 p-1 m-1 rounded my-auto font-normal inline"
+                        :max="new Date().toISOString().slice(0, -8)"
+                        />
+                </div>
 
-            <div>
-                <label for="span" class="block text-sm">Time Span</label>
-                <select v-model="span" id="span" class = "border border-black/50 p-1 m-1 rounded font-normal bg-gray-600">
-                    <option :value = "Span.Minute"> 1 minute </option>
-                     <option :value = "Span.Hour"> 1 hour </option>
-                    <option :value = "Span.Day"> 1 day </option>
-                </select>
-            </div>
+                <div>
+                    <label for="span" class="block text-sm">Time Span</label>
+                    <select v-model="span" id="span" class = "border border-black/50 p-1 m-1 rounded font-normal bg-gray-600/50">
+                        <option class="bg-gray-600" :value = "Span.Minute"> 1 minute </option>
+                        <option class="bg-gray-600" :value = "Span.Hour"> 1 hour </option>
+                        <option class="bg-gray-600" :value = "Span.Day"> 1 day </option>
+                    </select>
+                </div>
 
-            <div>
-                <label for="limit" class="block text-sm">Range Length</label>
-                <select v-model="limit" id="limit" class = "border border-black/50 p-1 m-1 rounded font-normal bg-gray-600">
-                    <option v-for="n in 10" :value = "n * 10"> {{`${n * 10} ${span}s`}} </option>
-                </select>
+                <div>
+                    <label for="limit" class="block text-sm">Range Length</label>
+                    <select v-model="limit" id="limit" class = "border border-black/50 p-1 m-1 rounded font-normal bg-gray-600/50">
+                        <option class="bg-gray-600" v-for="n in 10" :value = "n * 10"> {{`${n * 10} ${span}s`}} </option>
+                    </select>
+                </div>
             </div>
-
-           
         </div>
 
         <Line :data="data" :options="options" />

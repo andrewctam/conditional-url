@@ -5,7 +5,6 @@ import { Conditional, Operators } from "../types";
 import axios from "axios";
 import { connectDB } from "../database"
 import { URL } from "../createUrl";
-import { DataPoint } from "../getDataPoints";
 import { ObjectId } from "mongodb";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
@@ -188,10 +187,6 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     await urlsCollection.updateOne({_id: short}, updateUrl);
 
-
-    //delete data points
-    const dpCollection = db.collection<DataPoint>("datapoints");
-    await dpCollection.deleteMany({urlUID: url.uid })
 
     context.res = {
         status: 200,

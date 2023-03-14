@@ -160,7 +160,7 @@ const domain = computed(() => {
 </script>
 
 <template>
-   <div v-if="responseUrl !== ''" class = "text-center text-white font-light border border-black/25 w-fit mx-auto p-6 mt-8 rounded bg-black/10">
+   <div v-if="responseUrl !== ''" class = "text-center text-white font-light border border-black/25 xl:w-1/3 lg:w-2/3 md:w-5/6 w-[95%] p-6 mt-8 mx-auto rounded bg-black/10">
         <p class = "text-lg">Your Conditional URL was successfully created!</p>
         <input readonly type="text" 
             class = "w-80 text-black bg-white/90 text-center border border-black rounded px-2 py-1 mt-4" 
@@ -172,9 +172,14 @@ const domain = computed(() => {
         </button>
     </div>
     <div v-else class = "xl:w-1/2 lg:w-2/3 md:w-5/6 w-[95%] bg-black/10 my-8 mx-auto border border-black/25 rounded-xl text-center relative">
-        <div class = "mx-auto mt-4">
-            <span class = "text-white font-extralight text-xl">{{`${domain}/`}}</span>
-            <input v-model = "short" type = "text" class = "text-white text-xl font-extralight w-[165px] bg-white/10 focus:outline-none placeholder:text-white/50 placeholder:text-center" placeholder="optional custom url"/>
+        <div class = "mx-auto m-4">
+            <span class = "text-white font-extralight text-base md:text-lg lg:text-xl">{{`${domain}/`}}</span>
+            <input v-model = "short" type = "text" 
+                class = "text-white font-extralight bg-white/10 focus:outline-none placeholder:text-white/50 placeholder:text-center
+                text-base w-[135px]
+                md:text-lg md:w-[155px]
+                lg:text-xl lg:w-[165px]"
+                placeholder="optional custom url"/>
         </div>
 
         <ConditionalsEditor 

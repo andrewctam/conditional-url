@@ -10,9 +10,9 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <span class = "cursor-pointer font-semibold relative hover:text-blue-300" 
+    <div class = "cursor-pointer font-semibold relative hover:text-blue-300 inline" 
          :class='props.active ? "text-blue-300" : "text-blue-100"'
          @click="$emit('setActive')">
         {{ props.text }}
-    </span>
+    </div>
 </template>

@@ -3,8 +3,9 @@ import { onMounted, ref, inject, computed } from 'vue'
 import type { Ref } from 'vue'
 import { accessTokenKey, Conditional, refreshTokensKey, updateMsgKey } from '../../types'
 import ConditionalsEditor from '../ConditionalsEditor/ConditionalsEditor.vue';
-import DataGraph from './DataGraph.vue';
-import DataTable from './DataTable.vue';
+import DataGraph from './analytics/DataGraph.vue';
+import DataTable from './analytics/DataTable.vue';
+import RedirectsGraph from './analytics/RedirectsGraph.vue';
 
 const props = defineProps<{
     short: string
@@ -149,12 +150,12 @@ const getConditionals = async (retry: boolean = true) => {
         }
     } else if (!response.msg) {
         conditionals.value = JSON.parse(response.conditionals);
-        
-        for (let i = 0; i < response.redirects.length; i++) {
-            if (response.redirects[i] !== 0) {
+
+        analyticsNonZero.value = false;
+        for (let i = 0; i < response.redirects.length; i++) {    
+            if (response.redirects[i] !== 0)
                 analyticsNonZero.value = true;
-            }
-    
+
             conditionals.value[i].redirects = response.redirects[i];
         }
     }
@@ -263,11 +264,6 @@ const updateConditionals = async (retry: boolean = true) => {
         updateMsg("Updated successfully");
         analyticsNonZero.value = false;
         changesMade.value = false
-        conditionals.value = conditionals.value.map(c => {
-            c.redirects = 0;
-            return c;
-        })
-
     }
 
 }
@@ -281,62 +277,88 @@ const domain = computed(() => {
 })
 
 
+
 </script>
 
-<template>    
-    <span @click="close" class="absolute top-1 left-2 text-xl text-white hover:text-red-200 cursor-pointer select-none">
-        ←
-    </span>
-
-   
-    <div class="mt-4">
-        <span class = "text-white font-extralight text-xl">{{`${domain}/`}}</span>
-        <input 
-            v-model = "rename" 
-            type = "text" 
-            class = "text-white text-xl font-extralight w-[120px] bg-white/10 focus:outline-none placeholder:text-white/50 placeholder:text-center" 
-            />
-    </div>
-    
-    <div v-if="doneLoading" class = "w-[95%] mt-2 py-2 mx-auto text-center relative">
+<template>
+    <div class = "w-[95%] mx-auto relative" :class = "showAnalytics ? 'md:mx-10 md:grid md:grid-cols-2 md:gap-10' : 'xl:w-1/2 lg:w-2/3 md:w-5/6'" >
+        <div class="w-full h-fit bg-black/10 my-8 pb-4 mx-auto border border-black/25 rounded-xl text-center"
+            :class = "showAnalytics ? 'bg-[#3e3f41] z-50 max-h-[25vh] md:max-h-[95vh] overflow-y-auto sticky top-4' : ''"
+            >
+            
+            <span @click="close" class="absolute top-1 left-2 text-xl text-white hover:text-red-200 cursor-pointer select-none">
+                ←
+            </span>
         
-        <div class="mx-auto w-fit">
-            <div class="inline font-extralight cursor-pointer w-fit select-none">
-                <span @click="confirmDelete = !confirmDelete" class="text-red-200 hover:text-red-300 text-sm px-2 py-1 bg-black/10 rounded-lg">
-                    {{confirmDelete ? "Cancel" : "Delete URL"}}
-                </span>
-
-                <span @click="deleteURL()" v-if="confirmDelete" class="text-gray-200 hover:text-red-500 ml-2 text-sm px-2 py-1 bg-black/10 rounded-lg">
-                    Confirm
-                </span>
+            <div class="mt-6">
+                <span class = "text-white font-extralight text-base md:text-lg lg:text-xl">{{`${domain}/`}}</span>
+                <input 
+                    v-model = "rename" 
+                    type = "text" 
+                    class = "text-white font-extralight w-[120px] bg-white/10 focus:outline-none placeholder:text-white/50 placeholder:text-center text-base md:text-lg lg:text-xl"
+                    />
             </div>
+            
+            <div v-if="doneLoading" class = "w-[95%] mt-2 py-2 mx-auto text-center relative">
+                <div class="flex flex-wrap justify-center">
+                    <div class="mx-3 my-1 font-extralight text-sm w-fit px-2 py-1 bg-black/10 rounded-lg select-none whitespace-nowrap"
+                        :class="analyticsNonZero ? 'text-blue-200 hover:text-blue-300 cursor-pointer' : 'text-gray-200/40 cursor-auto'"
+                        @click="() => { if (!analyticsNonZero) return; showAnalytics = !showAnalytics }">
 
-            <div class="inline font-extralight text-sm w-fit ml-5 px-2 py-1 bg-black/10 rounded-lg select-none"
-                :class="validRename ? 'text-green-200 hover:text-green-300 cursor-pointer' : 'text-gray-200/40 cursor-auto'"
-                @click="renameURL()">
-                Rename
-            </div>
+                        {{showAnalytics ? "Close Analytics" : "Show Analytics"}}
+                    </div>
 
-            <div class="inline font-extralight text-sm w-fit ml-5 px-2 py-1 bg-black/10 rounded-lg select-none whitespace-nowrap"
-                :class="changesMade ? 'text-green-200 hover:text-green-300 cursor-pointer' : 'text-gray-200/40 cursor-auto'"
-                @click="updateConditionals()">
-                Save Changes
-            </div>
+                    <div class="mx-3 my-1 font-extralight text-sm w-fit px-2 py-1 bg-black/10 rounded-lg select-none whitespace-nowrap cursor-pointer"
+                        :class="confirmDelete ? 'text-green-200 hover:text-green-300' : 'text-red-200 hover:text-red-300'"
+                        @click="confirmDelete = !confirmDelete">
+                        {{confirmDelete ? "Cancel" : "Delete URL"}}
+                    </div>
 
-            <div class="inline font-extralight text-sm w-fit ml-5 px-2 py-1 bg-black/10 rounded-lg select-none whitespace-nowrap"
-                :class="analyticsNonZero ? 'text-blue-200 hover:text-blue-300 cursor-pointer' : 'text-gray-200/40 cursor-auto'"
-                @click="() => { if (!analyticsNonZero) return; showAnalytics = !showAnalytics }">
+                    <div v-if="confirmDelete" 
+                        class="mx-3 my-1 font-extralight text-sm w-fit px-2 py-1 bg-black/10 rounded-lg select-none whitespace-nowrap cursor-pointer text-red-400 hover:text-red-500"
+                        @click="deleteURL()">
+                        Confirm
+                    </div>
 
-                {{showAnalytics ? "Close Analytics" : "Show Analytics"}}
-            </div>
+                    <div class="mx-3 my-1 font-extralight text-sm w-fit px-2 py-1 bg-black/10 rounded-lg select-none"
+                        :class="validRename ? 'text-green-200 hover:text-green-300 cursor-pointer' : 'text-gray-200/40 cursor-auto'"
+                        @click="renameURL()">
+                        Rename
+                    </div>
+
+                    <div class="mx-3 my-1 font-extralight text-sm w-fit px-2 py-1 bg-black/10 rounded-lg select-none whitespace-nowrap"
+                        :class="changesMade ? 'text-green-200 hover:text-green-300 cursor-pointer' : 'text-gray-200/40 cursor-auto'"
+                        @click="updateConditionals()">
+                        Save Changes
+                    </div>
+                </div>
+
+                <div v-if="changesMade && analyticsNonZero" class="text-red-200 my-2 font-light text-xs select-none">
+                    WARNING: Saving changes will clear analytics
+                </div>
+                
+                <ConditionalsEditor
+                    :conditionals="conditionals"
+                    @update-conditionals="(updated) => {
+                        conditionals = updated;
+                        changesMade = true;
+                    }"
+                /> 
 
 
-            <div v-if="changesMade && analyticsNonZero" class="text-red-200 my-2 font-light text-xs select-none">
-                WARNING: Saving changes will clear analytics
             </div>
         </div>
-        
-        <div v-if="showAnalytics" class="p-4">
+
+        <div v-if="showAnalytics" class="w-full h-fit overflow-y-auto bg-black/10 my-8 p-4 mx-auto border border-black/25 rounded-xl text-center relative">
+            <DataGraph
+                :short="currentName"
+            />
+
+            <RedirectsGraph
+                :conditionals="conditionals"
+                @refresh = "getConditionals()"
+            />
+
             <DataTable
                 :short="currentName"
                 :urls="conditionals.map((c, i) => {
@@ -346,23 +368,7 @@ const domain = computed(() => {
                     }
                 })"
             />
-
-            <DataGraph
-                :short="currentName"
-            />
         </div>
-        
-        <ConditionalsEditor 
-            v-else
-            :conditionals="conditionals"
-            @update-conditionals="(updated) => {
-                conditionals = updated;
-                changesMade = true;
-            }"
-        />
-        
-      
     </div>
-
 </template>
 

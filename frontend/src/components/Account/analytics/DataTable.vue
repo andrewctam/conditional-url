@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { ref, computed, inject, onMounted, watch } from 'vue';
-import { accessTokenKey, refreshTokensKey, Variables } from '../../types';
-import { Variable } from '../ConditionalsEditor/AddConditionMenu.vue';
-import PageArrows from '../PageArrows.vue';
+import { accessTokenKey, refreshTokensKey, Variables } from '../../../types';
+import { Variable } from '../../ConditionalsEditor/AddConditionMenu.vue';
+import PageArrows from '../../PageArrows.vue';
 
 const props = defineProps<{
     short: string,
@@ -95,7 +95,7 @@ const truncate = (str: string, maxLen: number = 50) => {
 </script>
 
 <template>
-    <div class="bg-black/10 p-2 mb-8 pb-4 rounded select-none text-white relative">
+    <div class="bg-black/10 p-2 pb-4 rounded select-none text-white relative">
         <p class = "text-white text-xl font-extralight select-none mt-4">
             Data Counts
         </p>
@@ -110,11 +110,11 @@ const truncate = (str: string, maxLen: number = 50) => {
         </div>
 
         <span class="mr-1 font-light">From:</span>
-        <select v-model="selectedUrl" class = "select-none text-white border border-black/50 p-1 m-1 w-[200px] rounded font-light bg-gray-600">
-            <option value = "-1">
+        <select v-model="selectedUrl" class = "select-none text-white border border-black/50 p-1 m-1 w-[200px] rounded font-light bg-gray-600/50">
+            <option class="bg-gray-600" value = "-1">
                 All URLs
             </option>
-            <option v-for="url in props.urls" :value="url.id">
+            <option class="bg-gray-600" v-for="url in props.urls" :value="url.id">
                 {{`(${url.id + 1}) ${truncate(url.url)}`}}
             </option>
         </select>
@@ -123,16 +123,16 @@ const truncate = (str: string, maxLen: number = 50) => {
         <table class="w-[95%] mx-auto text-left text-whitep-2 m-5 font-light">
             <thead class="text-white bg-[#424242]">
                 <th class="w-1/2">
-                    <select v-model="selected" class = "select-none border border-black/50 p-1 m-1 rounded font-light bg-gray-600">
-                        <option v-for="variable in Variables">{{variable}}</option>
+                    <select v-model="selected" class = "select-none border border-black/50 p-1 m-1 rounded font-light bg-gray-600/50">
+                        <option class="bg-gray-600" v-for="variable in Variables">{{variable}}</option>
                     </select>
                 </th>
                 <th class="w-1/2">  
-                    <select v-model="sort" class = "select-none border border-black/50 p-1 m-1 rounded font-light bg-gray-600">
-                        <option value = "Decreasing">
+                    <select v-model="sort" class = "select-none border border-black/50 p-1 m-1 rounded font-light bg-gray-600/50">
+                        <option class="bg-gray-600" value = "Decreasing">
                             Count ↓
                         </option>
-                        <option value = "Increasing">
+                        <option class="bg-gray-600" value = "Increasing">
                             Count ↑
                         </option>
                     </select>        
@@ -152,6 +152,7 @@ const truncate = (str: string, maxLen: number = 50) => {
         
 
         <PageArrows 
+            v-if="pageCount > 0"
             :hasNext="hasNext" 
             :hasPrev="hasPrev" 
             :page="page" 
@@ -160,7 +161,9 @@ const truncate = (str: string, maxLen: number = 50) => {
             @prev="page--"
         />
 
-
+        <div v-else class="flex justify-center text-white font-light mx-2">
+            Loading...
+        </div>
 
     </div>
 

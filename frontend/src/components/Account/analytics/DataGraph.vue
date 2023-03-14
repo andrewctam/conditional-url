@@ -2,7 +2,7 @@
 import { ref, watch, computed, inject, onMounted } from 'vue';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
 import { Line } from 'vue-chartjs'
-import { accessTokenKey, Conditional, refreshTokensKey } from '../../../types';
+import { accessTokenKey, refreshTokensKey } from '../../../types';
 
 ChartJS.register(
   CategoryScale,
@@ -36,7 +36,6 @@ const span = ref<Span>(Span.Hour);
 const limit = ref<number>(30);
 const selectedUrl = ref("-1");
 
-const earliestPoint = ref<string | undefined>(undefined);
 const dataPoints = ref<number[]>([]);
 
 const accessToken = inject(accessTokenKey);
@@ -91,11 +90,6 @@ const getDataPoints = async (retry: boolean = true, refreshData = false) => {
     } else if (!response.msg) {
         dataPoints.value = response.dataPoints;
         doneLoading.value = true;
-
-        //on initial load, set earliest point
-        if (earliestPoint.value === undefined && dataPoints.value.length > 0) {
-            earliestPoint.value = response.earliestPoint.slice(0, -8);
-        }
     }
 }
 
@@ -209,13 +203,13 @@ const options = {
             Redirects Over Time
         </p>
         <div class="mt-2">
-            <label class="text-sm">From:</label>
+            <span class="mr-1 font-light">From:</span>
             <select v-model="selectedUrl" id="selectedUrl" class = "border border-black/50 p-1 m-1 rounded font-normal bg-gray-600/50">
                 <option class="bg-gray-600"  value = "-1"> All URLs </option>
                 <option class="bg-gray-600" v-for="url in props.urls" :value="url.id">
                     {{`(${url.id + 1}) ${truncate(url.url)}`}}
                 </option>
-        </select>
+            </select>
         </div>
 
         

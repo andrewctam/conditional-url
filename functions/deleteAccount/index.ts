@@ -57,6 +57,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 redirects: [],
                 conditionals: "",
                 urlCount: 0,
+                firstPoint: -1,
                 owner: "" //disassociate the url from the user
             }
         }

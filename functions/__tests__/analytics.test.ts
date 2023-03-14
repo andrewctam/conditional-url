@@ -12,7 +12,7 @@ jest.setTimeout(10000000)
 
 
 describe("Get requested analytics", () => {
-    const NUM_POINTS = 1000;
+    const NUM_POINTS = 5000;
     const UNIQUE_VALS = 95;
 
     let context = ({ log: jest.fn() } as unknown) as Context;
@@ -67,17 +67,7 @@ describe("Get requested analytics", () => {
         expect(accessToken).toBeDefined();
     })
 
-    const cond = 
-    {
-        url: "https://example.com/2",
-        and: true,
-        conditions: [{
-            variable: "Language",
-            operator: "=",
-            value: "English"
-        }]
-    }
-    
+
     
 
     it("should successfully be created", async () => {
@@ -89,9 +79,35 @@ describe("Get requested analytics", () => {
             body: {
                 short: randomShort,
                 conditionals: JSON.stringify([
-                    cond, cond, cond,
+                    {
+                        url: "https://example.com/1",
+                        and: true,
+                        conditions: [{
+                            variable: "Browser",
+                            operator: "=",
+                            value: "Chrome"
+                        }]
+                    },
                     {
                         url: "https://example.com/2",
+                        and: true,
+                        conditions: [{
+                            variable: "OS",
+                            operator: "=",
+                            value: "MacOS"
+                        }]
+                    },
+                    {
+                        url: "https://example.com/3",
+                        and: true,
+                        conditions: [{
+                            variable: "Language",
+                            operator: "=",
+                            value: "Spanish"
+                        }]
+                    },
+                    {
+                        url: "https://example.com/4",
                         and: true,
                         conditions: []
                     }

@@ -172,6 +172,18 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             return;
         }
 
+        if (url.firstPoint === -1) {
+            context.res = {
+                status: 200,
+                body: JSON.stringify({
+                    counts: new Array(pageSize).fill({key: "-", count: "-"}),
+                    pageCount: 1,
+                    fromCache: false,
+                })
+            };
+            return;
+        }
+
         const dpCollection = db.collection<DataPoint>("datapoints");
         const pipeline = [
             {
@@ -214,7 +226,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         if (doc[0].metadata[0])
             pageCount = Math.ceil(doc[0].metadata[0].total / pageSize);
         else
-            pageCount = 0;
+            pageCount = 1;
 
         if (data.length === 0) {
             context.res = {

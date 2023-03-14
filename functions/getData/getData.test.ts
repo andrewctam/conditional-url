@@ -261,7 +261,7 @@ describe("Setup", () => {
         await getData(context, req);
     
         expect(context.res.status).toBe(200);
-        expect(JSON.parse(context.res.body).pageCount).toBe(0);
+        expect(JSON.parse(context.res.body).pageCount).toBe(1);
     })
 
     test("Add a data point", async () => {

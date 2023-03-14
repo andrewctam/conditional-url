@@ -190,7 +190,18 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             };
             return;
         }
+        if (url.firstPoint === -1) {
+            context.res = {
+                status: 200,
+                body: JSON.stringify({
+                    dataPoints: new Array(limit).fill("0"),
+                    earliestPoint: null,
+                    fromCache: false
+                })
+            };
 
+            return;
+        }
         earliestPoint = new Date(url.firstPoint * 60000).toISOString();
 
         //data is split into 3 collections to increase aggregate speed

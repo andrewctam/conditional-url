@@ -2,7 +2,7 @@ import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import { Condition, Conditional, Data, Variables } from "../types"
 import { connectDB } from "../database"
 import * as dotenv from 'dotenv';
-import { URL } from "../createUrl";
+import { URL } from "../createURL";
 import { DataPoint } from "../getDataPoints";
 import { ObjectId } from "mongodb";
 

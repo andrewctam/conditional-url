@@ -12,7 +12,7 @@ const emit = defineEmits<{
     (event: 'updateConditionals', conditionals: Conditional[]): void
 }>();
 
-const updateUrl = (i: number, url: string) => {
+const updateURL = (i: number, url: string) => {
     const updated = props.conditionals.map((conditional, j) => {
         if (i == j) {
             conditional.url = url;
@@ -87,7 +87,11 @@ const toggleAnd = (i: number) => {
 </script>
 
 <template>
-    <draggable :model-value="props.conditionals" @update:modelValue="emit('updateConditionals', [...$event])" item-key="id">
+    <draggable 
+    handle=".handle"
+    :model-value="props.conditionals" 
+    @update:modelValue="emit('updateConditionals', [...$event])" 
+    item-key="id">
         <template #item="{element, index}">
             <ConditionalBlock
                 :key = "index"
@@ -99,7 +103,7 @@ const toggleAnd = (i: number) => {
                 :url="element.url"
                 :redirects="element.redirects"
                 @delete = "deleteConditional"
-                @updateUrl = "updateUrl"
+                @updateURL = "updateURL"
                 @addCondition = "addCondition"
                 @removeCondition = "removeCondition"
                 @toggleAnd = "toggleAnd"

@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 import { connectDB } from "../database";
 import { User } from "../signUp";
-import { URL } from "../createUrl";
+import { URL } from "../createURL";
 import { DataPoint } from "../getDataPoints";
 import { ObjectId } from "mongodb";
 
@@ -75,7 +75,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         throw Error("URL from user list not found");
     }
 
-    const deleteUrl = {
+    const deleteURL = {
         $set: {
             deleted: true,
             redirects: [],
@@ -86,7 +86,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         }
     }
         
-    await urlsCollection.updateOne({_id: short}, deleteUrl);
+    await urlsCollection.updateOne({_id: short}, deleteURL);
     
     const removeFromList = {
         $pull: {

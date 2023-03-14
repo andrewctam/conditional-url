@@ -3,7 +3,7 @@ import { connectDB } from "../database"
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 import { createClient, RedisClientType } from 'redis';
-import { URL } from "../createUrl";
+import { URL } from "../createURL";
 import { Collection, ObjectId } from "mongodb";
 
 export type DataPoint = {
@@ -69,9 +69,9 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
     
 
-    let selectedUrl = parseInt(req.query.selectedUrl);
-    if (isNaN(selectedUrl)) {
-        selectedUrl = -1
+    let selectedURL = parseInt(req.query.selectedURL);
+    if (isNaN(selectedURL)) {
+        selectedURL = -1
     }
 
     let limit: number;
@@ -143,7 +143,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             const cacheEnd = parseInt(info[2]);
             const cacheFirstPoint = parseInt(info[3])
             const username = info[4];
-            const cacheSelectedUrl = parseInt(info[5]);
+            const cacheselectedURL = parseInt(info[5]);
 
             if (username !== payload.username) {
                 context.res = {
@@ -155,7 +155,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 return;
             }
 
-            if (cacheSpan !== span || start < cacheStart || end > cacheEnd || selectedUrl !== cacheSelectedUrl) {
+            if (cacheSpan !== span || start < cacheStart || end > cacheEnd || selectedURL !== cacheselectedURL) {
                 throw new Error("Data outside cache requested. Fetch from DB");
             }
 
@@ -216,10 +216,10 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         let pipeline;
 
         if (usingRedis) {
-            pipeline = constructAggregate(extendedStart, extendedLimit, span, url.uid, selectedUrl, url.redirects.length);
+            pipeline = constructAggregate(extendedStart, extendedLimit, span, url.uid, selectedURL, url.redirects.length);
             points = new Array(extendedLimit).fill("0")
         } else {
-            pipeline = constructAggregate(start, limit, span, url.uid, selectedUrl, url.redirects.length);
+            pipeline = constructAggregate(start, limit, span, url.uid, selectedURL, url.redirects.length);
             points = new Array(limit).fill("0")
         }
         
@@ -249,7 +249,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                     extendedEnd.toString(),
                     url.firstPoint.toString(),
                     url.owner,
-                    selectedUrl.toString(),
+                    selectedURL.toString(),
                     ...points
                 ]
 
@@ -279,7 +279,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 };
 
 
-function constructAggregate(start: number, limit: number, span: number, urlUID: ObjectId, selectedUrl: number, numConditions: number) {
+function constructAggregate(start: number, limit: number, span: number, urlUID: ObjectId, selectedURL: number, numConditions: number) {
     let field;
     if (span === 1440) {
         field = "unixDay";
@@ -293,7 +293,7 @@ function constructAggregate(start: number, limit: number, span: number, urlUID: 
         field = "unixMin";
     }
 
-    if (selectedUrl === -1) {
+    if (selectedURL === -1) {
         return [
             { 
                 $match: {
@@ -333,7 +333,7 @@ function constructAggregate(start: number, limit: number, span: number, urlUID: 
             { 
                 $match: {
                     [field]: { "$gte": start, "$lt": start + limit * span },
-                    [selectedUrl]: { $exists: true },
+                    [selectedURL]: { $exists: true },
                     urlUID: urlUID
                 }
             },
@@ -342,7 +342,7 @@ function constructAggregate(start: number, limit: number, span: number, urlUID: 
                     groupBy: "$" + field,
                     boundaries: new Array(limit + 1).fill(0).map((_, i) => start + i * span),
                     output: {
-                        count: { $sum: "$" + selectedUrl }
+                        count: { $sum: "$" + selectedURL }
                     }
                 }
             }

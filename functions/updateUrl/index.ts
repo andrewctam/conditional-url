@@ -4,7 +4,7 @@ import * as jwt from 'jsonwebtoken';
 import { Conditional, Operators } from "../types";
 import axios from "axios";
 import { connectDB } from "../database"
-import { URL } from "../createUrl";
+import { URL } from "../createURL";
 import { ObjectId } from "mongodb";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
@@ -122,7 +122,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     dotenv.config();
     const GOOGLE_API_KEY = process.env["GOOGLE_API_KEY"];
     if (GOOGLE_API_KEY) { //if no key provided in .env, skip
-        const apiUrl = "https://safebrowsing.googleapis.com/v4/threatMatches:find?key=" + GOOGLE_API_KEY;
+        const APIURL = "https://safebrowsing.googleapis.com/v4/threatMatches:find?key=" + GOOGLE_API_KEY;
 
         const body = {
             client: {
@@ -138,7 +138,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         }
 
         try {
-            const response = await axios.post(apiUrl, body);
+            const response = await axios.post(APIURL, body);
             if (response.data.matches) {
                 context.res = {
                     status: 400,
@@ -176,7 +176,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    const updateUrl = {
+    const updateURL = {
         $set: {
             conditionals: conditionals,
             uid: new ObjectId(), //disassociate the data with this url
@@ -186,7 +186,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         }
     }
 
-    await urlsCollection.updateOne({_id: short}, updateUrl);
+    await urlsCollection.updateOne({_id: short}, updateURL);
 
 
     context.res = {

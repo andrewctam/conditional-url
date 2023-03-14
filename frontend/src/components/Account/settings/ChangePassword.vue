@@ -93,11 +93,11 @@ const changePassword = async () => {
             </div>
         </div>
         
-        <button @click="$emit('close')" class = "rounded px-4 py-1 mr-4 border border-black bg-red-800/50 font-light text-white mt-8"> 
+        <button @click="$emit('close')" class = "rounded px-4 py-1 mr-4 bg-red-800/50 font-light text-white mt-8"> 
             Cancel
         </button>   
 
-        <button class = "rounded px-4 py-1 border border-black bg-green-400/20 font-light text-white mt-8"> 
+        <button class = "rounded px-4 py-1 bg-green-400/10 font-light text-white mt-8"> 
             Confirm
         </button>
     </form>

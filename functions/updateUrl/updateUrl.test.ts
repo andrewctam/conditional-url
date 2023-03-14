@@ -1,11 +1,11 @@
 import { Context } from "@azure/functions";
 
 import signUp from "../signUp/index";
-import updateUrl from "./index"
-import createUrl from "../createUrl/index";
+import updateURL from "./index"
+import createURL from "../createURL/index";
 import jwt from "jsonwebtoken";
 
-describe("Unit tests for updateUrl", () => {
+describe("Unit tests for updateURL", () => {
     let accessToken;
     let accessToken2;
 
@@ -67,7 +67,7 @@ describe("Unit tests for updateUrl", () => {
             }
         }
     
-        await updateUrl(context, req);
+        await updateURL(context, req);
     
         expect(context.res.status).toBe(401);
         expect(JSON.parse(context.res.body).msg).toBe("No token provided");
@@ -93,7 +93,7 @@ describe("Unit tests for updateUrl", () => {
             }
         }
     
-        await updateUrl(context, req);
+        await updateURL(context, req);
     
         expect(context.res.status).toBe(401);
         expect(JSON.parse(context.res.body).msg).toBe("Invalid token");
@@ -121,7 +121,7 @@ describe("Unit tests for updateUrl", () => {
             }
         }
     
-        await updateUrl(context, req);
+        await updateURL(context, req);
     
         expect(context.res.status).toBe(401);
         expect(JSON.parse(context.res.body).msg).toBe("Invalid token");
@@ -146,7 +146,7 @@ describe("Unit tests for updateUrl", () => {
             }
         }
     
-        await updateUrl(context, req);
+        await updateURL(context, req);
     
         expect(context.res.status).toBe(404);
         expect(JSON.parse(context.res.body).msg).toBe("Short URL not found");
@@ -173,7 +173,7 @@ describe("Unit tests for updateUrl", () => {
             }
         }
 
-        await createUrl(context, req);
+        await createURL(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe(randomShort);
@@ -195,7 +195,7 @@ describe("Unit tests for updateUrl", () => {
             }
         }
     
-        await updateUrl(context, req2);
+        await updateURL(context, req2);
     
         expect(context.res.status).toBe(401);
         expect(JSON.parse(context.res.body).msg).toBe("You do not own this URL");
@@ -223,7 +223,7 @@ describe("Unit tests for updateUrl", () => {
             }
         }
 
-        await createUrl(context, req);
+        await createURL(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe(randomShort);
@@ -245,7 +245,7 @@ describe("Unit tests for updateUrl", () => {
             }
         }
     
-        await updateUrl(context, req2);
+        await updateURL(context, req2);
     
         expect(context.res.status).toBe(401);
         expect(JSON.parse(context.res.body).msg).toBe("You do not own this URL");
@@ -272,7 +272,7 @@ describe("Unit tests for updateUrl", () => {
             }
         }
     
-        await updateUrl(context, req);
+        await updateURL(context, req);
     
         expect(context.res.status).toBe(400);
         expect(JSON.parse(context.res.body).msg).toBe("Short URL contains invalid characters");
@@ -298,7 +298,7 @@ describe("Unit tests for updateUrl", () => {
             }
         }
     
-        await updateUrl(context, req);
+        await updateURL(context, req);
     
         expect(context.res.status).toBe(400);
         expect(JSON.parse(context.res.body).msg).toBe("Error with a link");
@@ -318,7 +318,7 @@ describe("Unit tests for updateUrl", () => {
             }
         }
     
-        await updateUrl(context, req);
+        await updateURL(context, req);
     
         expect(context.res.status).toBe(400);
         expect(JSON.parse(context.res.body).msg).toBe("Too many URLs");
@@ -354,7 +354,7 @@ describe("Unit tests for updateUrl", () => {
             }
         }
     
-        await updateUrl(context, req);
+        await updateURL(context, req);
     
         expect(context.res.status).toBe(400);
         expect(JSON.parse(context.res.body).msg).toBe("A value was not provided");
@@ -390,7 +390,7 @@ describe("Unit tests for updateUrl", () => {
             }
         }
     
-        await updateUrl(context, req);
+        await updateURL(context, req);
     
         expect(context.res.status).toBe(400);
         expect(JSON.parse(context.res.body).msg).toBe("No AND/OR value provided");
@@ -426,7 +426,7 @@ describe("Unit tests for updateUrl", () => {
             }
         }
     
-        await updateUrl(context, req);
+        await updateURL(context, req);
     
         expect(context.res.status).toBe(400);
         expect(JSON.parse(context.res.body).msg).toBe("Invalid operator");
@@ -464,7 +464,7 @@ describe("Unit tests for updateUrl", () => {
             }
         }
     
-        await updateUrl(context, req);
+        await updateURL(context, req);
     
         expect(context.res.status).toBe(400);
         expect(JSON.parse(context.res.body).msg).toBe("URL Parameter param was invalid");
@@ -501,7 +501,7 @@ describe("Unit tests for updateUrl", () => {
             }
         }
     
-        await updateUrl(context, req);
+        await updateURL(context, req);
     
         expect(context.res.status).toBe(400);
         expect(JSON.parse(context.res.body).msg).toBe("URL Parameter param was invalid");
@@ -527,7 +527,7 @@ describe("Unit tests for updateUrl", () => {
             }
         }
     
-        await updateUrl(context, req);
+        await updateURL(context, req);
     
         expect(context.res.status).toBe(400);
         expect(JSON.parse(context.res.body).msg).toBe("Unsafe URL detected");

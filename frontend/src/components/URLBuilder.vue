@@ -18,13 +18,13 @@ const conditionals: Ref<Conditional[]> = ref([
     }
 ]);
 const error = ref("");
-const responseUrl = ref("");
+const responseURL = ref("");
 
 const accessToken = inject(accessTokenKey)
 const refresh = inject(refreshTokensKey) as () => Promise<boolean>
 const updateMsg = inject(updateMsgKey) as (msg: string, err?: boolean) => void
 
-const createConditionalUrl = async (retry: boolean = true) => {
+const createConditionalURL = async (retry: boolean = true) => {
     //verify
     for (let i = 0; i < conditionals.value.length; i++) {
         const c = conditionals.value[i];
@@ -83,9 +83,9 @@ const createConditionalUrl = async (retry: boolean = true) => {
 
     let url;
     if (import.meta.env.PROD) {
-        url = `${import.meta.env.VITE_PROD_API_URL}/api/createUrl`;
+        url = `${import.meta.env.VITE_PROD_API_URL}/api/createURL`;
     } else {
-        url = `${import.meta.env.VITE_DEV_API_URL}/api/createUrl`;
+        url = `${import.meta.env.VITE_DEV_API_URL}/api/createURL`;
     }
     
     const authHeader = accessToken && accessToken.value ? `Bearer ${accessToken.value}` : "Bearer NONE";
@@ -111,13 +111,13 @@ const createConditionalUrl = async (retry: boolean = true) => {
     
     if (response.msg === "Invalid token") {
         if (retry && await refresh()) {
-            await createConditionalUrl(false);
+            await createConditionalURL(false);
         }
         return;
     } else if (response.msg) {
         updateMsg(response.msg, true);
     } else {
-        responseUrl.value = response;
+        responseURL.value = response;
     }
     
 }
@@ -146,7 +146,7 @@ const reset = () => {
         }
     ];
     error.value = "";
-    responseUrl.value = "";
+    responseURL.value = "";
 }
 
 const domain = computed(() => {
@@ -160,11 +160,11 @@ const domain = computed(() => {
 </script>
 
 <template>
-   <div v-if="responseUrl !== ''" class = "text-center text-white font-light border border-black/25 xl:w-1/3 lg:w-2/3 md:w-5/6 w-[95%] p-6 mt-8 mx-auto rounded bg-black/10">
+   <div v-if="responseURL !== ''" class = "text-center text-white font-light border border-black/25 xl:w-1/3 lg:w-2/3 md:w-5/6 w-[95%] p-6 mt-8 mx-auto rounded bg-black/10">
         <p class = "text-lg">Your Conditional URL was successfully created!</p>
         <input readonly type="text" 
             class = "w-80 text-black bg-white/90 text-center border border-black rounded px-2 py-1 mt-4" 
-            :value="`${domain}/${responseUrl}`" 
+            :value="`${domain}/${responseURL}`" 
             @click="selectText"/>
 
         <button @click='reset' class="mt-8 mx-auto hover:text-green-200 cursor-pointer block border border-black/20 rounded px-3 py-2 bg-black/10">
@@ -187,7 +187,7 @@ const domain = computed(() => {
             @update-conditionals="(updated) => conditionals = updated"
         />
 
-        <button @click = "createConditionalUrl()" class = "w-full px-4 py-2 mt-6 rounded-b-xl bg-black/10 border-t border-t-black/10 text-white font-light mx-auto hover:bg-black/30 hover:text-green-100 select-none">
+        <button @click = "createConditionalURL()" class = "w-full px-4 py-2 mt-6 rounded-b-xl bg-black/10 border-t border-t-black/10 text-white font-light mx-auto hover:bg-black/30 hover:text-green-100 select-none">
             Create Conditional URL
         </button>
         

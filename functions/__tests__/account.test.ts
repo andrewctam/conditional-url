@@ -1,14 +1,14 @@
 import { Context } from "@azure/functions";
 
-import createUrl from "../createUrl/index";
+import createURL from "../createURL/index";
 import signUp from "../signUp/index";
 import signIn from "../signIn/index";
-import getConditionals from "../getConditionals/index";
-import userUrls from "../userUrls/index";
-import updateUrl from "../updateUrl/index";
-import renameUrl from "../renameUrl/index";
-import deleteUrl from "../deleteUrl/index";
-import determineURL from "../determineUrl/index";
+import getURL from "../getURL/index";
+import getUserURLs from "../getUserURLs/index";
+import updateURL from "../updateURL/index";
+import renameURL from "../renameURL/index";
+import deleteURL from "../deleteURL/index";
+import determineURL from "../determineURL/index";
 import deleteAccount from "../deleteAccount/index";
 
 describe("Sign up, Login, and Create/Edit URLs", () => {
@@ -161,7 +161,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
             }
         }
 
-        await createUrl(context, req);
+        await createURL(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe(randomShort);
@@ -179,14 +179,14 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
             }
         }
 
-        await userUrls(context, req);
+        await getUserURLs(context, req);
 
         expect(context.res.status).toBe(200);
 
         const body = JSON.parse(context.res.body);
         expect(body.page).toBe(0);
         expect(body.pageCount).toBe(1);
-        expect(body.paginatedUrls).toStrictEqual([randomShort]);
+        expect(body.paginatedURLs).toStrictEqual([randomShort]);
     })
 
     it("should successfully be retrieved", async () => {
@@ -200,7 +200,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
             }
         }
 
-        await getConditionals(context, req);
+        await getURL(context, req);
 
         expect(context.res.status).toBe(200);
 
@@ -220,7 +220,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
             }
         }
 
-        await updateUrl(context, req);
+        await updateURL(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe(randomShort);
@@ -237,7 +237,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
             }
         }
 
-        await getConditionals(context, req);
+        await getURL(context, req);
 
         expect(context.res.status).toBe(200);
 
@@ -257,7 +257,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
             }
         }
 
-        await renameUrl(context, req);
+        await renameURL(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("URL renamed");
@@ -275,7 +275,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
             }
         }
 
-        await getConditionals(context, req);
+        await getURL(context, req);
 
         expect(context.res.status).toBe(200);
 
@@ -297,14 +297,14 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
             }
         }
 
-        await userUrls(context, req);
+        await getUserURLs(context, req);
 
         expect(context.res.status).toBe(200);
 
         const body = JSON.parse(context.res.body);
         expect(body.page).toBe(0);
         expect(body.pageCount).toBe(1);
-        expect(body.paginatedUrls).toStrictEqual([randomShort2]);
+        expect(body.paginatedURLs).toStrictEqual([randomShort2]);
     })
 
     
@@ -339,7 +339,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
             }
         }
 
-        await createUrl(context, req);
+        await createURL(context, req);
 
         expect(context.res.status).toBe(409);
         expect(JSON.parse(context.res.body).msg).toBe("Short URL already exists");
@@ -358,7 +358,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
             }
         }
 
-        await createUrl(context, req);
+        await createURL(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe(randomShort);
@@ -375,7 +375,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
             }
         }
 
-        await deleteUrl(context, req);
+        await deleteURL(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("URL deleted");
@@ -412,7 +412,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
             }
         }
 
-        await createUrl(context, req);
+        await createURL(context, req);
 
         expect(context.res.status).toBe(409);
         expect(JSON.parse(context.res.body).msg).toBe("Short URL already exists");
@@ -431,7 +431,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
             }
         }
 
-        await createUrl(context, req);
+        await createURL(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe(randomShort);
@@ -509,14 +509,14 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
             }
         }
 
-        await userUrls(context, req);
+        await getUserURLs(context, req);
 
         expect(context.res.status).toBe(200);
 
         const body = JSON.parse(context.res.body);
         expect(body.page).toBe(0);
         expect(body.pageCount).toBe(0);
-        expect(body.paginatedUrls).toStrictEqual([]);
+        expect(body.paginatedURLs).toStrictEqual([]);
     })
 
 
@@ -531,7 +531,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
             }
         }
 
-        await getConditionals(context, req);
+        await getURL(context, req);
         expect(context.res.status).toBe(401);
         expect(JSON.parse(context.res.body).msg).toBe("You do not own this URL");
     })

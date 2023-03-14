@@ -1,6 +1,6 @@
 
 import { Context } from "@azure/functions";
-import determineUrl from "./index";
+import determineURL from "./index";
 
 test("Nonexistent url", async () => {
     const context = ({ log: jest.fn() } as unknown) as Context;
@@ -14,7 +14,7 @@ test("Nonexistent url", async () => {
         }
     }
 
-    await determineUrl(context, req);
+    await determineURL(context, req);
 
     expect(context.res.status).toBe(404);
     expect(JSON.parse(context.res.body).msg).toBe("Short URL not found");
@@ -33,7 +33,7 @@ test("Invalid short", async () => {
         }
     }
 
-    await determineUrl(context, req);
+    await determineURL(context, req);
 
     expect(context.res.status).toBe(400);
     expect(JSON.parse(context.res.body).msg).toBe("Short URL contains invalid characters");
@@ -52,7 +52,7 @@ test("Invalid short 2", async () => {
         }
     }
 
-    await determineUrl(context, req);
+    await determineURL(context, req);
 
     expect(context.res.status).toBe(400);
     expect(JSON.parse(context.res.body).msg).toBe("Short URL contains invalid characters");

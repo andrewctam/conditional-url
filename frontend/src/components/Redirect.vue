@@ -106,9 +106,9 @@ onMounted(async () => {
 
     let url;
     if (import.meta.env.PROD) {
-        url = `${import.meta.env.VITE_PROD_API_URL}/api/determineUrl`;
+        url = `${import.meta.env.VITE_PROD_API_URL}/api/determineURL`;
     } else {
-        url = `${import.meta.env.VITE_DEV_API_URL}/api/determineUrl`;
+        url = `${import.meta.env.VITE_DEV_API_URL}/api/determineURL`;
     }
 
     const response = await fetch(url, {

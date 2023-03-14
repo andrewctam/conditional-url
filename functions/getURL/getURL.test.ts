@@ -1,7 +1,7 @@
 import { Context } from "@azure/functions";
-import getConditionals from "./index"
+import getURL from "./index"
 import signUp from "../signUp/index";
-import createUrl from "../createUrl/index";
+import createURL from "../createURL/index";
 import jwt from "jsonwebtoken";
 
 test("No token", async () => {
@@ -16,7 +16,7 @@ test("No token", async () => {
         }
     }
 
-    await getConditionals(context, req);
+    await getURL(context, req);
 
     expect(context.res.status).toBe(401);
     expect(JSON.parse(context.res.body).msg).toBe("No token provided");
@@ -34,7 +34,7 @@ test("Bad token", async () => {
         }
     }
 
-    await getConditionals(context, req);
+    await getURL(context, req);
 
     expect(context.res.status).toBe(401);
     expect(JSON.parse(context.res.body).msg).toBe("Invalid token");
@@ -55,7 +55,7 @@ test("Bad token 2", async () => {
         }
     }
 
-    await getConditionals(context, req);
+    await getURL(context, req);
 
     expect(context.res.status).toBe(401);
     expect(JSON.parse(context.res.body).msg).toBe("Invalid token");
@@ -74,7 +74,7 @@ test("Bad token 3", async () => {
         }
     }
 
-    await getConditionals(context, req);
+    await getURL(context, req);
 
     expect(context.res.status).toBe(401);
     expect(JSON.parse(context.res.body).msg).toBe("Invalid token");
@@ -136,7 +136,7 @@ describe("Setup", () => {
             }
         }
 
-        await createUrl(context, req2);
+        await createURL(context, req2);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe(short);
@@ -155,7 +155,7 @@ describe("Setup", () => {
             }
         }
     
-        await getConditionals(context, req);
+        await getURL(context, req);
     
         expect(context.res.status).toBe(401);
         expect(JSON.parse(context.res.body).msg).toBe("You do not own this URL");
@@ -174,7 +174,7 @@ describe("Setup", () => {
             }
         }
     
-        await getConditionals(context, req);
+        await getURL(context, req);
     
         expect(context.res.status).toBe(404);
         expect(JSON.parse(context.res.body).msg).toBe("Short URL not found");
@@ -194,7 +194,7 @@ describe("Setup", () => {
             }
         }
     
-        await getConditionals(context, req);
+        await getURL(context, req);
     
         expect(context.res.status).toBe(400);
         expect(JSON.parse(context.res.body).msg).toBe("No short URL provided");
@@ -213,7 +213,7 @@ describe("Setup", () => {
             }
         }
     
-        await getConditionals(context, req);
+        await getURL(context, req);
     
         expect(context.res.status).toBe(401);
         expect(JSON.parse(context.res.body).msg).toBe("You do not own this URL");

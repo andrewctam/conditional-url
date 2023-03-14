@@ -1,6 +1,6 @@
 import { Context } from "@azure/functions";
 
-import createUrl from "./index"
+import createURL from "./index"
 import jwt from "jsonwebtoken";
 
 test("Invalid URL Special Character", async () => {
@@ -22,7 +22,7 @@ test("Invalid URL Special Character", async () => {
         }
     }
 
-    await createUrl(context, req);
+    await createURL(context, req);
 
     expect(context.res.status).toBe(400);
     expect(JSON.parse(context.res.body).msg).toBe("Short URL contains invalid characters");
@@ -48,7 +48,7 @@ test("Invalid URL Link", async () => {
         }
     }
 
-    await createUrl(context, req);
+    await createURL(context, req);
 
     expect(context.res.status).toBe(400);
     expect(JSON.parse(context.res.body).msg).toBe("Error with a link");
@@ -68,7 +68,7 @@ test("Invalid URL Too Many", async () => {
         }
     }
 
-    await createUrl(context, req);
+    await createURL(context, req);
 
     expect(context.res.status).toBe(400);
     expect(JSON.parse(context.res.body).msg).toBe("Too many URLs");
@@ -104,7 +104,7 @@ test("Invalid URL Empty Value", async () => {
         }
     }
 
-    await createUrl(context, req);
+    await createURL(context, req);
 
     expect(context.res.status).toBe(400);
     expect(JSON.parse(context.res.body).msg).toBe("A value was not provided");
@@ -140,7 +140,7 @@ test("Invalid URL Missing AND/OR", async () => {
         }
     }
 
-    await createUrl(context, req);
+    await createURL(context, req);
 
     expect(context.res.status).toBe(400);
     expect(JSON.parse(context.res.body).msg).toBe("No AND/OR value provided");
@@ -176,7 +176,7 @@ test("Invalid URL Missing Operator", async () => {
         }
     }
 
-    await createUrl(context, req);
+    await createURL(context, req);
 
     expect(context.res.status).toBe(400);
     expect(JSON.parse(context.res.body).msg).toBe("Invalid operator");
@@ -214,7 +214,7 @@ test("Invalid URL Params Invalid Character", async () => {
         }
     }
 
-    await createUrl(context, req);
+    await createURL(context, req);
 
     expect(context.res.status).toBe(400);
     expect(JSON.parse(context.res.body).msg).toBe("URL Parameter param was invalid");
@@ -251,7 +251,7 @@ test("Invalid URL Params Undefined", async () => {
         }
     }
 
-    await createUrl(context, req);
+    await createURL(context, req);
 
     expect(context.res.status).toBe(400);
     expect(JSON.parse(context.res.body).msg).toBe("URL Parameter param was invalid");
@@ -277,7 +277,7 @@ test("Invalid URL Unsafe URL", async () => {
         }
     }
 
-    await createUrl(context, req);
+    await createURL(context, req);
 
     expect(context.res.status).toBe(400);
     expect(JSON.parse(context.res.body).msg).toBe("Unsafe URL detected");
@@ -305,7 +305,7 @@ test("Invalid URL Bad Token URL", async () => {
         }
     }
 
-    await createUrl(context, req);
+    await createURL(context, req);
 
     expect(context.res.status).toBe(401);
     expect(JSON.parse(context.res.body).msg).toBe("Invalid token");
@@ -334,7 +334,7 @@ test("Invalid URL Invalid Token 2", async () => {
         }
     }
 
-    await createUrl(context, req);
+    await createURL(context, req);
 
     expect(context.res.status).toBe(401);
     expect(JSON.parse(context.res.body).msg).toBe("Invalid token");
@@ -366,7 +366,7 @@ test("Invalid URL Invalid Token 3", async () => {
         }
     }
 
-    await createUrl(context, req);
+    await createURL(context, req);
 
     expect(context.res.status).toBe(400);
     expect(JSON.parse(context.res.body).msg).toBe("User not found");

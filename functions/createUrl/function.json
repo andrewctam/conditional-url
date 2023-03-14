@@ -15,5 +15,5 @@
       "name": "res"
     }
   ],
-  "scriptFile": "../dist/createUrl/index.js"
+  "scriptFile": "../dist/createURL/index.js"
 }

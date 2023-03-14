@@ -1,8 +1,8 @@
 import { Context } from "@azure/functions";
 import getDataPoints from "./index"
 import signUp from "../signUp/index";
-import createUrl from "../createUrl/index";
-import determineUrl from "../determineUrl/index";
+import createURL from "../createURL/index";
+import determineURL from "../determineURL/index";
 import jwt from "jsonwebtoken";
 jest.setTimeout(10000)
 
@@ -138,7 +138,7 @@ describe("Setup", () => {
             }
         }
 
-        await createUrl(context, req2);
+        await createURL(context, req2);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe(short);
@@ -234,7 +234,7 @@ describe("Setup", () => {
             }
         }
 
-        await determineUrl(context, req);
+        await determineURL(context, req);
         expect(context.res.status).toBe(200);
     })
 

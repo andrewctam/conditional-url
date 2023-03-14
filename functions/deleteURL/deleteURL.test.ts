@@ -1,7 +1,7 @@
 import { Context } from "@azure/functions";
-import deleteUrl from "./index"
+import deleteURL from "./index"
 import signUp from "../signUp/index";
-import createUrl from "../createUrl/index";
+import createURL from "../createURL/index";
 import jwt from "jsonwebtoken";
 
 test("No token", async () => {
@@ -16,7 +16,7 @@ test("No token", async () => {
         }
     }
 
-    await deleteUrl(context, req);
+    await deleteURL(context, req);
 
     expect(context.res.status).toBe(401);
     expect(JSON.parse(context.res.body).msg).toBe("No token provided");
@@ -34,7 +34,7 @@ test("Bad token", async () => {
         }
     }
 
-    await deleteUrl(context, req);
+    await deleteURL(context, req);
 
     expect(context.res.status).toBe(401);
     expect(JSON.parse(context.res.body).msg).toBe("Invalid token");
@@ -55,7 +55,7 @@ test("Bad token 2", async () => {
         }
     }
 
-    await deleteUrl(context, req);
+    await deleteURL(context, req);
 
     expect(context.res.status).toBe(401);
     expect(JSON.parse(context.res.body).msg).toBe("Invalid token");
@@ -74,7 +74,7 @@ test("Bad token 3", async () => {
         }
     }
 
-    await deleteUrl(context, req);
+    await deleteURL(context, req);
 
     expect(context.res.status).toBe(401);
     expect(JSON.parse(context.res.body).msg).toBe("Invalid token");
@@ -136,7 +136,7 @@ describe("Setup", () => {
             }
         }
 
-        await createUrl(context, req2);
+        await createURL(context, req2);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe(short);
@@ -155,7 +155,7 @@ describe("Setup", () => {
             }
         }
     
-        await deleteUrl(context, req);
+        await deleteURL(context, req);
     
         expect(context.res.status).toBe(404);
         expect(JSON.parse(context.res.body).msg).toBe("User not found");
@@ -173,7 +173,7 @@ describe("Setup", () => {
             }
         }
     
-        await deleteUrl(context, req);
+        await deleteURL(context, req);
     
         expect(context.res.status).toBe(401);
         expect(JSON.parse(context.res.body).msg).toBe("Unauthorized");
@@ -191,7 +191,7 @@ describe("Setup", () => {
             }
         }
     
-        await deleteUrl(context, req);
+        await deleteURL(context, req);
     
         expect(context.res.status).toBe(401);
         expect(JSON.parse(context.res.body).msg).toBe("Unauthorized");
@@ -209,7 +209,7 @@ describe("Setup", () => {
             }
         }
     
-        await deleteUrl(context, req);
+        await deleteURL(context, req);
     
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("URL deleted");

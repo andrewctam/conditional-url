@@ -1,7 +1,7 @@
 import { Context } from "@azure/functions";
 
 import signUp from "../signUp/index";
-import createUrl from "../createUrl/index";
+import createURL from "../createURL/index";
 import deleteAllURLs from "./index";
 import determineURL from "../determineURL/index";
 import jwt from "jsonwebtoken";
@@ -50,7 +50,7 @@ describe("Delete account tests", () => {
                     ])
                 }
             }
-            await createUrl(context, req2);
+            await createURL(context, req2);
 
             expect(context.res.status).toBe(200);
         }
@@ -186,7 +186,7 @@ describe("Delete account tests", () => {
                     ])
                 }
             }
-            await createUrl(context, req);
+            await createURL(context, req);
 
             expect(context.res.status).toBe(409);
             expect(JSON.parse(context.res.body).msg).toBe("Short URL already exists");
@@ -212,7 +212,7 @@ describe("Delete account tests", () => {
                     ])
                 }
             }
-            await createUrl(context, req);
+            await createURL(context, req);
 
             expect(context.res.status).toBe(200);
             expect(JSON.parse(context.res.body)).toBe(short);

@@ -5,7 +5,7 @@ import * as bcrypt from 'bcryptjs';
 import { User } from "../signUp";
 import { DataPoint } from "../getDataPoints";
 import { ObjectId } from "mongodb";
-import { URL } from "../createUrl";
+import { URL } from "../createURL";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const username = req.body.username;
@@ -50,7 +50,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     const urlsCollection = db.collection<URL>("urls");
     if (alsoDeleteURLs) {
-        const deleteUrl = {
+        const deleteURL = {
             $set: {
                 deleted: true,
                 uid: new ObjectId(), //disassociate the data with this url
@@ -62,7 +62,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             }
         }
 
-        await urlsCollection.updateMany({owner: username}, deleteUrl);
+        await urlsCollection.updateMany({owner: username}, deleteURL);
         
     } else {
         const removeOwner = {

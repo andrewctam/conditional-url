@@ -18,7 +18,7 @@ const sort = ref<"Increasing" | "Decreasing">("Decreasing");
 const counts = ref< {key: string, count: number}[]>(new Array(10).fill({key: "-", count: "-"}));
 const page = ref(0);
 const pageCount = ref(0);
-const selectedUrl = ref<number>(-1);
+const selectedURL = ref<number>(-1);
 
 const accessToken = inject(accessTokenKey);
 const refresh = inject(refreshTokensKey) as () => Promise<boolean>;
@@ -30,9 +30,9 @@ const getCounts = async (retry: boolean = true, refreshData: boolean = false) =>
 
     let url;
     if (import.meta.env.PROD) {
-        url = `${import.meta.env.VITE_PROD_API_URL}/api/getData?short=${props.short}&variable=${selected.value}&selectedUrl=${selectedUrl.value}&page=${page.value}&sort=${sort.value}&refresh=${refreshData}`;
+        url = `${import.meta.env.VITE_PROD_API_URL}/api/getDataPage?short=${props.short}&variable=${selected.value}&selectedURL=${selectedURL.value}&page=${page.value}&sort=${sort.value}&refresh=${refreshData}`;
     } else {
-        url = `${import.meta.env.VITE_DEV_API_URL}/api/getData?short=${props.short}&variable=${selected.value}&selectedUrl=${selectedUrl.value}&page=${page.value}&sort=${sort.value}&refresh=${refreshData}`;
+        url = `${import.meta.env.VITE_DEV_API_URL}/api/getDataPage?short=${props.short}&variable=${selected.value}&selectedURL=${selectedURL.value}&page=${page.value}&sort=${sort.value}&refresh=${refreshData}`;
     }
 
     doneLoading.value = false;
@@ -72,7 +72,7 @@ watch(selected, async () => {
     await getCounts();
 })
 
-watch([sort, page, selectedUrl], async () => {
+watch([sort, page, selectedURL], async () => {
     await getCounts();
 })
 
@@ -110,7 +110,7 @@ const truncate = (str: string, maxLen: number = 50) => {
         </div>
 
         <span class="mr-1 font-light">From:</span>
-        <select v-model="selectedUrl" class = "select-none text-white border border-black/50 p-1 m-1 w-[200px] rounded font-light bg-gray-600/50">
+        <select v-model="selectedURL" class = "select-none text-white border border-black/50 p-1 m-1 w-[200px] rounded font-light bg-gray-600/50">
             <option class="bg-gray-600" value = "-1">
                 All URLs
             </option>

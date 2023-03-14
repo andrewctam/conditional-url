@@ -33,8 +33,8 @@ const onlyOne = computed(() => {
     return props.first && props.last;
 })
 
-const handleUpdateUrl = (e: Event) => {
-    emit('updateUrl', props.i, (e.target as HTMLInputElement).value);
+const handleUpdateURL = (e: Event) => {
+    emit('updateURL', props.i, (e.target as HTMLInputElement).value);
 }
 
 
@@ -47,7 +47,7 @@ const addCondition = (condition: Condition) => {
 
 const emit = defineEmits<{
     (event: 'delete', id: number): void,
-    (event: 'updateUrl', id: number, url: string): void
+    (event: 'updateURL', id: number, url: string): void
     (event: 'addCondition', id: number, condition: Condition): void,
     (event: 'removeCondition', id: number, conId: number): void,
     (event: 'toggleAnd', id: number): void
@@ -55,12 +55,15 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <div class = "bg-white/5 hover:bg-black/5 border border-black/20 my-4 mx-2 p-3 relative rounded cursor-move select-none text-sm md:text-base">
+    <div class = "bg-white/5 hover:bg-black/5 border border-black/20 my-4 mx-2 p-3 relative rounded select-none text-sm md:text-base">
         <button tabindex="-1" v-if="!onlyOne" @click = "$emit('delete', props.i)" class = "absolute top-0 right-2 text-lg text-red-400 hover:text-red-500">
             × 
         </button>
 
-       
+        <svg v-if="!onlyOne" xmlns="http://www.w3.org/2000/svg" class="handle cursor-grab absolute top-1 mx-auto left-0 right-0 text-white/20 hover:text-white/60" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path> <path d="M5 9m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path> <path d="M5 15m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path> <path d="M12 9m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path> <path d="M12 15m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path> <path d="M19 9m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path> <path d="M19 15m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path>
+        </svg>
+
         <div class = "flex">
             <span class = "font-light text-white mr-1 h-fit">{{msg}}</span>
 
@@ -97,17 +100,17 @@ const emit = defineEmits<{
             <div v-else-if="props.conditions.length > 0" class="text-white/25 italic"> Unused Conditions...</div>
         </div>
 
-        <div class="flex mt-1 relative">
+        <div class="mt-1 relative flex items-center">
             <p class = "my-auto mr-1 font-light text-white"> Redirect to</p>
             <input 
                 :value="props.url" 
-                @input="handleUpdateUrl" 
+                @input="handleUpdateURL" 
                 type = "text" 
                 class = "flex-grow pl-1 pr-10 text-white font-light bg-white/10 focus:outline-none placeholder:text-white/50" 
                 placeholder="https://example.com"
             />
 
-            <div class="absolute top-1 right-1 text-gray-400 text-xs font-light">
+            <div class="absolute right-1 text-gray-400 text-xs font-light">
                 {{"URL " + (i + 1)}}
             </div>
         </div>

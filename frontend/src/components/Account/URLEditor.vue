@@ -29,9 +29,10 @@ const confirmDelete = ref(false);
 const currentName = ref(props.short);
 const rename = ref(props.short);
 
+const notOwner = ref(false);
 
 onMounted(async () => {
-    await getUrl();
+    await getURL();
 });
 
 const emit = defineEmits<{
@@ -39,6 +40,14 @@ const emit = defineEmits<{
     (event: 'closeAndFetch'): void
 }>();
 
+
+const close = () => {
+    if (props.short !== currentName.value) {
+        emit('closeAndFetch');
+    } else {
+        emit('close');
+    }
+}
 
 const deleteURL = async (retry: boolean = true) => {
     if (!accessToken || !accessToken.value || !currentName.value)
@@ -76,10 +85,6 @@ const deleteURL = async (retry: boolean = true) => {
         emit('closeAndFetch');
     }
 }
-
-const validRename = computed(() => {
-    return rename.value !== "" && rename.value !== currentName.value;
-});
 
 const renameURL = async (retry: boolean = true) => {
     if (!accessToken || !accessToken.value || !currentName.value || !validRename.value)
@@ -123,15 +128,15 @@ const renameURL = async (retry: boolean = true) => {
 }
 
 
-const getUrl = async (updateConditionals: boolean = true, updateRedirects: boolean = true, retry: boolean = true) => {
+const getURL = async (updateConditionals: boolean = true, updateRedirects: boolean = true, retry: boolean = true) => {
     if (!accessToken || !accessToken.value)
         return;
 
     let url;
     if (import.meta.env.PROD) {
-        url = `${import.meta.env.VITE_PROD_API_URL}/api/getConditionals?short=${currentName.value}`;
+        url = `${import.meta.env.VITE_PROD_API_URL}/api/getURL?short=${currentName.value}`;
     } else {
-        url = `${import.meta.env.VITE_DEV_API_URL}/api/getConditionals?short=${currentName.value}`;
+        url = `${import.meta.env.VITE_DEV_API_URL}/api/getURL?short=${currentName.value}`;
     }
 
     const response = await fetch(url, {
@@ -146,10 +151,12 @@ const getUrl = async (updateConditionals: boolean = true, updateRedirects: boole
     
     if (response.msg === "Invalid token" ) {
         if (retry && await refresh()) {
-            await getUrl(updateConditionals, updateRedirects, false);
+            await getURL(updateConditionals, updateRedirects, false);
         } else {
             doneLoading.value = true;
         }
+    } else if (response.msg === "You do not own this URL" || response.msg === "Short URL not found") {
+        notOwner.value = true;
     } else if (!response.msg) {
         if (updateConditionals)
             conditionals.value = JSON.parse(response.conditionals);
@@ -161,23 +168,6 @@ const getUrl = async (updateConditionals: boolean = true, updateRedirects: boole
     
     doneLoading.value = true;
 }
-
-const close = () => {
-    if (props.short !== currentName.value) {
-        emit('closeAndFetch');
-    } else {
-        emit('close');
-    }
-}
-
-const analyticsNonZero = computed(() => {
-    for (let i = 0; i < redirects.value.length; i++) {    
-        if (redirects.value[i] !== 0)
-            return true;
-    }
-
-    return false;
-})
 
 
 const updateConditionals = async (retry: boolean = true) => {
@@ -238,9 +228,9 @@ const updateConditionals = async (retry: boolean = true) => {
 
     let url;
     if (import.meta.env.PROD) {
-        url = `${import.meta.env.VITE_PROD_API_URL}/api/updateUrl`;
+        url = `${import.meta.env.VITE_PROD_API_URL}/api/updateURL`;
     } else {
-        url = `${import.meta.env.VITE_DEV_API_URL}/api/updateUrl`;
+        url = `${import.meta.env.VITE_DEV_API_URL}/api/updateURL`;
     }
     
     const response = await fetch(url, {
@@ -284,14 +274,26 @@ const domain = computed(() => {
     }
 })
 
+const validRename = computed(() => {
+    return rename.value !== "" && rename.value !== currentName.value;
+});
 
+
+const analyticsNonZero = computed(() => {
+    for (let i = 0; i < redirects.value.length; i++) {    
+        if (redirects.value[i] !== 0)
+            return true;
+    }
+
+    return false;
+})
 
 </script>
 
 <template>
     <div class = "w-[95%] mx-auto relative" :class = "showAnalytics ? 'md:mx-10 md:grid md:grid-cols-2 md:gap-10' : 'xl:w-1/2 lg:w-2/3 md:w-5/6'" >
-        <div class="w-full h-fit bg-black/10 my-8 pb-4 mx-auto border border-black/25 rounded-xl text-center"
-            :class = "showAnalytics ? 'bg-[#3e3f41] z-50 max-h-[25vh] md:max-h-[95vh] overflow-y-auto sticky top-4' : ''"
+        <div class="w-full h-fit bg-[#3e3f41] my-8 pb-4 mx-auto border border-black/25 rounded-xl text-center"
+            :class = "showAnalytics ? 'z-50 max-h-[25vh] md:max-h-[95vh] overflow-y-auto sticky top-4' : ''"
             >
             
             <span @click="close" class="absolute top-1 left-2 text-xl text-white hover:text-red-200 cursor-pointer select-none">
@@ -300,19 +302,20 @@ const domain = computed(() => {
         
             <div class="mt-6">
                 <span class = "text-white font-extralight text-base md:text-lg lg:text-xl">{{`${domain}/`}}</span>
-                <input 
-                    v-model = "rename" 
-                    type = "text" 
+                <input v-model = "rename" type = "text" 
                     class = "text-white font-extralight w-[120px] bg-white/10 focus:outline-none placeholder:text-white/50 placeholder:text-center text-base md:text-lg lg:text-xl"
-                    />
+                />
             </div>
             
-            <div v-if="doneLoading" class = "w-[95%] mt-2 py-2 mx-auto text-center relative">
+            <div v-if="notOwner" class = "w-[95%] mt-4 mx-auto text-center relative text-red-200 font-extralight text-xl">
+                You do not own this URL
+            </div>
+            <div v-else-if="doneLoading" class = "w-[95%] mt-2 py-2 mx-auto text-center relative">
                 <div class="flex flex-wrap justify-center">
                     <div class="mx-3 my-1 font-extralight text-sm w-fit px-2 py-1 bg-black/10 rounded-lg select-none whitespace-nowrap text-blue-200 hover:text-blue-300 cursor-pointer"
                         @click="() => { 
                             if (!showAnalytics) //if toggling to true, refresh the redirects
-                                getUrl(false, true, true)
+                                getURL(false, true, true)
 
                             showAnalytics = !showAnalytics 
                         }">
@@ -355,9 +358,7 @@ const domain = computed(() => {
                         conditionals = updated;
                         changesMade = true;
                     }"
-                /> 
-
-
+                />
             </div>
         </div>
 
@@ -374,7 +375,7 @@ const domain = computed(() => {
 
             <RedirectsChart
                 :redirects="redirects"
-                @refresh = "getUrl(false, true, true)"
+                @refresh = "getURL(false, true, true)"
             />
 
             <DataTable

@@ -1,8 +1,8 @@
 import { Context } from "@azure/functions";
-import renameUrl from "./index"
+import renameURL from "./index"
 import signUp from "../signUp/index";
-import createUrl from "../createUrl/index";
-import deleteUrl from "../deleteUrl/index";
+import createURL from "../createURL/index";
+import deleteURL from "../deleteURL/index";
 import jwt from "jsonwebtoken";
 
 test("Bad short", async () => {
@@ -18,7 +18,7 @@ test("Bad short", async () => {
         }
     }
 
-    await renameUrl(context, req);
+    await renameURL(context, req);
 
     expect(context.res.status).toBe(400);
     expect(JSON.parse(context.res.body).msg).toBe("Short URL contains invalid characters");
@@ -38,7 +38,7 @@ test("Bad short 2", async () => {
         }
     }
 
-    await renameUrl(context, req);
+    await renameURL(context, req);
 
     expect(context.res.status).toBe(400);
     expect(JSON.parse(context.res.body).msg).toBe("Short URL contains invalid characters");
@@ -59,7 +59,7 @@ test("Bad token", async () => {
         }
     }
 
-    await renameUrl(context, req);
+    await renameURL(context, req);
 
     expect(context.res.status).toBe(401);
     expect(JSON.parse(context.res.body).msg).toBe("Invalid token");
@@ -80,7 +80,7 @@ test("Bad token 2", async () => {
         }
     }
 
-    await renameUrl(context, req);
+    await renameURL(context, req);
 
     expect(context.res.status).toBe(401);
     expect(JSON.parse(context.res.body).msg).toBe("No token provided");
@@ -100,7 +100,7 @@ test("Bad token 3", async () => {
         }
     }
 
-    await renameUrl(context, req);
+    await renameURL(context, req);
 
     expect(context.res.status).toBe(401);
     expect(JSON.parse(context.res.body).msg).toBe("Invalid token");
@@ -165,7 +165,7 @@ describe("Setup", () => {
             }
         }
 
-        await createUrl(context, req2);
+        await createURL(context, req2);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe(short);
@@ -186,7 +186,7 @@ describe("Setup", () => {
             }
         }
 
-        await createUrl(context, req2);
+        await createURL(context, req2);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe(existingShort);
@@ -207,7 +207,7 @@ describe("Setup", () => {
             }
         }
 
-        await createUrl(context, req2);
+        await createURL(context, req2);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe(user2Short);
@@ -230,7 +230,7 @@ describe("Setup", () => {
             }
         }
 
-        await renameUrl(context, req);
+        await renameURL(context, req);
 
         expect(context.res.status).toBe(401);
         expect(JSON.parse(context.res.body).msg).toBe("Invalid token");
@@ -249,7 +249,7 @@ describe("Setup", () => {
             }
         }
     
-        await renameUrl(context, req);
+        await renameURL(context, req);
     
         expect(context.res.status).toBe(401);
         expect(JSON.parse(context.res.body).msg).toBe("Unauthorized");
@@ -271,7 +271,7 @@ describe("Setup", () => {
             }
         }
     
-        await renameUrl(context, req);
+        await renameURL(context, req);
     
         expect(context.res.status).toBe(404);
         expect(JSON.parse(context.res.body).msg).toBe("User not found");
@@ -291,7 +291,7 @@ describe("Setup", () => {
             }
         }
     
-        await renameUrl(context, req);
+        await renameURL(context, req);
     
         expect(context.res.status).toBe(409);
         expect(JSON.parse(context.res.body).msg).toBe("New URL already exists");
@@ -310,7 +310,7 @@ describe("Setup", () => {
             }
         }
     
-        await renameUrl(context, req);
+        await renameURL(context, req);
     
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("URL renamed")
@@ -329,7 +329,7 @@ describe("Setup", () => {
             }
         }
     
-        await renameUrl(context, req);
+        await renameURL(context, req);
     
         expect(context.res.status).toBe(409);
         expect(JSON.parse(context.res.body).msg).toBe("New URL already exists");
@@ -349,7 +349,7 @@ describe("Setup", () => {
             }
         }
     
-        await renameUrl(context, req);
+        await renameURL(context, req);
     
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("URL renamed")
@@ -367,7 +367,7 @@ describe("Setup", () => {
             }
         }
     
-        await deleteUrl(context, req);
+        await deleteURL(context, req);
     
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("URL deleted")
@@ -386,7 +386,7 @@ describe("Setup", () => {
             }
         }
     
-        await renameUrl(context, req);
+        await renameURL(context, req);
     
         expect(context.res.status).toBe(409);
         expect(JSON.parse(context.res.body).msg).toBe("New URL already exists");
@@ -405,7 +405,7 @@ describe("Setup", () => {
             }
         }
     
-        await renameUrl(context, req);
+        await renameURL(context, req);
     
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("URL renamed");

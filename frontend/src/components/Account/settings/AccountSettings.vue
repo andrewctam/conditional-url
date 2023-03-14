@@ -2,7 +2,7 @@
 import { ref } from 'vue'
 import ChangePassword from './ChangePassword.vue';
 import DeleteAccount from './DeleteAccount.vue';
-import DeleteAllUrls from './DeleteAllURLs.vue';
+import DeleteAllURLs from './DeleteAllURLs.vue';
 
 const enum Setting {
     None,
@@ -26,7 +26,7 @@ const emit = defineEmits<
         </span>
 
         <ChangePassword v-if="selected === Setting.ChangePassword"  @close="selected=Setting.None" />
-        <DeleteAllUrls v-else-if="selected === Setting.DeleteAllURLs" @close="selected=Setting.None" />
+        <DeleteAllURLs v-else-if="selected === Setting.DeleteAllURLs" @close="selected=Setting.None" />
         <DeleteAccount v-else-if="selected === Setting.DeleteAccount" @close="selected=Setting.None" @signout="$emit('signout')" />
 
         <div v-else="">

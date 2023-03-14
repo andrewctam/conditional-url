@@ -1,8 +1,8 @@
 import { Context } from "@azure/functions";
 
 import signUp from "../signUp/index";
-import createUrl, { URL } from "../createUrl/index";
-import getData from "../getData"
+import createURL, { URL } from "../createURL/index";
+import getDataPage from "../getDataPage"
 import getDataPoints from "../getDataPoints"
 import { DataPoint } from "../getDataPoints/index";
 import { Variables } from "../types";
@@ -115,7 +115,7 @@ describe("Get requested analytics", () => {
             }
         }
 
-        await createUrl(context, req);
+        await createURL(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe(randomShort);
@@ -125,7 +125,7 @@ describe("Get requested analytics", () => {
         const db = client.db("conditionalurl");
         const urlsCollection = db.collection<URL>("urls")
 
-        const shortUrl = await urlsCollection.findOne({_id: randomShort});
+        const shortURL = await urlsCollection.findOne({_id: randomShort});
 
         //artificially create some data
         let currentMinute = start;
@@ -141,7 +141,7 @@ describe("Get requested analytics", () => {
 
             const datum: DataPoint = {
                 _id: new ObjectId(),
-                urlUID: shortUrl.uid,
+                urlUID: shortURL.uid,
                 i: i,
                 values: Variables.map(v => {
                     const val = Math.floor(Math.random() * UNIQUE_VALS).toString()
@@ -177,19 +177,19 @@ describe("Get requested analytics", () => {
                     expDataPointsURL0.push(0)
 
                 mins.push({
-                    urlUID: shortUrl.uid, 
+                    urlUID: shortURL.uid, 
                     unixMin: currentMinute,
                     [i]: 1
                 })
 
                 hrs.push({
-                    urlUID: shortUrl.uid,
+                    urlUID: shortURL.uid,
                     unixHour: unixHr,
                     [i]: 1
                 })
 
                 days.push({
-                    urlUID: shortUrl.uid,
+                    urlUID: shortURL.uid,
                     unixDay: unixDay,
                     [i]: 1
                 })
@@ -202,7 +202,7 @@ describe("Get requested analytics", () => {
 
                 if (mins[mins.length - 1].unixMin !== currentMinute) {
                     mins.push({
-                        urlUID: shortUrl.uid,
+                        urlUID: shortURL.uid,
                         owner: username,
                         unixMin: currentMinute,
                         [i]: 1
@@ -216,7 +216,7 @@ describe("Get requested analytics", () => {
 
                 if (hrs[hrs.length - 1].unixHr !== unixHr) {
                     hrs.push({
-                        urlUID: shortUrl.uid,
+                        urlUID: shortURL.uid,
                         owner: username,
                         unixHour: unixHr,
                         [i]: 1
@@ -231,7 +231,7 @@ describe("Get requested analytics", () => {
 
                 if (days[days.length - 1].unixDay !== unixDay) {
                     days.push({
-                        urlUID: shortUrl.uid,
+                        urlUID: shortURL.uid,
                         owner: username,
                         unixDay: unixDay,
                         [i]: 1
@@ -363,13 +363,13 @@ describe("Get requested analytics", () => {
                     short: randomShort,
                     variable: v,
                     page: 0,
-                    selectedUrl: -1,
+                    selectedURL: -1,
                     sort: "Increasing",
                     refresh: true
                 }
             }
 
-            await getData(context, req);
+            await getDataPage(context, req);
 
             expect(context.res.status).toBe(200);
             
@@ -393,13 +393,13 @@ describe("Get requested analytics", () => {
                 short: randomShort,
                 variable: "Language",
                 page: 0,
-                selectedUrl: -1,
+                selectedURL: -1,
                 sort: "Decreasing",
                 refresh: true
             }
         }
 
-        await getData(context, req);
+        await getDataPage(context, req);
 
         expect(context.res.status).toBe(200);
         
@@ -424,13 +424,13 @@ describe("Get requested analytics", () => {
                     short: randomShort,
                     variable: v,
                     page: 0,
-                    selectedUrl: 0,
+                    selectedURL: 0,
                     sort: "Increasing",
                     refresh: true
                 }
             }
 
-            await getData(context, req);
+            await getDataPage(context, req);
 
             expect(context.res.status).toBe(200);
             
@@ -462,13 +462,13 @@ describe("Get requested analytics", () => {
                     short: randomShort,
                     variable: v,
                     page: page,
-                    selectedUrl: -1,
+                    selectedURL: -1,
                     sort: "Increasing",
                     refresh: true
                 }
             }
 
-            await getData(context, req);
+            await getDataPage(context, req);
 
             expect(context.res.status).toBe(200);
             
@@ -500,13 +500,13 @@ describe("Get requested analytics", () => {
                     short: randomShort,
                     variable: v,
                     page: page,
-                    selectedUrl: -1,
+                    selectedURL: -1,
                     sort: "Increasing",
                     refresh: false
                 }
             }
 
-            await getData(context, req);
+            await getDataPage(context, req);
 
             expect(context.res.status).toBe(200);
             
@@ -530,7 +530,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: start,
                 limit: 30,
-                selectedUrl: -1,
+                selectedURL: -1,
                 refresh: true
             }
         }
@@ -556,7 +556,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: start,
                 limit: 30,
-                selectedUrl: -1,
+                selectedURL: -1,
                 refresh: false
             }
         }
@@ -584,7 +584,7 @@ describe("Get requested analytics", () => {
                 span: "hour",
                 start: start,
                 limit: 30,
-                selectedUrl: -1,
+                selectedURL: -1,
                 refresh: true
             }
         }
@@ -612,7 +612,7 @@ describe("Get requested analytics", () => {
                 span: "hour",
                 start: start,
                 limit: 30,
-                selectedUrl: -1,
+                selectedURL: -1,
                 refresh: false
             }
         }
@@ -641,7 +641,7 @@ describe("Get requested analytics", () => {
                 span: "day",
                 start: start,
                 limit: 10,
-                selectedUrl: -1,
+                selectedURL: -1,
                 refresh: true
             }
         }
@@ -667,7 +667,7 @@ describe("Get requested analytics", () => {
                 span: "day",
                 start: start,
                 limit: 10,
-                selectedUrl: -1,
+                selectedURL: -1,
                 refresh: false
             }
         }
@@ -697,7 +697,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: start,
                 limit: 30,
-                selectedUrl: 0,
+                selectedURL: 0,
                 refresh: true
             }
         }
@@ -723,7 +723,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: start,
                 limit: 30,
-                selectedUrl: 0,
+                selectedURL: 0,
                 refresh: false
             }
         }
@@ -751,7 +751,7 @@ describe("Get requested analytics", () => {
                 span: "hour",
                 start: start,
                 limit: 30,
-                selectedUrl: 0,
+                selectedURL: 0,
                 refresh: true
             }
         }
@@ -779,7 +779,7 @@ describe("Get requested analytics", () => {
                 span: "hour",
                 start: start,
                 limit: 30,
-                selectedUrl: 0,
+                selectedURL: 0,
                 refresh: false
             }
         }
@@ -808,7 +808,7 @@ describe("Get requested analytics", () => {
                 span: "day",
                 start: start,
                 limit: 10,
-                selectedUrl: 0,
+                selectedURL: 0,
                 refresh: true
             }
         }
@@ -834,7 +834,7 @@ describe("Get requested analytics", () => {
                 span: "day",
                 start: start,
                 limit: 10,
-                selectedUrl: 0,
+                selectedURL: 0,
                 refresh: false
             }
         }
@@ -862,7 +862,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: start - 1000,
                 limit: 30,
-                selectedUrl: -1,
+                selectedURL: -1,
                 refresh: true
             }
         }
@@ -887,7 +887,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: start - 1000,
                 limit: 30,
-                selectedUrl: -1,
+                selectedURL: -1,
                 refresh: false
             }
         }
@@ -913,7 +913,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: start - 5,
                 limit: 30,
-                selectedUrl: -1,
+                selectedURL: -1,
                 refresh: true
             }
         }
@@ -938,7 +938,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: start - 5,
                 limit: 30,
-                selectedUrl: -1,
+                selectedURL: -1,
                 refresh: false
             }
         }
@@ -964,7 +964,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: start + 5,
                 limit: 30,
-                selectedUrl: -1,
+                selectedURL: -1,
                 refresh: true
             }
         }
@@ -989,7 +989,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: start + 5,
                 limit: 30,
-                selectedUrl: -1,
+                selectedURL: -1,
                 refresh: false
             }
         }
@@ -1014,7 +1014,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: new Date("2030-01-01").getTime() / 60000,
                 limit: 30,
-                selectedUrl: -1,
+                selectedURL: -1,
                 refresh: true
             }
         }
@@ -1040,7 +1040,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: new Date("2030-01-01").getTime() / 60000,
                 limit: 30,
-                selectedUrl: -1,
+                selectedURL: -1,
                 refresh: false
             }
         }
@@ -1066,7 +1066,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: end - 25,
                 limit: 30,
-                selectedUrl: -1,
+                selectedURL: -1,
                 refresh: true
             }
         }
@@ -1078,8 +1078,7 @@ describe("Get requested analytics", () => {
         const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
         
         const exp = [...expDataPoints.slice(expDataPoints.length - 1 - 25).map((i) => i.toString()), "0", "0", "0", "0"]
-        console.log(exp)
-        console.log(dataPoints)
+
         expect(dataPoints).toStrictEqual(exp);
     });
 
@@ -1096,7 +1095,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: end - 25,
                 limit: 30,
-                selectedUrl: -1,
+                selectedURL: -1,
                 refresh: true
             }
         }
@@ -1108,8 +1107,7 @@ describe("Get requested analytics", () => {
         const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
         
         const exp = [...expDataPoints.slice(expDataPoints.length - 1 - 25).map((i) => i.toString()), "0", "0", "0", "0"]
-        console.log(exp)
-        console.log(dataPoints)
+
         expect(dataPoints).toStrictEqual(exp);
     });
 

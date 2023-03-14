@@ -16,5 +16,5 @@
       "name": "res"
     }
   ],
-  "scriptFile": "../dist/getConditionals/index.js"
+  "scriptFile": "../dist/getURL/index.js"
 }

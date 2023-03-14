@@ -2,7 +2,7 @@ import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 import { ObjectId } from "mongodb";
-import { URL } from "../createUrl";
+import { URL } from "../createURL";
 import { connectDB } from "../database";
 import { DataPoint } from "../getDataPoints";
 import { User } from "../signUp";
@@ -64,7 +64,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     }
 
     const urlsCollection = db.collection<URL>("urls");
-    const deleteUrl = {
+    const deleteURL = {
         $set: {
             deleted: true,
             uid: new ObjectId(), //disassociate the data with this url
@@ -75,7 +75,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         }
     }
 
-    await urlsCollection.updateMany({_id: {$in: user.urls}}, deleteUrl);
+    await urlsCollection.updateMany({_id: {$in: user.urls}}, deleteURL);
 
     const removeFromList = {
         $set: {

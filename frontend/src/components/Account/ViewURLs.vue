@@ -24,7 +24,7 @@ const sorting = ref(Sorting.Newest);
 const page = ref(0);
 const pageCount = ref(1);
 const doneLoading = ref(false);
-const shortUrls: Ref<string[]> = ref([]); 
+const shortURLs: Ref<string[]> = ref([]); 
 const refresh = inject(refreshTokensKey) as () => Promise<boolean>
 const accessToken = inject(accessTokenKey)
 
@@ -35,7 +35,7 @@ const emit = defineEmits<{
 
 const selected = ref("");
 
-const fetchUrls = async (direction: Direction, retry: boolean = true) => {
+const fetchURLs = async (direction: Direction, retry: boolean = true) => {
     if (!accessToken || !accessToken.value)
         return;
     
@@ -45,9 +45,9 @@ const fetchUrls = async (direction: Direction, retry: boolean = true) => {
     doneLoading.value = false;
     let url;
     if (import.meta.env.PROD) {
-        url = `${import.meta.env.VITE_PROD_API_URL}/api/userUrls?page=${page.value + direction}&sort=${sorting.value}`;
+        url = `${import.meta.env.VITE_PROD_API_URL}/api/getUserURLs?page=${page.value + direction}&sort=${sorting.value}`;
     } else {
-        url = `${import.meta.env.VITE_DEV_API_URL}/api/userUrls?page=${page.value + direction}&sort=${sorting.value}`;
+        url = `${import.meta.env.VITE_DEV_API_URL}/api/getUserURLs?page=${page.value + direction}&sort=${sorting.value}`;
     }
 
     const response = await fetch(url, {
@@ -62,11 +62,11 @@ const fetchUrls = async (direction: Direction, retry: boolean = true) => {
 
     if (response.msg === "Invalid token") {
         if (retry && await refresh()) {
-            await fetchUrls(direction, false);
+            await fetchURLs(direction, false);
         }
         return;
     } else if (!response.msg) {
-        shortUrls.value = response.paginatedUrls;
+        shortURLs.value = response.paginatedURLs;
         pageCount.value = response.pageCount;
     }
 
@@ -83,7 +83,7 @@ const hasPrev = computed(() => {
 })
 
 onBeforeMount(async () => {
-    await fetchUrls(Direction.Same);
+    await fetchURLs(Direction.Same);
 
     const view = route.query.view as string | undefined;
     if (view) {
@@ -94,7 +94,7 @@ onBeforeMount(async () => {
 
 watch(sorting, async (oldSorting, newSorting) => {
     if (oldSorting !== newSorting)
-        await fetchUrls(Direction.Same);
+        await fetchURLs(Direction.Same);
 })
 
 watch(selected, () => {
@@ -113,7 +113,7 @@ watch(selected, () => {
             Your URLs
         </div>
 
-        <div v-if="doneLoading && shortUrls.length > 0" class="mt-1 mb-4">
+        <div v-if="doneLoading && shortURLs.length > 0" class="mt-1 mb-4">
             <span @click="sorting=Sorting.Newest" class="cursor-pointer select-none" :class="sorting===Sorting.Newest ? 'text-blue-200' : 'text-white'" >
                 Newest
             </span>
@@ -128,13 +128,13 @@ watch(selected, () => {
         <p v-if="!doneLoading" class="text-white font-light mt-4">
             Loading...
         </p>
-        <p v-else-if="shortUrls.length === 0" class="text-white font-light my-4">
+        <p v-else-if="shortURLs.length === 0" class="text-white font-light my-4">
             No URLs created. 
             <span @click="$emit('close')" class="text-blue-200 hover:text-blue-300 font-light cursor-pointer">
                 Create your first!
             </span>
         </p>
-        <ul v-else v-for="short in shortUrls" :key="short" class="my-3">
+        <ul v-else v-for="short in shortURLs" :key="short" class="my-3">
             <ShortBlock 
                 :short="short" 
                 @select="() => { selected = short }" 
@@ -147,8 +147,8 @@ watch(selected, () => {
             :hasPrev="hasPrev"
             :page="page"
             :pageCount="pageCount"
-            @prev="fetchUrls(Direction.Prev)"
-            @next="fetchUrls(Direction.Next)"
+            @prev="fetchURLs(Direction.Prev)"
+            @next="fetchURLs(Direction.Next)"
         />
     </div>
 
@@ -158,7 +158,7 @@ watch(selected, () => {
         @close="selected = ''"
         @closeAndFetch="() => {
             selected = '';
-            fetchUrls(Direction.Same);
+            fetchURLs(Direction.Same);
         }"
     />    
 

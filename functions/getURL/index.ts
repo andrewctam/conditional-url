@@ -1,7 +1,7 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
-import { URL } from "../createUrl";
+import { URL } from "../createURL";
 import { connectDB } from "../database"
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {

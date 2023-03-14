@@ -3,9 +3,9 @@ import { Context } from "@azure/functions";
 import signUp from "../signUp/index";
 import signIn from "../signIn/index";
 import deleteAccount from "./index";
-import createUrl from "../createUrl/index";
-import determineUrl from "../determineUrl/index";
-import getConditionals from "../getConditionals/index";
+import createURL from "../createURL/index";
+import determineURL from "../determineURL/index";
+import getURL from "../getURL/index";
 
 describe("Delete account tests", () => {
     const context = ({ log: jest.fn() } as unknown) as Context;
@@ -50,7 +50,7 @@ describe("Delete account tests", () => {
                 ])
             }
         }
-        await createUrl(context, req2);
+        await createURL(context, req2);
 
         expect(context.res.status).toBe(200);
     })
@@ -155,7 +155,7 @@ describe("Delete account tests", () => {
             }
         }
 
-        await determineUrl(context, req);
+        await determineURL(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com");
@@ -195,7 +195,7 @@ describe("Delete account tests", () => {
                 ])
             }
         }
-        await createUrl(context, req2);
+        await createURL(context, req2);
 
         expect(context.res.status).toBe(200);
     })
@@ -211,7 +211,7 @@ describe("Delete account tests", () => {
             }
         }
 
-        await getConditionals(context, req);
+        await getURL(context, req);
 
         expect(context.res.status).toBe(401);
         expect(JSON.parse(context.res.body).msg).toBe("You do not own this URL");
@@ -234,7 +234,7 @@ describe("Delete account tests", () => {
                 ])
             }
         }
-        await createUrl(context, req);
+        await createURL(context, req);
 
         expect(context.res.status).toBe(409);
         expect(JSON.parse(context.res.body).msg).toBe("Short URL already exists");
@@ -288,7 +288,7 @@ describe("Delete account tests", () => {
             }
         }
 
-        await determineUrl(context, req);
+        await determineURL(context, req);
 
         expect(context.res.status).toBe(404);
         expect(JSON.parse(context.res.body).msg).toBe("Short URL not found");

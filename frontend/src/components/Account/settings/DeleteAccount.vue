@@ -58,15 +58,15 @@ const deleteAccount = async () => {
         Delete Account
     </div>
 
-    <button @click="$emit('close')" class = "rounded px-4 py-1 mr-4 border border-black bg-red-800/50 font-light text-white mt-8"> 
+    <button @click="$emit('close')" class = "rounded px-4 py-1 mr-4 bg-red-800/50 font-light text-white mt-8"> 
         Cancel
     </button>
-    <button @click="action=Action.Account" class = "rounded px-4 py-1 mr-4 border border-black font-light disabled:text-gray-400 text-white mt-8"
-                :class="action===Action.Account ? 'bg-black/50' : 'bg-transparent'"> 
+    <button @click="action=Action.Account" class = "rounded px-4 py-1 mr-4  font-light disabled:text-gray-400 text-white mt-8"
+                :class="action===Action.Account ? 'bg-black/50' : 'bg-black/20'"> 
         Delete Account
     </button>
-    <button @click="action=Action.Both" class = "rounded px-4 py-1 border border-black font-light disabled:text-gray-400 text-white mt-8"
-                :class="action===Action.Both ? 'bg-black/50' : 'bg-transparent'"> 
+    <button @click="action=Action.Both" class = "rounded px-4 py-1 font-light disabled:text-gray-400 text-white mt-8"
+                :class="action===Action.Both ? 'bg-black/50' : 'bg-black/20'"> 
         Delete Account and All URLs
     </button>
 
@@ -74,7 +74,7 @@ const deleteAccount = async () => {
         After deleting your account, you will no longer be able to edit your URLs or view analytics, even if you create a new account with the same username
     </div>
 
-    <div v-if="action!==Action.None" class = "mt-12 border border-black w-fit mx-auto p-3 bg-black/20 rounded text-center">
+    <div v-if="action!==Action.None" class = "mt-12 w-fit mx-auto p-3 bg-black/20 rounded text-center">
        
         <label class="text-sm font-light text-white">
             Confirm Password
@@ -83,7 +83,7 @@ const deleteAccount = async () => {
             <input v-model="password" type="password" autocomplete="password" class="sm:text-sm text-black p-1 bg-gray-400 font-light rounded-md w-60">
         </div>
 
-        <button @click="deleteAccount" :disabled="password.length === 0" class = " rounded px-4 py-1 border border-black bg-green-100/10 font-light disabled:text-gray-400 text-white mt-4"> 
+        <button @click="deleteAccount" :disabled="password.length === 0" class = " rounded px-4 py-1 bg-green-100/10 font-light disabled:text-gray-400 text-white mt-4"> 
             Finalize
         </button>
     </div>

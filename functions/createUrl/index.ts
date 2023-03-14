@@ -100,7 +100,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     dotenv.config();
     const GOOGLE_API_KEY = process.env["GOOGLE_API_KEY"];
     if (GOOGLE_API_KEY) { //if no key provided in .env, skip
-        const apiUrl = "https://safebrowsing.googleapis.com/v4/threatMatches:find?key=" + GOOGLE_API_KEY;
+        const APIURL = "https://safebrowsing.googleapis.com/v4/threatMatches:find?key=" + GOOGLE_API_KEY;
 
         const body = {
             client: {
@@ -116,7 +116,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         }
 
         try {
-            const response = await axios.post(apiUrl, body);
+            const response = await axios.post(APIURL, body);
             if (response.data.matches) {
                 context.res = {
                     status: 400,
@@ -174,11 +174,11 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     const urlsColleciton = db.collection<URL>("urls");
 
-    const existingUrl = await urlsColleciton.findOne({_id: short});
+    const existingURL = await urlsColleciton.findOne({_id: short});
 
-    if (existingUrl !== null) {
+    if (existingURL !== null) {
         //owner deleted an old url and is now trying to recreate it
-        if (existingUrl.deleted && existingUrl.owner !== "" && existingUrl.owner === owner) {
+        if (existingURL.deleted && existingURL.owner !== "" && existingURL.owner === owner) {
             const updateDoc = {
                 $set: { //reinitialize the deleted url
                     deleted: false,

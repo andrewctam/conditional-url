@@ -1,11 +1,11 @@
 import { Context } from "@azure/functions";
 
 import signUp from "../signUp/index";
-import userUrls from "./index";
-import createUrl from "../createUrl/index";
+import getUserURLs from "./index";
+import createURL from "../createURL/index";
 import jwt from "jsonwebtoken";
 
-describe("Unit tests for userUrls", () => {
+describe("Unit tests for getUserURLs", () => {
     let accessToken;
     let shorts = [];
 
@@ -51,7 +51,7 @@ describe("Unit tests for userUrls", () => {
                 }
             }
     
-            await createUrl(context, req);
+            await createURL(context, req);
     
         }
 
@@ -71,14 +71,14 @@ describe("Unit tests for userUrls", () => {
             }
         }
 
-        await userUrls(context, req);
+        await getUserURLs(context, req);
 
         expect(context.res.status).toBe(200);
 
         let body = JSON.parse(context.res.body);
         expect(body.page).toBe(0);
         expect(body.pageCount).toBe(2);
-        expect(body.paginatedUrls).toStrictEqual(copy.splice(0, 10));
+        expect(body.paginatedURLs).toStrictEqual(copy.splice(0, 10));
 
         req = {
             headers: {
@@ -91,14 +91,14 @@ describe("Unit tests for userUrls", () => {
             }
         }
 
-        await userUrls(context, req);
+        await getUserURLs(context, req);
 
         expect(context.res.status).toBe(200);
 
         body = JSON.parse(context.res.body);
         expect(body.page).toBe(1);
         expect(body.pageCount).toBe(2);
-        expect(body.paginatedUrls).toStrictEqual(copy.splice(0, 1));
+        expect(body.paginatedURLs).toStrictEqual(copy.splice(0, 1));
     })
 
     
@@ -118,14 +118,14 @@ describe("Unit tests for userUrls", () => {
             }
         }
 
-        await userUrls(context, req);
+        await getUserURLs(context, req);
 
         expect(context.res.status).toBe(200);
 
         let body = JSON.parse(context.res.body);
         expect(body.page).toBe(0);
         expect(body.pageCount).toBe(2);
-        expect(body.paginatedUrls).toStrictEqual(reversed.splice(0, 10));
+        expect(body.paginatedURLs).toStrictEqual(reversed.splice(0, 10));
 
         req = {
             headers: {
@@ -138,14 +138,14 @@ describe("Unit tests for userUrls", () => {
             }
         }
 
-        await userUrls(context, req);
+        await getUserURLs(context, req);
 
         expect(context.res.status).toBe(200);
 
         body = JSON.parse(context.res.body);
         expect(body.page).toBe(1);
         expect(body.pageCount).toBe(2);
-        expect(body.paginatedUrls).toStrictEqual(reversed.splice(0, 1));
+        expect(body.paginatedURLs).toStrictEqual(reversed.splice(0, 1));
     })
     
 
@@ -165,14 +165,14 @@ describe("Unit tests for userUrls", () => {
             }
         }
 
-        await userUrls(context, req);
+        await getUserURLs(context, req);
 
         expect(context.res.status).toBe(200);
 
         let body = JSON.parse(context.res.body);
         expect(body.page).toBe(0);
         expect(body.pageCount).toBe(2);
-        expect(body.paginatedUrls).toStrictEqual(reversed.splice(0, 10));
+        expect(body.paginatedURLs).toStrictEqual(reversed.splice(0, 10));
 
     })
     
@@ -190,7 +190,7 @@ describe("Unit tests for userUrls", () => {
             }
         }
 
-        await userUrls(context, req);
+        await getUserURLs(context, req);
 
         expect(context.res.status).toBe(401);
         expect(JSON.parse(context.res.body).msg).toBe("Invalid token")
@@ -210,7 +210,7 @@ describe("Unit tests for userUrls", () => {
             }
         }
 
-        await userUrls(context, req);
+        await getUserURLs(context, req);
 
         expect(context.res.status).toBe(401);
         expect(JSON.parse(context.res.body).msg).toBe("No token provided")
@@ -232,7 +232,7 @@ describe("Unit tests for userUrls", () => {
             }
         }
 
-        await userUrls(context, req);
+        await getUserURLs(context, req);
 
         expect(context.res.status).toBe(401);
         expect(JSON.parse(context.res.body).msg).toBe("Invalid token")
@@ -255,7 +255,7 @@ describe("Unit tests for userUrls", () => {
             }
         }
 
-        await userUrls(context, req);
+        await getUserURLs(context, req);
 
         expect(context.res.status).toBe(401);
         expect(JSON.parse(context.res.body).msg).toBe("User not found")

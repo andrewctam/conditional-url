@@ -34,7 +34,7 @@ const start = ref<string>(
 
 const span = ref<Span>(Span.Hour);
 const limit = ref<number>(30);
-const selectedUrl = ref("-1");
+const selectedURL = ref("-1");
 
 const dataPoints = ref<number[]>([]);
 
@@ -46,7 +46,7 @@ onMounted(async () => {
     await getDataPoints(true, true);
 })
 
-watch([span, limit, start, selectedUrl], async () => {
+watch([span, limit, start, selectedURL], async () => {
         await getDataPoints();
 })
 
@@ -63,9 +63,9 @@ const getDataPoints = async (retry: boolean = true, refreshData = false) => {
 
     let url;
     if (import.meta.env.PROD) {
-        url = `${import.meta.env.VITE_PROD_API_URL}/api/getDataPoints?short=${props.short}&span=${span.value}&start=${unixInMins}&limit=${limit.value}&selectedUrl=${selectedUrl.value}&refresh=${refreshData}`;
+        url = `${import.meta.env.VITE_PROD_API_URL}/api/getDataPoints?short=${props.short}&span=${span.value}&start=${unixInMins}&limit=${limit.value}&selectedURL=${selectedURL.value}&refresh=${refreshData}`;
     } else {
-        url = `${import.meta.env.VITE_DEV_API_URL}/api/getDataPoints?short=${props.short}&span=${span.value}&start=${unixInMins}&limit=${limit.value}&selectedUrl=${selectedUrl.value}&refresh=${refreshData}`;
+        url = `${import.meta.env.VITE_DEV_API_URL}/api/getDataPoints?short=${props.short}&span=${span.value}&start=${unixInMins}&limit=${limit.value}&selectedURL=${selectedURL.value}&refresh=${refreshData}`;
     }
 
     const response = await fetch(url, {
@@ -204,7 +204,7 @@ const options = {
         </p>
         <div class="mt-2">
             <span class="mr-1 font-light">From:</span>
-            <select v-model="selectedUrl" id="selectedUrl" class = "border border-black/50 p-1 m-1 rounded font-normal bg-gray-600/50">
+            <select v-model="selectedURL" id="selectedURL" class = "border border-black/50 p-1 m-1 rounded font-normal bg-gray-600/50">
                 <option class="bg-gray-600"  value = "-1"> All URLs </option>
                 <option class="bg-gray-600" v-for="url in props.urls" :value="url.id">
                     {{`(${url.id + 1}) ${truncate(url.url)}`}}

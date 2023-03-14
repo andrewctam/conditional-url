@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 import { Variables } from "../types";
 import { createClient } from "redis";
-import { URL } from "../createUrl";
+import { URL } from "../createURL";
 import { DataPoint } from "../getDataPoints";
 
 
@@ -42,9 +42,9 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
     
-    let selectedUrl = parseInt(req.query.selectedUrl)
-    if (selectedUrl === undefined || isNaN(selectedUrl)) {
-        selectedUrl = -1;
+    let selectedURL = parseInt(req.query.selectedURL)
+    if (selectedURL === undefined || isNaN(selectedURL)) {
+        selectedURL = -1;
     }
 
     if (payload === undefined || payload.username === undefined) {
@@ -119,14 +119,14 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             const owner = info[0];
             const cachedSortDirection = parseInt(info[1]);
             const cachedVariable = info[2];
-            const cachedSelectedUrl = parseInt(info[3]);
+            const cachedselectedURL = parseInt(info[3]);
             const cachedFirstPage = parseInt(info[4]);
             const cachedLastPage = parseInt(info[5]);
             pageCount = parseInt(info[6]);
 
             if (owner === undefined ||
                 variable !== cachedVariable ||
-                selectedUrl !== cachedSelectedUrl || 
+                selectedURL !== cachedselectedURL || 
                 sortDirection !== cachedSortDirection ||
                 page < cachedFirstPage ||
                 page > cachedLastPage) {
@@ -189,7 +189,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             {
                 $match: {
                     urlUID: url.uid,
-                    i: selectedUrl === -1 ? {$exists: true} : selectedUrl
+                    i: selectedURL === -1 ? {$exists: true} : selectedURL
                 }
             },
             {
@@ -255,7 +255,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                     url.owner,
                     sortDirection.toString(),
                     variable, //variable cached
-                    selectedUrl.toString(), //selectedUrl cached
+                    selectedURL.toString(), //selectedURL cached
                     extendedPageStart.toString(), //first page cached
                     lastCachedPage.toString(), //last page cached
                     pageCount.toString(), 

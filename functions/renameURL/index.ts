@@ -2,7 +2,7 @@ import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 import { ObjectId } from "mongodb";
-import { URL } from "../createUrl";
+import { URL } from "../createURL";
 import { connectDB } from "../database";
 import { User } from "../signUp";
 
@@ -80,26 +80,26 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     const urls = await urlsCollection.find({ _id: { $in: [oldShort, newShort] } }).toArray();
     
-    const oldUrl = urls.find(url => url._id === oldShort);
-    const newUrl = urls.find(url => url._id === newShort);
+    const oldURL = urls.find(url => url._id === oldShort);
+    const newURL = urls.find(url => url._id === newShort);
 
-    if (oldUrl === undefined || oldUrl.owner !== payload.username) {
+    if (oldURL === undefined || oldURL.owner !== payload.username) {
         //already checked to see if on user's list above, but not found in DB
         throw Error("URL from user list not found");
     }
 
-    oldUrl._id = newShort;
-    if (newUrl === undefined) {
-        await urlsCollection.insertOne(oldUrl);
+    oldURL._id = newShort;
+    if (newURL === undefined) {
+        await urlsCollection.insertOne(oldURL);
     } else {
-        if (newUrl.owner !== payload.username || !newUrl.deleted) {
+        if (newURL.owner !== payload.username || !newURL.deleted) {
             context.res = {
                 status: 409,
                 body: JSON.stringify({"msg": "New URL already exists"})
             };
             return;
         } else {
-            await urlsCollection.updateOne({ _id: newShort }, { $set: oldUrl })
+            await urlsCollection.updateOne({ _id: newShort }, { $set: oldURL })
         }
     }
     

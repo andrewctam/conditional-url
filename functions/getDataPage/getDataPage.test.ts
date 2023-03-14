@@ -1,8 +1,8 @@
 import { Context } from "@azure/functions";
-import getData from "./index"
+import getDataPage from "./index"
 import signUp from "../signUp/index";
-import createUrl from "../createUrl/index";
-import determineUrl from "../determineUrl/index";
+import createURL from "../createURL/index";
+import determineURL from "../determineURL/index";
 import jwt from "jsonwebtoken";
 
 test("No token", async () => {
@@ -16,13 +16,13 @@ test("No token", async () => {
             short: Math.random().toString(36).substring(2, 10),
             variable: "Language",
             page: 0,
-            selectedUrl: -1,
+            selectedURL: -1,
             sort: "Increasing",
             refresh: true
         }
     }
 
-    await getData(context, req);
+    await getDataPage(context, req);
 
     expect(context.res.status).toBe(401);
     expect(JSON.parse(context.res.body).msg).toBe("No token provided");
@@ -39,13 +39,13 @@ test("Bad token", async () => {
             short: Math.random().toString(36).substring(2, 10),
             variable: "Language",
             page: 0,
-            selectedUrl: -1,
+            selectedURL: -1,
             sort: "Increasing",
             refresh: true
         }
     }
 
-    await getData(context, req);
+    await getDataPage(context, req);
 
     expect(context.res.status).toBe(401);
     expect(JSON.parse(context.res.body).msg).toBe("Invalid token");
@@ -65,13 +65,13 @@ test("Bad token 2", async () => {
             short: Math.random().toString(36).substring(2, 10),
             variable: "Language",
             page: 0,
-            selectedUrl: -1,
+            selectedURL: -1,
             sort: "Increasing",
             refresh: true
         }
     }
 
-    await getData(context, req);
+    await getDataPage(context, req);
 
     expect(context.res.status).toBe(401);
     expect(JSON.parse(context.res.body).msg).toBe("Invalid token");
@@ -89,13 +89,13 @@ test("Bad token 3", async () => {
             short: Math.random().toString(36).substring(2, 10),
             variable: "Language",
             page: 0,
-            selectedUrl: -1,
+            selectedURL: -1,
             sort: "Increasing",
             refresh: true
         }
     }
 
-    await getData(context, req);
+    await getDataPage(context, req);
 
     expect(context.res.status).toBe(401);
     expect(JSON.parse(context.res.body).msg).toBe("Invalid token");
@@ -140,7 +140,7 @@ describe("Setup", () => {
             }
         }
 
-        await createUrl(context, req2);
+        await createURL(context, req2);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe(short);
@@ -158,13 +158,13 @@ describe("Setup", () => {
                 short: short,
                 variable: "Language",
                 page: 0,
-                selectedUrl: -1,
+                selectedURL: -1,
                 sort: "Increasing",
                 refresh: true
             }
         }
     
-        await getData(context, req);
+        await getDataPage(context, req);
     
         expect(context.res.status).toBe(400);
         expect(JSON.parse(context.res.body).msg).toBe("You do not own this URL");
@@ -183,13 +183,13 @@ describe("Setup", () => {
                 short: "",
                 variable: "Language",
                 page: 0,
-                selectedUrl: -1,
+                selectedURL: -1,
                 sort: "Increasing",
                 refresh: true
             }
         }
     
-        await getData(context, req);
+        await getDataPage(context, req);
     
         expect(context.res.status).toBe(400);
         expect(JSON.parse(context.res.body).msg).toBe("No short URL provided");
@@ -207,13 +207,13 @@ describe("Setup", () => {
                 short: Math.random().toString(36).substring(2, 10),
                 variable: "Language",
                 page: 0,
-                selectedUrl: -1,
+                selectedURL: -1,
                 sort: "Increasing",
                 refresh: true
             }
         }
     
-        await getData(context, req);
+        await getDataPage(context, req);
     
         expect(context.res.status).toBe(404);
         expect(JSON.parse(context.res.body).msg).toBe("Short URL not found");
@@ -231,13 +231,13 @@ describe("Setup", () => {
                 short: short,
                 variable: "Random variable that doesn't exist",
                 page: 0,
-                selectedUrl: -1,
+                selectedURL: -1,
                 sort: "Increasing",
                 refresh: true
             }
         }
     
-        await getData(context, req);
+        await getDataPage(context, req);
     
         expect(context.res.status).toBe(400);
         expect(JSON.parse(context.res.body).msg).toBe("Invalid variable provided");
@@ -258,9 +258,15 @@ describe("Setup", () => {
             }
         }
     
-        await getData(context, req);
+        await getDataPage(context, req);
     
         expect(context.res.status).toBe(200);
+        expect(JSON.parse(context.res.body).counts).toStrictEqual(
+            new Array(10).fill({
+                "key": "-",
+                "count": "-"
+            })
+        );
         expect(JSON.parse(context.res.body).pageCount).toBe(1);
     })
 
@@ -282,7 +288,7 @@ describe("Setup", () => {
             }
         }
 
-        await determineUrl(context, req);
+        await determineURL(context, req);
         expect(context.res.status).toBe(200);
 
         const req2 = {
@@ -297,7 +303,7 @@ describe("Setup", () => {
             }
         }
     
-        await getData(context, req2);
+        await getDataPage(context, req2);
     
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body).counts).toStrictEqual([
@@ -331,7 +337,7 @@ describe("Setup", () => {
             }
         }
     
-        await getData(context, req);
+        await getDataPage(context, req);
     
         expect(context.res.status).toBe(400);
         expect(JSON.parse(context.res.body).msg).toBe("You do not own this URL");

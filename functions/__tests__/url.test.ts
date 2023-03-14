@@ -1,8 +1,8 @@
 import { connectDB, disconnectDB } from "../database";
 import { Context } from "@azure/functions";
 
-import createUrl, { URL } from "../createUrl/index";
-import determineUrl from "../determineUrl/index";
+import createURL, { URL } from "../createURL/index";
+import determineURL from "../determineURL/index";
 
 describe("Create and determine", () => {
     let context = ({ log: jest.fn() } as unknown) as Context;
@@ -109,7 +109,7 @@ describe("Create and determine", () => {
             }
         }
 
-        await createUrl(context, req);
+        await createURL(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe(randomShort);
@@ -134,7 +134,7 @@ describe("Create and determine", () => {
             }
         }
 
-        await createUrl(context, req);
+        await createURL(context, req);
 
         expect(context.res.status).toBe(409);
         expect(JSON.parse(context.res.body).msg).toBe("Short URL already exists");
@@ -157,7 +157,7 @@ describe("Create and determine", () => {
             }
         }
 
-        await determineUrl(context, req);
+        await determineURL(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/1");
@@ -179,7 +179,7 @@ describe("Create and determine", () => {
             }
         }
 
-        await determineUrl(context, req);
+        await determineURL(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/2");
@@ -201,7 +201,7 @@ describe("Create and determine", () => {
             }
         }
 
-        await determineUrl(context, req);
+        await determineURL(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/2");
@@ -223,7 +223,7 @@ describe("Create and determine", () => {
             }
         }
 
-        await determineUrl(context, req);
+        await determineURL(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/3");
@@ -246,7 +246,7 @@ describe("Create and determine", () => {
             }
         }
 
-        await determineUrl(context, req);
+        await determineURL(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/4");
@@ -270,7 +270,7 @@ describe("Create and determine", () => {
             }
         }
 
-        await determineUrl(context, req);
+        await determineURL(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/5");
@@ -294,7 +294,7 @@ describe("Create and determine", () => {
             }
         }
 
-        await determineUrl(context, req);
+        await determineURL(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/6");
@@ -319,7 +319,7 @@ describe("Create and determine", () => {
             }
         }
 
-        await determineUrl(context, req);
+        await determineURL(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/7");
@@ -344,7 +344,7 @@ describe("Create and determine", () => {
             }
         }
 
-        await determineUrl(context, req);
+        await determineURL(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/8");

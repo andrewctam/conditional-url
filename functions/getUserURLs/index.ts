@@ -74,7 +74,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         body: JSON.stringify({
             page: page,
             pageCount: Math.ceil(user.urls.length / 10),
-            paginatedUrls: urls.slice(page * 10, (page + 1) * 10)
+            paginatedURLs: urls.slice(page * 10, (page + 1) * 10)
         })
     };
 

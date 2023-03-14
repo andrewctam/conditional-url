@@ -5,16 +5,17 @@ import { accessTokenKey, Conditional, refreshTokensKey, updateMsgKey } from '../
 import ConditionalsEditor from '../ConditionalsEditor/ConditionalsEditor.vue';
 import DataGraph from './analytics/DataGraph.vue';
 import DataTable from './analytics/DataTable.vue';
-import RedirectsGraph from './analytics/RedirectsGraph.vue';
+import RedirectsChart from './analytics/RedirectsChart.vue';
+import router from '../../router';
 
 const props = defineProps<{
     short: string
 }>();
 
 const conditionals: Ref<Conditional[]> = ref([]);
+const redirects: Ref<number[]> = ref([]);
 
 const doneLoading = ref(false);
-const analyticsNonZero = ref(false);
 const changesMade = ref(false);
 
 const accessToken = inject(accessTokenKey)
@@ -30,7 +31,7 @@ const rename = ref(props.short);
 
 
 onMounted(async () => {
-    await getConditionals();
+    await getUrl();
 });
 
 const emit = defineEmits<{
@@ -117,11 +118,12 @@ const renameURL = async (retry: boolean = true) => {
     } else {
         updateMsg("URL renamed successfully");
         currentName.value = rename.value;
+        router.push({query: { view: rename.value }})
     }
 }
 
 
-const getConditionals = async (retry: boolean = true) => {
+const getUrl = async (updateConditionals: boolean = true, updateRedirects: boolean = true, retry: boolean = true) => {
     if (!accessToken || !accessToken.value)
         return;
 
@@ -144,20 +146,16 @@ const getConditionals = async (retry: boolean = true) => {
     
     if (response.msg === "Invalid token" ) {
         if (retry && await refresh()) {
-            await getConditionals(false);
+            await getUrl(updateConditionals, updateRedirects, false);
         } else {
             doneLoading.value = true;
         }
     } else if (!response.msg) {
-        conditionals.value = JSON.parse(response.conditionals);
-
-        analyticsNonZero.value = false;
-        for (let i = 0; i < response.redirects.length; i++) {    
-            if (response.redirects[i] !== 0)
-                analyticsNonZero.value = true;
-
-            conditionals.value[i].redirects = response.redirects[i];
-        }
+        if (updateConditionals)
+            conditionals.value = JSON.parse(response.conditionals);
+        
+        if (updateRedirects)
+            redirects.value = response.redirects;
     }
 
     
@@ -171,6 +169,15 @@ const close = () => {
         emit('close');
     }
 }
+
+const analyticsNonZero = computed(() => {
+    for (let i = 0; i < redirects.value.length; i++) {    
+        if (redirects.value[i] !== 0)
+            return true;
+    }
+
+    return false;
+})
 
 
 const updateConditionals = async (retry: boolean = true) => {
@@ -262,8 +269,9 @@ const updateConditionals = async (retry: boolean = true) => {
         updateMsg(response.msg, true);
     } else {
         updateMsg("Updated successfully");
-        analyticsNonZero.value = false;
         changesMade.value = false
+        redirects.value = new Array(conditionals.value.length).fill(0);
+        showAnalytics.value = false;
     }
 
 }
@@ -301,9 +309,13 @@ const domain = computed(() => {
             
             <div v-if="doneLoading" class = "w-[95%] mt-2 py-2 mx-auto text-center relative">
                 <div class="flex flex-wrap justify-center">
-                    <div class="mx-3 my-1 font-extralight text-sm w-fit px-2 py-1 bg-black/10 rounded-lg select-none whitespace-nowrap"
-                        :class="analyticsNonZero ? 'text-blue-200 hover:text-blue-300 cursor-pointer' : 'text-gray-200/40 cursor-auto'"
-                        @click="() => { if (!analyticsNonZero) return; showAnalytics = !showAnalytics }">
+                    <div class="mx-3 my-1 font-extralight text-sm w-fit px-2 py-1 bg-black/10 rounded-lg select-none whitespace-nowrap text-blue-200 hover:text-blue-300 cursor-pointer"
+                        @click="() => { 
+                            if (!showAnalytics) //if toggling to true, refresh the redirects
+                                getUrl(false, true, true)
+
+                            showAnalytics = !showAnalytics 
+                        }">
 
                         {{showAnalytics ? "Close Analytics" : "Show Analytics"}}
                     </div>
@@ -360,9 +372,9 @@ const domain = computed(() => {
                 })"
             />
 
-            <RedirectsGraph
-                :conditionals="conditionals"
-                @refresh = "getConditionals()"
+            <RedirectsChart
+                :redirects="redirects"
+                @refresh = "getUrl(false, true, true)"
             />
 
             <DataTable

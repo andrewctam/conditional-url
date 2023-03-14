@@ -10,33 +10,59 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 const reloading = ref(false);
 
 const props = defineProps<{
-    conditionals: Conditional[]
+    redirects: number[]
 }>();
+
+enum Sort {
+    URLOrder = "URL Order",
+    MostRedirects = "Most Redirects",
+    LeastRedirects = "Least Redirects"
+}
+
+const sort = ref<Sort>(Sort.URLOrder);
 
 watch(props, () => {
     reloading.value = false;
 })
 
 const sum = computed(() => {
-    return props.conditionals.reduce((acc, cur) => {
-        return acc + (cur.redirects ?? 0);
+    return props.redirects.reduce((acc, cur) => {
+        return acc + cur;
     }, 0)
 })
 
 
 const data = computed(() => {
+    let redirects: number[] = [...props.redirects]
+    let indexes: number[] = props.redirects.map((_, i) => i);
+    switch(sort.value) {
+        case Sort.MostRedirects:
+            indexes.sort((a, b) => redirects[b] - redirects[a])
+            redirects.sort((a, b) => b - a);
+            break;
+        case Sort.LeastRedirects:
+            indexes.sort((a, b) => redirects[a] - redirects[b])
+            redirects.sort((a, b) => a - b);
+            break;
+
+        case Sort.URLOrder: //already sorted
+        default: 
+            break;
+    }
+
     return {
-        labels: props.conditionals.map((_, i) => "URL " + (i + 1)), 
+        labels: indexes.map(i => "URL " + (i + 1)), 
         datasets: [
             {
-                backgroundColor: '#b2d4d3',
-                data: props.conditionals.map((c) => c.redirects ?? 0)
+                backgroundColor: '#a4cacb',
+                data: redirects
             }
-        ]
+        ],
     }
 })
 
 const options = {
+    indexAxis: 'y' as const,
     responsive: true,
     maintainAspectRatio: true,
     plugins: {
@@ -63,6 +89,17 @@ defineEmits<{
 
         <p class = "text-sky-100">Total: {{ sum }} </p>
 
+        <div class="mt-2">
+            <span class="mr-1 font-light">Sort by:</span>
+            <select v-model="sort" class = "select-none text-white border border-black/50 p-1 m-1 w-[200px] rounded font-light bg-gray-600/50">
+                <option class="bg-gray-600" v-for="s in Object.values(Sort)" :value="s">
+                    {{ s }}
+                </option>
+            </select>
+        </div>
+        
+
+
         <svg v-if ="!reloading" @click="() => {
                 reloading = true;
                 $emit('refresh')
@@ -77,8 +114,8 @@ defineEmits<{
             ...
         </div>
 
-        <Bar :data="data" :options="options" />
-        
+        <Bar :data="data" :options="options"/>
+
     </div>
 
 </template>

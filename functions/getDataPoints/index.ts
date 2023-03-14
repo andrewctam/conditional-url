@@ -160,11 +160,9 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             }
 
             earliestPoint = new Date(cacheFirstPoint * 60000).toISOString()
-
-            const cachedPoints = await redisClient.lRange(short + "_graph", 6, -1);
-
-            const i = (start - cacheStart) / span
-            points = cachedPoints.slice(i, i + limit);
+            
+            const i = (start - cacheStart) / span + 6
+            points = await redisClient.lRange(short + "_graph", i, i + limit - 1);
         }
         
     } catch (error) { //error while fetching from redis, or force refresh, or redis not used
@@ -243,7 +241,6 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             points[i] = info.count.toString()
         })
     
-
         if (usingRedis) { //cache extended range for faster access of nearby data
             try {
                 const cachedData: string[] = [
@@ -266,8 +263,6 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             points = points.slice(2 * limit, 3 * limit)
         }
     }
-
-
 
     if (usingRedis)
         await redisClient.disconnect();

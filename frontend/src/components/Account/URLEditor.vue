@@ -352,6 +352,12 @@ const domain = computed(() => {
         <div v-if="showAnalytics" class="w-full h-fit overflow-y-auto bg-black/10 my-8 p-4 mx-auto border border-black/25 rounded-xl text-center relative">
             <DataGraph
                 :short="currentName"
+                :urls="conditionals.map((c, i) => {
+                    return {
+                        id: i,
+                        url: c.url
+                    }
+                })"
             />
 
             <RedirectsGraph

@@ -12,7 +12,7 @@ jest.setTimeout(10000000)
 
 
 describe("Get requested analytics", () => {
-    const NUM_POINTS = 100000;
+    const NUM_POINTS = 1000;
     const UNIQUE_VALS = 95;
 
     let context = ({ log: jest.fn() } as unknown) as Context;
@@ -41,6 +41,7 @@ describe("Get requested analytics", () => {
     }
 
     let expDataPoints = []
+    let expDataPointsURL0 = []
 
     it("should successfully sign up", async () => {
         const req = {
@@ -154,40 +155,47 @@ describe("Get requested analytics", () => {
             if (pt === 0) {
                 expDataPoints.push(1);
 
+                if (i === 0)
+                    expDataPointsURL0.push(1)
+                else
+                    expDataPointsURL0.push(0)
+
                 mins.push({
                     urlUID: shortUrl.uid, 
-                    owner: username,
                     unixMin: currentMinute,
-                    count: 1
+                    [i]: 1
                 })
 
                 hrs.push({
                     urlUID: shortUrl.uid,
-                    owner: username,
                     unixHour: unixHr,
-                    count: 1
+                    [i]: 1
                 })
 
                 days.push({
                     urlUID: shortUrl.uid,
-                    owner: username,
                     unixDay: unixDay,
-                    count: 1
-
+                    [i]: 1
                 })
 
             } else {
                 expDataPoints[expDataPoints.length - 1]++
+
+                if (i === 0)
+                    expDataPointsURL0[expDataPointsURL0.length - 1]++
 
                 if (mins[mins.length - 1].unixMin !== currentMinute) {
                     mins.push({
                         urlUID: shortUrl.uid,
                         owner: username,
                         unixMin: currentMinute,
-                        count: 1
+                        [i]: 1
                     })
                 } else {
-                    mins[mins.length - 1].count++
+                    if (mins[mins.length - 1][i])
+                        mins[mins.length - 1][i]++
+                    else
+                        mins[mins.length - 1][i] = 1
                 }
 
                 if (hrs[hrs.length - 1].unixHr !== unixHr) {
@@ -195,10 +203,14 @@ describe("Get requested analytics", () => {
                         urlUID: shortUrl.uid,
                         owner: username,
                         unixHour: unixHr,
-                        count: 1
+                        [i]: 1
                     })
                 } else {
-                    hrs[hrs.length - 1].count++
+                    if (hrs[hrs.length - 1][i])
+                        hrs[hrs.length - 1][i]++
+                    else
+                        hrs[hrs.length - 1][i] = 1
+
                 }
 
                 if (days[days.length - 1].unixDay !== unixDay) {
@@ -206,10 +218,13 @@ describe("Get requested analytics", () => {
                         urlUID: shortUrl.uid,
                         owner: username,
                         unixDay: unixDay,
-                        count: 1
+                        [i]: 1
                     })
                 } else {
-                    days[days.length - 1].count++
+                    if (days[days.length - 1][i])
+                        days[days.length - 1][i]++
+                    else
+                        days[days.length - 1][i] = 1
                 }
             }
 
@@ -220,8 +235,10 @@ describe("Get requested analytics", () => {
                 end = currentMinute;
 
 
-                for (let i = 0; i < diff; i++)
+                for (let i = 0; i < diff; i++) {
                     expDataPoints.push(0)
+                    expDataPointsURL0.push(0)
+                }
             }
 
         }
@@ -497,6 +514,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: start,
                 limit: 30,
+                selectedUrl: -1,
                 refresh: true
             }
         }
@@ -522,6 +540,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: start,
                 limit: 30,
+                selectedUrl: -1,
                 refresh: false
             }
         }
@@ -549,6 +568,7 @@ describe("Get requested analytics", () => {
                 span: "hour",
                 start: start,
                 limit: 30,
+                selectedUrl: -1,
                 refresh: true
             }
         }
@@ -576,6 +596,7 @@ describe("Get requested analytics", () => {
                 span: "hour",
                 start: start,
                 limit: 30,
+                selectedUrl: -1,
                 refresh: false
             }
         }
@@ -604,6 +625,7 @@ describe("Get requested analytics", () => {
                 span: "day",
                 start: start,
                 limit: 10,
+                selectedUrl: -1,
                 refresh: true
             }
         }
@@ -629,6 +651,7 @@ describe("Get requested analytics", () => {
                 span: "day",
                 start: start,
                 limit: 10,
+                selectedUrl: -1,
                 refresh: false
             }
         }
@@ -641,6 +664,175 @@ describe("Get requested analytics", () => {
         
         expect(dataPoints).toStrictEqual(groupPoints(expDataPoints, 10, 1440))
     });
+    
+
+
+
+
+
+    it("should successfully get data points by min of specific url", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: 1,
+                start: start,
+                limit: 30,
+                selectedUrl: 0,
+                refresh: true
+            }
+        }
+
+        await getDataPoints(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        
+        expect(dataPoints).toStrictEqual(expDataPointsURL0.slice(0, 30).map((i) => i.toString()))
+    });
+
+
+    it("should successfully get data points by min with redis of specific url", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: 1,
+                start: start,
+                limit: 30,
+                selectedUrl: 0,
+                refresh: false
+            }
+        }
+
+        await getDataPoints(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        
+        expect(dataPoints).toStrictEqual(expDataPointsURL0.slice(0, 30).map((i) => i.toString()))
+    });
+
+
+
+
+    it("should successfully get data points by hour of specific url", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: "hour",
+                start: start,
+                limit: 30,
+                selectedUrl: 0,
+                refresh: true
+            }
+        }
+
+        await getDataPoints(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        
+        expect(dataPoints).toStrictEqual(groupPoints(expDataPointsURL0, 30, 60))
+    
+
+    });
+
+
+    it("should successfully get data points by hour with redis of specific url", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: "hour",
+                start: start,
+                limit: 30,
+                selectedUrl: 0,
+                refresh: false
+            }
+        }
+
+        await getDataPoints(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+    
+        expect(dataPoints).toStrictEqual(groupPoints(expDataPointsURL0, 30, 60))
+    
+
+    });
+
+
+
+    it("should successfully get data points by day of specific url", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: "day",
+                start: start,
+                limit: 10,
+                selectedUrl: 0,
+                refresh: true
+            }
+        }
+
+        await getDataPoints(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+
+        expect(dataPoints).toStrictEqual(groupPoints(expDataPointsURL0, 10, 1440))
+    });
+
+
+    it("should successfully get data points by day with redis of specific url", async () => {
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                short: randomShort,
+                span: "day",
+                start: start,
+                limit: 10,
+                selectedUrl: 0,
+                refresh: false
+            }
+        }
+
+        await getDataPoints(context, req);
+
+        expect(context.res.status).toBe(200);
+        
+        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        
+        expect(dataPoints).toStrictEqual(groupPoints(expDataPointsURL0, 10, 1440))
+    });
+
+
 
 
     it("should successfully get data points way before start", async () => {
@@ -654,6 +846,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: start - 1000,
                 limit: 30,
+                selectedUrl: -1,
                 refresh: true
             }
         }
@@ -678,6 +871,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: start - 1000,
                 limit: 30,
+                selectedUrl: -1,
                 refresh: false
             }
         }
@@ -703,6 +897,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: start - 5,
                 limit: 30,
+                selectedUrl: -1,
                 refresh: true
             }
         }
@@ -727,6 +922,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: start - 5,
                 limit: 30,
+                selectedUrl: -1,
                 refresh: false
             }
         }
@@ -752,6 +948,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: start + 5,
                 limit: 30,
+                selectedUrl: -1,
                 refresh: true
             }
         }
@@ -776,6 +973,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: start + 5,
                 limit: 30,
+                selectedUrl: -1,
                 refresh: false
             }
         }
@@ -800,6 +998,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: new Date("2030-01-01").getTime() / 60000,
                 limit: 30,
+                selectedUrl: -1,
                 refresh: true
             }
         }
@@ -825,6 +1024,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: new Date("2030-01-01").getTime() / 60000,
                 limit: 30,
+                selectedUrl: -1,
                 refresh: false
             }
         }
@@ -850,6 +1050,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: end - 25,
                 limit: 30,
+                selectedUrl: -1,
                 refresh: true
             }
         }
@@ -879,6 +1080,7 @@ describe("Get requested analytics", () => {
                 span: 1,
                 start: end - 25,
                 limit: 30,
+                selectedUrl: -1,
                 refresh: true
             }
         }

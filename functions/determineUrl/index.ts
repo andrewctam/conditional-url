@@ -67,7 +67,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
 
         const inc = { 
-            $inc: { count: 1 }
+            $inc: { [i]: 1 }
         }
 
         const minsCollection = db.collection("datamins");

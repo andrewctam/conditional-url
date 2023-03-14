@@ -68,6 +68,12 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             break;
     }
     
+
+    let selectedUrl = parseInt(req.query.selectedUrl);
+    if (isNaN(selectedUrl)) {
+        selectedUrl = -1
+    }
+
     let limit: number;
     if (req.query.limit === undefined || req.query.limit === "undefined") {
         limit = 30;
@@ -125,7 +131,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         } else {
             redisClient.on('error', err => {throw new Error(err + " Fetch from DB")});
 
-            const info = await redisClient.lRange(short + "_graph", 0, 4)
+            const info = await redisClient.lRange(short + "_graph", 0, 5)
 
             
             if (info.length === 0) {
@@ -137,6 +143,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             const cacheEnd = parseInt(info[2]);
             const cacheFirstPoint = parseInt(info[3])
             const username = info[4];
+            const cacheSelectedUrl = parseInt(info[5]);
 
             if (username !== payload.username) {
                 context.res = {
@@ -148,13 +155,13 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 return;
             }
 
-            if (cacheSpan !== span || start < cacheStart || end > cacheEnd) {
+            if (cacheSpan !== span || start < cacheStart || end > cacheEnd || selectedUrl !== cacheSelectedUrl) {
                 throw new Error("Data outside cache requested. Fetch from DB");
             }
 
             earliestPoint = new Date(cacheFirstPoint * 60000).toISOString()
 
-            const cachedPoints = await redisClient.lRange(short + "_graph", 5, -1);
+            const cachedPoints = await redisClient.lRange(short + "_graph", 6, -1);
 
             const i = (start - cacheStart) / span
             points = cachedPoints.slice(i, i + limit);
@@ -200,10 +207,10 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         let pipeline;
 
         if (usingRedis) {
-            pipeline = constructAggregate(extendedStart, extendedLimit, span, url.uid);
+            pipeline = constructAggregate(extendedStart, extendedLimit, span, url.uid, selectedUrl, url.redirects.length);
             points = new Array(extendedLimit).fill("0")
         } else {
-            pipeline = constructAggregate(start, limit, span, url.uid);
+            pipeline = constructAggregate(start, limit, span, url.uid, selectedUrl, url.redirects.length);
             points = new Array(limit).fill("0")
         }
         
@@ -234,6 +241,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                     extendedEnd.toString(),
                     url.firstPoint.toString(),
                     url.owner,
+                    selectedUrl.toString(),
                     ...points
                 ]
 
@@ -265,7 +273,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 };
 
 
-function constructAggregate(start: number, limit: number, span: number, urlUID: ObjectId) {
+function constructAggregate(start: number, limit: number, span: number, urlUID: ObjectId, selectedUrl: number, numConditions: number) {
     let field;
     if (span === 1440) {
         field = "unixDay";
@@ -279,23 +287,61 @@ function constructAggregate(start: number, limit: number, span: number, urlUID: 
         field = "unixMin";
     }
 
-    return [
-        { 
-            $match: {
-                [field]: { "$gte": start, "$lt": start + limit * span },
-                urlUID: urlUID
-            }
-        },
-        {
-            $bucket: { 
-                groupBy: "$" + field,
-                boundaries: new Array(limit + 1).fill(0).map((_, i) => start + i * span),
-                output: {
-                    "count": { $sum: "$count" }
+    if (selectedUrl === -1) {
+        return [
+            { 
+                $match: {
+                    [field]: { "$gte": start, "$lt": start + limit * span },
+                    urlUID: urlUID
+                }
+            },
+            {
+                $project: {
+                    [field]: 1,
+                    total: { $add: 
+                        new Array(numConditions).fill("").
+                        map((_, i) => {
+                            return {
+                                $cond: [
+                                    { $ifNull: [ "$" + i, false ], },
+                                    "$" + i,
+                                    0
+                                ]
+                            }
+                        }) 
+                    }
+                }
+            },
+            {
+                $bucket: { 
+                    groupBy: "$" + field,
+                    boundaries: new Array(limit + 1).fill(0).map((_, i) => start + i * span),
+                    output: {
+                        count: { $sum: "$total" }
+                    }
                 }
             }
-        }
-    ]
+        ]
+    } else {
+        return [
+            { 
+                $match: {
+                    [field]: { "$gte": start, "$lt": start + limit * span },
+                    [selectedUrl]: { $exists: true },
+                    urlUID: urlUID
+                }
+            },
+            {
+                $bucket: { 
+                    groupBy: "$" + field,
+                    boundaries: new Array(limit + 1).fill(0).map((_, i) => start + i * span),
+                    output: {
+                        count: { $sum: "$" + selectedUrl }
+                    }
+                }
+            }
+        ]
+    }
     
 }
 export default httpTrigger;

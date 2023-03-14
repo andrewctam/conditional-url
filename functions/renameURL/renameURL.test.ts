@@ -2,6 +2,7 @@ import { Context } from "@azure/functions";
 import renameUrl from "./index"
 import signUp from "../signUp/index";
 import createUrl from "../createUrl/index";
+import deleteUrl from "../deleteUrl/index";
 import jwt from "jsonwebtoken";
 
 test("Bad short", async () => {
@@ -111,6 +112,8 @@ describe("Setup", () => {
     const short = Math.random().toString(36).substring(2, 18);
     const newShort = Math.random().toString(36).substring(2, 18);
     const existingShort = Math.random().toString(36).substring(2, 18);
+
+    const user2Short = Math.random().toString(36).substring(2, 18);
     
     test("Sign up and create url", async () => {
         const context = ({ log: jest.fn() } as unknown) as Context;
@@ -187,6 +190,27 @@ describe("Setup", () => {
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe(existingShort);
+
+
+        req2 = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken2
+            },
+            body: {
+                short: user2Short,
+                conditionals: JSON.stringify({
+                    url: "https://example.com",
+                    and: true,
+                    conditions: []
+                })
+            }
+        }
+
+        await createUrl(context, req2);
+
+        expect(context.res.status).toBe(200);
+        expect(JSON.parse(context.res.body)).toBe(user2Short);
 
     });
 
@@ -291,5 +315,103 @@ describe("Setup", () => {
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("URL renamed")
     })
+
+    test("Another user can not rename to old short", async () => {
+        const context = ({ log: jest.fn() } as unknown) as Context;
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken2
+            },
+            body: {
+                oldShort: user2Short,
+                newShort: short
+            }
+        }
+    
+        await renameUrl(context, req);
+    
+        expect(context.res.status).toBe(409);
+        expect(JSON.parse(context.res.body).msg).toBe("New URL already exists");
+    })
+
+
+    test("Original user can rename to old short", async () => {
+        const context = ({ log: jest.fn() } as unknown) as Context;
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            body: {
+                oldShort: newShort,
+                newShort: short
+            }
+        }
+    
+        await renameUrl(context, req);
+    
+        expect(context.res.status).toBe(200);
+        expect(JSON.parse(context.res.body)).toBe("URL renamed")
+    })
+
+    test("Another user can not rename to deleted short", async () => {
+        const context = ({ log: jest.fn() } as unknown) as Context;
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            body: {
+                short: short
+            }
+        }
+    
+        await deleteUrl(context, req);
+    
+        expect(context.res.status).toBe(200);
+        expect(JSON.parse(context.res.body)).toBe("URL deleted")
+    })
+
+    test("Another user can not rename to deleted short", async () => {
+        const context = ({ log: jest.fn() } as unknown) as Context;
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken2
+            },
+            body: {
+                oldShort: user2Short,
+                newShort: short
+            }
+        }
+    
+        await renameUrl(context, req);
+    
+        expect(context.res.status).toBe(409);
+        expect(JSON.parse(context.res.body).msg).toBe("New URL already exists");
+    })
+
+    test("Original user can rename to deleted short", async () => {
+        const context = ({ log: jest.fn() } as unknown) as Context;
+        const req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            body: {
+                oldShort: existingShort,
+                newShort: short
+            }
+        }
+    
+        await renameUrl(context, req);
+    
+        expect(context.res.status).toBe(200);
+        expect(JSON.parse(context.res.body)).toBe("URL renamed");
+    })
+
+
+
     
 })

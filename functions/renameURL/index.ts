@@ -77,31 +77,36 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     
 
     const urlsCollection = db.collection<URL>("urls")
-    const url = await urlsCollection.findOne({ _id: oldShort })
 
-    if (url === null || url.owner !== payload.username) {
+    const urls = await urlsCollection.find({ _id: { $in: [oldShort, newShort] } }).toArray();
+    
+    const oldUrl = urls.find(url => url._id === oldShort);
+    const newUrl = urls.find(url => url._id === newShort);
+
+    if (oldUrl === undefined || oldUrl.owner !== payload.username) {
         //already checked to see if on user's list above, but not found in DB
         throw Error("URL from user list not found");
     }
 
-    try {
-        url._id = newShort;
-        //clone old one with new uid
-        url.uid = new ObjectId();
-    
-        //create new one
-        await urlsCollection.insertOne(url);
-    } catch (e) {
-        context.res = {
-            status: 409,
-            body: JSON.stringify({"msg": "New URL already exists"})
-        };
-        return;
+    oldUrl._id = newShort;
+    if (newUrl === undefined) {
+        await urlsCollection.insertOne(oldUrl);
+    } else {
+        if (newUrl.owner !== payload.username || !newUrl.deleted) {
+            context.res = {
+                status: 409,
+                body: JSON.stringify({"msg": "New URL already exists"})
+            };
+            return;
+        } else {
+            await urlsCollection.updateOne({ _id: newShort }, { $set: oldUrl })
+        }
     }
-
+    
     const deleteOld = {
         $set: {
             deleted: true,
+            urlUID: new ObjectId(), //disassociate from old URL
             conditionals: "",
             urlCount: 0,
             redirects: [] as number[],

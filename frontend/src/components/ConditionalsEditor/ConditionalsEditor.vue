@@ -128,7 +128,11 @@ const toggleAnd = (i: number) => {
         <draggable 
         handle=".handle"
         :model-value="props.conditionals" 
-        @update:modelValue="emit('updateConditionals', [...$event])" 
+        @update:modelValue="(event) => {
+            addToUndo();
+            emit('updateConditionals', [...event])
+        }
+        " 
         item-key="id">
             <template #item="{element, index}">
                 <ConditionalBlock
@@ -154,11 +158,11 @@ const toggleAnd = (i: number) => {
         </div>
 
         <div class = "absolute top-0 right-2">
-            <button @click="undo" :disabled = "undoStack.length < 1" class="p-1 text-white disabled:text-gray-500"> 
-                ↺
+            <button @click="undo" :disabled = "undoStack.length < 1" class="p-1 text-white text-2xl disabled:text-gray-500"> 
+                ⟲
             </button>
-            <button @click="redo" :disabled = "redoStack.length < 1" class="p-1 text-white disabled:text-gray-500 ml-4 md:ml-1"> 
-                ↻
+            <button @click="redo" :disabled = "redoStack.length < 1" class="p-1 text-white text-2xl disabled:text-gray-500 ml-4 md:ml-1"> 
+                ⟳
             </button>
         </div>
     </div>

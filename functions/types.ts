@@ -41,27 +41,25 @@ export type ShortURL = {
     deleted: boolean
 }
 
-export type DataPoint = {
-    _id: ObjectId,
-    urlUID: ObjectId,
-    i: number, // index of redirected
-    values: string[]
-};
-
-interface Redirects {
+interface DataPoint {
     _id: ObjectId,
     urlUID: ObjectId,
     [i: number]: number
 }
 
-export interface DataMin extends Redirects {
+export interface DataMin extends DataPoint {
     unixMin: number
 }
 
-export interface DataHour extends Redirects {
+export interface DataHour extends DataPoint {
     unixHour: number
 }
 
-export interface DataDay extends Redirects {
+export interface DataDay extends DataPoint {
     unixDay: number
+}
+
+export interface DataValue extends DataPoint {
+    var: typeof Variables[number],
+    val: string,
 }

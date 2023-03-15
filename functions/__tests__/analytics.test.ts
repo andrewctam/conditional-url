@@ -4,14 +4,13 @@ import signUp from "../signUp/index";
 import createURL from "../createURL/index";
 import getDataPage from "../getDataPage"
 import getDataPoints from "../getDataPoints"
-import { DataPoint, Variables, ShortURL } from "../types";
+import { Variables, ShortURL, DataValue, DataMin, DataHour, DataDay } from "../types";
 import { connectDB, disconnectDB } from "../database";
-import { ObjectId } from "mongodb";
 jest.setTimeout(10000000)
 
 
 describe("Get requested analytics", () => {
-    const NUM_POINTS = 10000;
+    const NUM_POINTS = 100000;
     const UNIQUE_VALS = 95;
 
     let context = ({ log: jest.fn() } as unknown) as Context;
@@ -27,17 +26,10 @@ describe("Get requested analytics", () => {
     let end = -1;
     
     const redirects = [0, 0, 0, 0]
-    const counts = {}
+    
     const expCounts = {}
-    let langDescending = null;
-
-    const countsURL0 = {}
     const expCountsURL0 = {}
-
-    for (const v of Variables) {
-        counts[v] = {}
-        countsURL0[v] = {}
-    }
+    let expLangDescending = null;
 
     let expDataPoints = []
     let expDataPointsURL0 = []
@@ -128,45 +120,56 @@ describe("Get requested analytics", () => {
 
         //artificially create some data
         let currentMinute = start;
-        const data = []
+
+        const vals: {
+            [v: string]: {
+                [val: string]: number[]
+            }
+        } = {}
+
         const mins = []
         const hrs = []
         const days = []
 
+        const counts = {}
+        const countsURL0 = {}
+
+        for (const v of Variables) {
+            counts[v] = {}
+            countsURL0[v] = {}
+            vals[v] = {}
+        }
         
         for (let pt = 0; pt < NUM_POINTS; pt++) {
             const i = Math.floor(Math.random() * 4);
             redirects[i]++;
 
-            const datum: DataPoint = {
-                _id: new ObjectId(),
-                urlUID: shortURL.uid,
-                i: i,
-                values: Variables.map(v => {
-                    const val = Math.floor(Math.random() * UNIQUE_VALS).toString()
+            Variables.forEach(v => {
+                const val = Math.floor(Math.random() * UNIQUE_VALS).toString()
 
-                    if (counts[v][val] === undefined)
-                        counts[v][val] = 1
+                if (counts[v][val] === undefined)
+                    counts[v][val] = 1
+                else
+                    counts[v][val]++;
+                
+                if (i === 0) {
+                    if (countsURL0[v][val] === undefined)
+                        countsURL0[v][val] = 1
                     else
-                        counts[v][val]++;
-                    
-                    if (i === 0) {
-                        if (countsURL0[v][val] === undefined)
-                            countsURL0[v][val] = 1
-                        else
-                            countsURL0[v][val]++;
-                    }
+                        countsURL0[v][val]++;
+                }
 
-                    return val;
-                })
-            }
+                if (vals[v][val] === undefined)
+                    vals[v][val] = [0, 0, 0, 0]
 
+                vals[v][val][i]++;
+
+                return val;
+            })
+            
             const unixHr = Math.floor(currentMinute / 60);
             const unixDay = Math.floor(currentMinute / 60 / 24);
 
-            
-            data.push(datum)
-            
             if (pt === 0) {
                 expDataPoints.push(1);
 
@@ -262,20 +265,42 @@ describe("Get requested analytics", () => {
             }
         })
 
-        const dpCollection = db.collection<DataPoint>("datapoints")
-        await dpCollection.insertMany(data);
+        const values = []
+        for (const variable in vals) {
+            for (const val in vals[variable]) {
+                const datum = {
+                    urlUID: shortURL.uid,
+                    var: variable,
+                    val: val
+                }
 
-        const minCollection = db.collection("datamins")
+                vals[variable][val].forEach((count, i) => {
+                    if (count > 0) 
+                        datum[i.toString()] = count
+                })
+
+                values.push(datum)
+            }
+        }
+
+        const valCollection = db.collection<DataValue>("values")
+        await valCollection.insertMany(values);
+
+        const minCollection = db.collection<DataMin>("datamins")
         await minCollection.insertMany(mins);
 
-        const hrCollection = db.collection("datahours")
+        const hrCollection = db.collection<DataHour>("datahours")
         await hrCollection.insertMany(hrs);
 
-        const dayCollection = db.collection("datadays")
+        const dayCollection = db.collection<DataDay>("datadays")
         await dayCollection.insertMany(days);
 
         await disconnectDB();
 
+
+
+
+        //set up expected
         Variables.map((v) => {
             expCounts[v] = Object.keys(counts[v]).map((k) => {
                 return {
@@ -285,8 +310,8 @@ describe("Get requested analytics", () => {
             })
 
             if (v === "Language") {
-                langDescending = [...expCounts[v]]
-                langDescending.sort((a, b) => {
+                expLangDescending = [...expCounts[v]]
+                expLangDescending.sort((a, b) => {
                     let aCount = parseInt(a.count);
                     let bCount = parseInt(b.count);
     
@@ -297,8 +322,8 @@ describe("Get requested analytics", () => {
                     }
                 })
 
-                while(langDescending.length % 10 !== 0) {
-                    langDescending.push({ key: "-", count: "-" })
+                while(expLangDescending.length % 10 !== 0) {
+                    expLangDescending.push({ key: "-", count: "-" })
                 }
             }
 
@@ -404,7 +429,7 @@ describe("Get requested analytics", () => {
             count: string
         }[] = JSON.parse(context.res.body).counts;
 
-        expect(page).toStrictEqual(langDescending.slice(0, 10));
+        expect(page).toStrictEqual(expLangDescending.slice(0, 10));
     
     });
 
@@ -441,7 +466,7 @@ describe("Get requested analytics", () => {
 
     it("should successfully get all pages of data", async () => {
         const v = Variables[0];
-        const pages = Math.ceil( Object.keys(counts[v]).length / 10);
+        const pages = Math.ceil( Object.keys(expCounts[v]).length / 10);
 
         let prev: {
             key: string,
@@ -480,7 +505,7 @@ describe("Get requested analytics", () => {
 
     it("should successfully get all pages of data with redis", async () => {
         const v = Variables[0];
-        const pages = Math.ceil( Object.keys(counts[v]).length / 10);
+        const pages = Math.ceil( Object.keys(expCounts[v]).length / 10);
 
         let prev: {
             key: string,

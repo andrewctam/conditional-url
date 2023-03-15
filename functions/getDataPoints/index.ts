@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 import { createClient, RedisClientType } from 'redis';
 import { Collection, ObjectId } from "mongodb";
-import { Data, DataDay, DataHour, DataMin, ShortURL } from "../types";
+import { DataDay, DataHour, DataMin, ShortURL } from "../types";
 
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {

@@ -4,7 +4,6 @@ import * as jwt from 'jsonwebtoken';
 import { ObjectId } from "mongodb";
 import { ShortURL } from "../types";
 import { connectDB } from "../database";
-import { DataPoint } from "../types";
 import { User } from "../types";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {

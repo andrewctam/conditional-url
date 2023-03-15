@@ -2,10 +2,10 @@ import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import { connectDB } from "../database"
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
-import { Variables } from "../types";
+import { DataValue, Variables } from "../types";
 import { createClient } from "redis";
 import { ShortURL } from "../types";
-import { DataPoint } from "../types";
+import { ObjectId } from "mongodb";
 
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
@@ -184,40 +184,15 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             return;
         }
 
-        const dpCollection = db.collection<DataPoint>("datapoints");
-        const pipeline = [
-            {
-                $match: {
-                    urlUID: url.uid,
-                    i: selectedURL === -1 ? {$exists: true} : selectedURL
-                }
-            },
-            {
-                $project: {
-                    value: { $arrayElemAt: ["$values", Variables.indexOf(variable)] }
-                }
-            },
-            {
-                $group: {
-                    _id: "$value",
-                    count: { $sum: 1 }
-                }
-            },
-            {
-                $sort: {
-                    count: sortDirection,
-                    _id: 1
-                }
-            },
-            {
-                $facet: {
-                    metadata: [ { $count: "total" } ],
-                    data: usingRedis ?
-                        [ { $skip: extendedPageStart * pageSize }, { $limit: extendedPageSize } ] : 
-                        [ { $skip: page * pageSize }, { $limit: pageSize } ]
-                }
-            }
-        ]
+        const dpCollection = db.collection<DataValue>("values");
+        let pipeline;
+        
+        if (usingRedis)
+            pipeline = constructAggregate(variable, sortDirection, url.uid, selectedURL, url.urlCount,
+                                            extendedPageStart * pageSize, extendedPageSize);
+        else
+            pipeline = constructAggregate(variable, sortDirection, url.uid, selectedURL, url.urlCount,
+                                            page * pageSize, pageSize);
 
         const doc = await dpCollection.aggregate(pipeline).toArray();
 
@@ -290,4 +265,85 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 };
 
 
+function constructAggregate(variable: string, sortDirection: 1 | -1, urlUID: ObjectId, selectedURL: number, numConditions: number,
+                            skip: number, limit: number) {
+
+    if (selectedURL === -1) {
+        return [
+            {
+                $match: {
+                    urlUID: urlUID,
+                    var: variable,
+                }
+            },
+            {
+                $project: {
+                    val: 1,
+                    total: { $add: 
+                        new Array(numConditions).fill("").
+                        map((_, i) => {
+                            return {
+                                $cond: [
+                                    { $ifNull: [ "$" + i, false ], },
+                                    "$" + i,
+                                    0
+                                ]
+                            }
+                        }) 
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: "$val",
+                    count: { $sum: "$total" }
+                }
+            },
+            {
+                $sort: {
+                    count: sortDirection,
+                    _id: 1
+                }
+            },
+            {
+                $facet: {
+                    metadata: [ { $count: "total" } ],
+                    data: [ { $skip: skip }, { $limit: limit } ]
+                }
+            }
+        ]
+    } else {
+        return [
+            {
+                $match: {
+                    urlUID: urlUID,
+                    [selectedURL]: { $exists: true },
+                    var: variable,
+                }
+            },
+            {
+                $group: {
+                    _id: "$val",
+                    count: { $sum: "$" + selectedURL }
+                }
+            },
+            {
+                $sort: {
+                    count: sortDirection,
+                    _id: 1
+                }
+            },
+            {
+                $facet: {
+                    metadata: [ { $count: "total" } ],
+                    data: [ { $skip: skip }, { $limit: limit } ]
+                }
+            }
+        ]
+    }
+    
+}
+
+
 export default httpTrigger;
+

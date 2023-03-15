@@ -1,5 +1,5 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
-import { Condition, Conditional, Data, DataDay, DataHour, DataMin, DataPoint, Variables } from "../types"
+import { Condition, Conditional, DataDay, DataHour, DataMin, Variables, DataValue, Data } from "../types"
 import { connectDB } from "../database"
 import * as dotenv from 'dotenv';
 import { ShortURL } from "../types";
@@ -55,17 +55,6 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         }
     await urlsCollection.updateOne({_id: short}, incrementCount)
 
-    const dpCollection = db.collection<DataPoint>("datapoints");
-    const dp = {
-        _id: new ObjectId(),
-        urlUID: url.uid,
-        i: i as number,
-        values: Variables.map(v => data[v]),
-    }
-
-    await dpCollection.insertOne(dp);
-
-
     const inc = { 
         $inc: { [i]: 1 }
     }
@@ -88,7 +77,26 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         unixDay: Math.floor(Date.now() / 86400000)
     }, inc, {upsert: true});
 
-   
+
+    let writes = []
+    Variables.forEach((v) => {
+        if (data[v] !== undefined) {
+            writes.push({
+                "updateOne": {
+                    "filter": {
+                        urlUID: url.uid,
+                        var: v,
+                        val: data[v],
+                    },
+                    "update": inc,
+                    "upsert": true
+                }
+            })
+        }      
+    })
+
+    const valsCollection = db.collection<DataValue>("values");
+    await valsCollection.bulkWrite(writes);
 
     context.res = {
         status: 200,

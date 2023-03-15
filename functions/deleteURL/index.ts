@@ -4,7 +4,6 @@ import * as jwt from 'jsonwebtoken';
 import { connectDB } from "../database";
 import { User } from "../types";
 import { ShortURL } from "../types";
-import { DataPoint } from "../types";
 import { ObjectId } from "mongodb";
 
 

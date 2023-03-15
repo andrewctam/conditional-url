@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 import { createHmac, timingSafeEqual } from "crypto";
 import { connectDB } from "../database"
-import { User } from "../signUp";
+import { User } from "../types";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const refreshToken = req.body.refreshToken;

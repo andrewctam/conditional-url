@@ -15,5 +15,5 @@
       "name": "res"
     }
   ],
-  "scriptFile": "../dist/getData/index.js"
+"scriptFile": "../dist/getDataPage/index.js"
 }

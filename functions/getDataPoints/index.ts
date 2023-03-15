@@ -3,15 +3,8 @@ import { connectDB } from "../database"
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 import { createClient, RedisClientType } from 'redis';
-import { URL } from "../createURL";
 import { Collection, ObjectId } from "mongodb";
-
-export type DataPoint = {
-    _id: ObjectId,
-    urlUID: ObjectId,
-    i: number, // index of redirected
-    values: string[]
-};
+import { Data, DataDay, DataHour, DataMin, ShortURL } from "../types";
 
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
@@ -170,7 +163,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         const client = await connectDB();
         const db = client.db("conditionalurl");
 
-        const urlsCollection = db.collection<URL>("urls");
+        const urlsCollection = db.collection<ShortURL>("urls");
         const url = await urlsCollection.findOne({_id: short})
 
         if (url === null) {
@@ -203,13 +196,13 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         earliestPoint = new Date(url.firstPoint * 60000).toISOString();
 
         //data is split into 3 collections to increase aggregate speed
-        let collection: Collection;
+        let collection: Collection<DataDay> | Collection<DataHour> | Collection<DataMin>;
         if (span === 1440) {
-            collection = db.collection("datadays");
+            collection = db.collection<DataDay>("datadays");
         } else if (span === 60) {
-            collection = db.collection("datahours");
+            collection = db.collection<DataHour>("datahours");
         } else
-            collection = db.collection("datamins");
+            collection = db.collection<DataMin>("datamins");
 
         //construct an aggregate query to count points in DB.
         //if usingRedis, then extend the range to cache more points

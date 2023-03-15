@@ -5,16 +5,7 @@ import * as jwt from 'jsonwebtoken';
 import { createHmac } from "crypto";
 import { connectDB } from "../database";
 import { ObjectId } from "mongodb";
-
-export type User = {
-    _id: string,
-    uid: ObjectId,
-    urls: string[],
-    urlCount: number,
-    hashedPassword: string,
-    hashedRefresh: string
-}
-
+import { User } from "../types";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const username = req.body.username.toLowerCase();

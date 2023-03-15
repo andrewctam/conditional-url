@@ -1,8 +1,9 @@
 import { connectDB, disconnectDB } from "../database";
 import { Context } from "@azure/functions";
 
-import createURL, { URL } from "../createURL/index";
+import createURL from "../createURL/index";
 import determineURL from "../determineURL/index";
+import { ShortURL } from "../types";
 
 describe("Create and determine", () => {
     let context = ({ log: jest.fn() } as unknown) as Context;
@@ -353,7 +354,7 @@ describe("Create and determine", () => {
 
     test("verify redirect nums", async () => {
         const client = await connectDB();
-        const urlsCollection = client.db("conditionalurl").collection<URL>("urls");
+        const urlsCollection = client.db("conditionalurl").collection<ShortURL>("urls");
         const url = await urlsCollection.findOne({_id: randomShort});
         await disconnectDB();
 

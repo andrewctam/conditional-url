@@ -5,18 +5,10 @@ import { Conditional, Operators } from "../types";
 import axios from "axios";
 import { connectDB } from "../database";
 import { ObjectId } from "mongodb";
-import { User } from "../signUp";
+import { User } from "../types";
+import { ShortURL } from "../types";
 
-export type URL = {
-    _id: string, //short url, can change
-    uid: ObjectId, //never changes
-    conditionals: string,
-    urlCount: number,
-    owner: string,
-    redirects: number[],
-    firstPoint: number,
-    deleted: boolean
-}
+
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const short = req.body.short.toLowerCase();
@@ -172,7 +164,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     } 
 
-    const urlsColleciton = db.collection<URL>("urls");
+    const urlsColleciton = db.collection<ShortURL>("urls");
 
     const existingURL = await urlsColleciton.findOne({_id: short});
 

@@ -1,7 +1,7 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
-import { URL } from "../createURL";
+import { ShortURL } from "../types";
 import { connectDB } from "../database"
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
@@ -47,7 +47,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const client = await connectDB();
     const db = client.db("conditionalurl");
 
-    const urlsCollection = db.collection<URL>("urls");
+    const urlsCollection = db.collection<ShortURL>("urls");
 
     const url = await urlsCollection.findOne({ _id: short });
 

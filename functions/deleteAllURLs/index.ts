@@ -2,10 +2,10 @@ import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 import { ObjectId } from "mongodb";
-import { URL } from "../createURL";
+import { ShortURL } from "../types";
 import { connectDB } from "../database";
-import { DataPoint } from "../getDataPoints";
-import { User } from "../signUp";
+import { DataPoint } from "../types";
+import { User } from "../types";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     if (req.headers.authorization === "") {
@@ -63,7 +63,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    const urlsCollection = db.collection<URL>("urls");
+    const urlsCollection = db.collection<ShortURL>("urls");
     const deleteURL = {
         $set: {
             deleted: true,

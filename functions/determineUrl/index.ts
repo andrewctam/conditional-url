@@ -1,9 +1,8 @@
 import { AzureFunction, Context, HttpRequest } from "@azure/functions"
-import { Condition, Conditional, Data, Variables } from "../types"
+import { Condition, Conditional, Data, DataDay, DataHour, DataMin, DataPoint, Variables } from "../types"
 import { connectDB } from "../database"
 import * as dotenv from 'dotenv';
-import { URL } from "../createURL";
-import { DataPoint } from "../getDataPoints";
+import { ShortURL } from "../types";
 import { ObjectId } from "mongodb";
 
 
@@ -15,85 +14,86 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         context.res = {
             status: 400,
             body: JSON.stringify({"msg": "Short URL contains invalid characters"})
-        };    
-
-    } else {
-        dotenv.config();
-        const client = await connectDB();
-        const db = client.db("conditionalurl");
-        const urlsCollection = db.collection<URL>("urls");
-
-
-        const url = await urlsCollection.findOne({ _id: short });
-
-        if (url === null || url.deleted) {
-            context.res = {
-                status: 404,
-                body: JSON.stringify({"msg": "Short URL not found"})
-            };
-            return;
-        }
-        
-        const conditionals = JSON.parse(url.conditionals);
-        const [redirect, i] = determine(conditionals, data)
-
-        let incrementCount;
-        if (url.firstPoint === -1) {
-            incrementCount = {
-                $inc: {
-                    [`redirects.${i}`]: 1
-                },
-                $set: {
-                    firstPoint: Math.floor(Date.now() / 60000)
-                }
-            }
-        } else
-            incrementCount = {
-                $inc: {
-                    [`redirects.${i}`]: 1
-                }
-            }
-        await urlsCollection.updateOne({_id: short}, incrementCount)
-
-        const dpCollection = db.collection<DataPoint>("datapoints");
-        const dp = {
-            _id: new ObjectId(),
-            urlUID: url.uid,
-            i: i as number,
-            values: Variables.map(v => data[v]),
-        }
-
-        await dpCollection.insertOne(dp);
+        };  
+        return;  
+    } 
+    
+    dotenv.config();
+    const client = await connectDB();
+    const db = client.db("conditionalurl");
+    const urlsCollection = db.collection<ShortURL>("urls");
 
 
-        const inc = { 
-            $inc: { [i]: 1 }
-        }
+    const url = await urlsCollection.findOne({ _id: short });
 
-        const minsCollection = db.collection("datamins");
-        await minsCollection.updateOne({
-            urlUID: url.uid, 
-            unixMin: Math.floor(Date.now() / 60000)
-        }, inc, {upsert: true});
-        
-        const hoursCollection = db.collection("datahours");
-        await hoursCollection.updateOne({
-            urlUID: url.uid,
-            unixHour: Math.floor(Date.now() / 3600000)
-        }, inc, {upsert: true});
-        
-        const daysCollection = db.collection("datadays");
-        await daysCollection.updateOne({
-            urlUID: url.uid, 
-            unixDay: Math.floor(Date.now() / 86400000)
-        }, inc, {upsert: true});
-
+    if (url === null || url.deleted) {
         context.res = {
-            status: 200,
-            body: JSON.stringify(redirect)
+            status: 404,
+            body: JSON.stringify({"msg": "Short URL not found"})
+        };
+        return;
+    }
+    
+    const conditionals = JSON.parse(url.conditionals);
+    const [redirect, i] = determine(conditionals, data)
+
+    let incrementCount;
+    if (url.firstPoint === -1) {
+        incrementCount = {
+            $inc: {
+                [`redirects.${i}`]: 1
+            },
+            $set: {
+                firstPoint: Math.floor(Date.now() / 60000)
+            }
         }
+    } else
+        incrementCount = {
+            $inc: {
+                [`redirects.${i}`]: 1
+            }
+        }
+    await urlsCollection.updateOne({_id: short}, incrementCount)
+
+    const dpCollection = db.collection<DataPoint>("datapoints");
+    const dp = {
+        _id: new ObjectId(),
+        urlUID: url.uid,
+        i: i as number,
+        values: Variables.map(v => data[v]),
     }
 
+    await dpCollection.insertOne(dp);
+
+
+    const inc = { 
+        $inc: { [i]: 1 }
+    }
+
+    const minsCollection = db.collection<DataMin>("datamins");
+    await minsCollection.updateOne({
+        urlUID: url.uid, 
+        unixMin: Math.floor(Date.now() / 60000)
+    }, inc, {upsert: true});
+    
+    const hoursCollection = db.collection<DataHour>("datahours");
+    await hoursCollection.updateOne({
+        urlUID: url.uid,
+        unixHour: Math.floor(Date.now() / 3600000)
+    }, inc, {upsert: true});
+    
+    const daysCollection = db.collection<DataDay>("datadays");
+    await daysCollection.updateOne({
+        urlUID: url.uid, 
+        unixDay: Math.floor(Date.now() / 86400000)
+    }, inc, {upsert: true});
+
+   
+
+    context.res = {
+        status: 200,
+        body: JSON.stringify(redirect)
+    }
 
 };
 

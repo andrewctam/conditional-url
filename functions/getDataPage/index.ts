@@ -4,8 +4,8 @@ import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 import { Variables } from "../types";
 import { createClient } from "redis";
-import { URL } from "../createURL";
-import { DataPoint } from "../getDataPoints";
+import { ShortURL } from "../types";
+import { DataPoint } from "../types";
 
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
@@ -152,7 +152,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         fromCache = false;
         const client = await connectDB();
         const db = client.db("conditionalurl");
-        const urlsCollection = db.collection<URL>("urls");
+        const urlsCollection = db.collection<ShortURL>("urls");
 
         const url = await urlsCollection.findOne({_id: short});
 

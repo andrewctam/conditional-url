@@ -5,7 +5,7 @@ import { connectDB } from '../database';
 import * as dotenv from 'dotenv';
 import { createHmac } from "crypto";
 import { ObjectId } from "mongodb";
-import { User } from "../signUp";
+import { User } from "../types";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const username = req.body.username.toLowerCase();

@@ -4,7 +4,7 @@ import * as jwt from 'jsonwebtoken';
 import { Conditional, Operators } from "../types";
 import axios from "axios";
 import { connectDB } from "../database"
-import { URL } from "../createURL";
+import { ShortURL } from "../types";
 import { ObjectId } from "mongodb";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
@@ -156,7 +156,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const client = await connectDB();
     const db = client.db("conditionalurl");
 
-    const urlsCollection = db.collection<URL>("urls");
+    const urlsCollection = db.collection<ShortURL>("urls");
 
     const url = await urlsCollection.findOne({_id: short})
 

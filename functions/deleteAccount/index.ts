@@ -2,10 +2,9 @@ import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import { connectDB } from "../database"
 import * as dotenv from 'dotenv';
 import * as bcrypt from 'bcryptjs';
-import { User } from "../signUp";
-import { DataPoint } from "../getDataPoints";
+import { User } from "../types";
 import { ObjectId } from "mongodb";
-import { URL } from "../createURL";
+import { ShortURL } from "../types";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const username = req.body.username;
@@ -48,7 +47,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    const urlsCollection = db.collection<URL>("urls");
+    const urlsCollection = db.collection<ShortURL>("urls");
     if (alsoDeleteURLs) {
         const deleteURL = {
             $set: {

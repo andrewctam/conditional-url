@@ -2,9 +2,9 @@ import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import * as dotenv from 'dotenv';
 import * as jwt from 'jsonwebtoken';
 import { connectDB } from "../database";
-import { User } from "../signUp";
-import { URL } from "../createURL";
-import { DataPoint } from "../getDataPoints";
+import { User } from "../types";
+import { ShortURL } from "../types";
+import { DataPoint } from "../types";
 import { ObjectId } from "mongodb";
 
 
@@ -66,7 +66,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
-    const urlsCollection = db.collection<URL>("urls")
+    const urlsCollection = db.collection<ShortURL>("urls")
 
     const url = await urlsCollection.findOne({_id: short})
 

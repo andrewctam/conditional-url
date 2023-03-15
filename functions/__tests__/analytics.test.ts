@@ -1,18 +1,17 @@
 import { Context } from "@azure/functions";
 
 import signUp from "../signUp/index";
-import createURL, { URL } from "../createURL/index";
+import createURL from "../createURL/index";
 import getDataPage from "../getDataPage"
 import getDataPoints from "../getDataPoints"
-import { DataPoint } from "../getDataPoints/index";
-import { Variables } from "../types";
+import { DataPoint, Variables, ShortURL } from "../types";
 import { connectDB, disconnectDB } from "../database";
 import { ObjectId } from "mongodb";
 jest.setTimeout(10000000)
 
 
 describe("Get requested analytics", () => {
-    const NUM_POINTS = 5000;
+    const NUM_POINTS = 10000;
     const UNIQUE_VALS = 95;
 
     let context = ({ log: jest.fn() } as unknown) as Context;
@@ -123,7 +122,7 @@ describe("Get requested analytics", () => {
         
         const client = await connectDB();
         const db = client.db("conditionalurl");
-        const urlsCollection = db.collection<URL>("urls")
+        const urlsCollection = db.collection<ShortURL>("urls")
 
         const shortURL = await urlsCollection.findOne({_id: randomShort});
 
@@ -203,7 +202,6 @@ describe("Get requested analytics", () => {
                 if (mins[mins.length - 1].unixMin !== currentMinute) {
                     mins.push({
                         urlUID: shortURL.uid,
-                        owner: username,
                         unixMin: currentMinute,
                         [i]: 1
                     })
@@ -214,10 +212,9 @@ describe("Get requested analytics", () => {
                         mins[mins.length - 1][i] = 1
                 }
 
-                if (hrs[hrs.length - 1].unixHr !== unixHr) {
+                if (hrs[hrs.length - 1].unixHour !== unixHr) {
                     hrs.push({
                         urlUID: shortURL.uid,
-                        owner: username,
                         unixHour: unixHr,
                         [i]: 1
                     })
@@ -232,7 +229,6 @@ describe("Get requested analytics", () => {
                 if (days[days.length - 1].unixDay !== unixDay) {
                     days.push({
                         urlUID: shortURL.uid,
-                        owner: username,
                         unixDay: unixDay,
                         [i]: 1
                     })

@@ -1,10 +1,11 @@
 import { Context } from "@azure/functions";
 
-import signUp, { User } from "../signUp/index";
+import signUp from "../signUp/index";
 import refreshTokens from "./index";
 import jwt from "jsonwebtoken";
 import  { connectDB, disconnectDB } from "../database";
 import { createHmac } from "crypto";
+import { User } from "../types";
 
 describe("Refresh token tests", () => {
     let context = ({ log: jest.fn() } as unknown) as Context;

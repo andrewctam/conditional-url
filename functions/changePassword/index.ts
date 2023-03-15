@@ -2,7 +2,7 @@ import { AzureFunction, Context, HttpRequest } from "@azure/functions"
 import * as dotenv from 'dotenv';
 import * as bcrypt from 'bcryptjs';
 import { connectDB } from "../database";
-import { User } from "../signUp";
+import { User } from "../types";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const username = req.body.username.toLowerCase();

@@ -1,3 +1,4 @@
+import { ObjectId } from "mongodb"
 
 export const Operators = ["=", "≠", ">", "≥", "<", "≤", "Contains"]
 export const Variables = ["Language", "Time", "Time Zone", "Date", "OS", "Browser", "URL Parameter", "Screen Width", "Screen Height", "Has Touchscreen", "Using Ad Blocker"] as const
@@ -20,13 +21,47 @@ export interface Conditional {
     redirects?: number
 }
 
+export type User = {
+    _id: string,
+    uid: ObjectId,
+    urls: string[],
+    urlCount: number,
+    hashedPassword: string,
+    hashedRefresh: string
+}
 
-export const operatingSystems = ["Windows", "MacOS", "Linux", "Android", "iOS"];
-export const browsers = ["Chrome", "Firefox", "Safari", "Edge", "Opera"];
-export const timezones = ["-12", "-11", "-10", "-9:30", "-9", "-8", "-7", "-6", "-5", "-4", "-3", "-2", "-1", "0", "+1", "+2", "+3", "+3:30", "+4", "+4:30", "+5", "+5:30", "+5:45", "+6", "+6:30", "+7", "+8", "+8:45", "+9", "+9:30", "+10", "+10:30", "+11", "+12", "+12:45", "+13", "+14"]
-export const languages = ["English", "Spanish", "French", "German", "Italian", "Portuguese", "Russian", "Chinese", "Japanese", "Korean", "Hindi"]
-export const booleans = ["True", "False"]
+export type ShortURL = {
+    _id: string, //short url, can change
+    uid: ObjectId, //never changes
+    conditionals: string,
+    urlCount: number,
+    owner: string,
+    redirects: number[],
+    firstPoint: number,
+    deleted: boolean
+}
 
-export const enum AccountAction {
-    CreateURL, SignIn, SignUp, ViewURLs, Settings
+export type DataPoint = {
+    _id: ObjectId,
+    urlUID: ObjectId,
+    i: number, // index of redirected
+    values: string[]
+};
+
+interface Redirects {
+    _id: ObjectId,
+    urlUID: ObjectId,
+    [i: number]: number
+}
+
+export interface DataMin extends Redirects {
+    unixMin: number
+}
+
+export interface DataHour extends Redirects {
+    unixHour: number
+}
+
+export interface DataDay extends Redirects {
+    unixDay: number
 }

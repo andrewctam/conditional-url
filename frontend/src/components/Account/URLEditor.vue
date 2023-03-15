@@ -310,6 +310,7 @@ const analyticsNonZero = computed(() => {
             <div v-if="notOwner" class = "w-[95%] mt-4 mx-auto text-center relative text-red-200 font-extralight text-xl">
                 You do not own this URL
             </div>
+            
             <div v-else-if="doneLoading" class = "w-[95%] mt-2 py-2 mx-auto text-center relative">
                 <div class="flex flex-wrap justify-center">
                     <div class="mx-3 my-1 font-extralight text-sm w-fit px-2 py-1 bg-black/10 rounded-lg select-none whitespace-nowrap text-blue-200 hover:text-blue-300 cursor-pointer"
@@ -344,7 +345,7 @@ const analyticsNonZero = computed(() => {
                     <div class="mx-3 my-1 font-extralight text-sm w-fit px-2 py-1 bg-black/10 rounded-lg select-none whitespace-nowrap"
                         :class="changesMade ? 'text-green-200 hover:text-green-300 cursor-pointer' : 'text-gray-200/40 cursor-auto'"
                         @click="updateConditionals()">
-                        Save Changes
+                        Save Edits
                     </div>
                 </div>
 

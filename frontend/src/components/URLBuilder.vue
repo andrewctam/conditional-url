@@ -171,8 +171,10 @@ const domain = computed(() => {
             Make Another URL
         </button>
     </div>
+
     <div v-else class = "xl:w-1/2 lg:w-2/3 md:w-5/6 w-[95%] bg-black/10 my-8 mx-auto border border-black/25 rounded-xl text-center relative">
-        <div class = "mx-auto m-4">
+
+        <div class = "mx-auto mt-6">
             <span class = "text-white font-extralight text-base md:text-lg lg:text-xl">{{`${domain}/`}}</span>
             <input v-model = "short" type = "text" 
                 class = "text-white font-extralight bg-white/10 focus:outline-none placeholder:text-white/50 placeholder:text-center
@@ -186,6 +188,7 @@ const domain = computed(() => {
             :conditionals="conditionals"
             @update-conditionals="(updated) => conditionals = updated"
         />
+
 
         <button @click = "createConditionalURL()" class = "w-full px-4 py-2 mt-6 rounded-b-xl bg-black/10 border-t border-t-black/10 text-white font-light mx-auto hover:bg-black/30 hover:text-green-100 select-none">
             Create Conditional URL

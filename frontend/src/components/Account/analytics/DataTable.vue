@@ -155,6 +155,7 @@ const truncate = (str: string, maxLen: number = 50) => {
             v-if="pageCount > 0"
             :hasNext="hasNext" 
             :hasPrev="hasPrev" 
+            :canMove="doneLoading"
             :page="page" 
             :pageCount="pageCount"
             @next="page++"

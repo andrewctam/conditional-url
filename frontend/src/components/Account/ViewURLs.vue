@@ -145,6 +145,7 @@ watch(selected, () => {
             v-if="pageCount > 0"
             :hasNext="hasNext"
             :hasPrev="hasPrev"
+            :canMove="doneLoading"
             :page="page"
             :pageCount="pageCount"
             @prev="fetchURLs(Direction.Prev)"

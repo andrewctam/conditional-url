@@ -178,7 +178,7 @@ const updateConditionals = async (retry: boolean = true) => {
     for (let i = 0; i < conditionals.value.length; i++) {
         const c = conditionals.value[i];
         if (c.url == "") {
-            updateMsg(`Please enter a URL for block #${i + 1}`, true);
+            updateMsg(`Please enter a URL for redirect URL #${i + 1}`, true);
             return;
         }
         
@@ -193,23 +193,23 @@ const updateConditionals = async (retry: boolean = true) => {
         }
         
         if (c.conditions.length == 0 && i != conditionals.value.length - 1) {
-            updateMsg(`Please enter at least one condition for block #${i + 1}`, true);
+            updateMsg(`Please enter at least one condition for redirect URL #${i + 1}`, true);
             return;
         }
 
         for (let j = 0; j < c.conditions.length; j++) {
             const condition = c.conditions[j];
             if (condition.value === "" && condition.variable !== "URL Parameter") { //url param value can be empty
-                updateMsg(`Please enter a value for condition #${j + 1} in block #${i + 1}`, true);
+                updateMsg(`Please enter a value for condition #${j + 1} in redirect URL #${i + 1}`, true);
                 return;
             } else if (condition.variable === "URL Parameter") {
                 if (!condition.param) {
-                    updateMsg(`Please enter a URL Parameter for condition #${j + 1} in block #${i + 1}`, true);
+                    updateMsg(`Please enter a URL Parameter for condition #${j + 1} in redirect URL #${i + 1}`, true);
                     return;
                 }
 
                 if (!/^[a-zA-Z0-9]*$/.test(condition.param)) {
-                    updateMsg(`URL Parameter for condition #${j + 1} in block #${i + 1} can only contain letters and numbers`, true);
+                    updateMsg(`URL Parameter for condition #${j + 1} in redirect URL #${i + 1} can only contain letters and numbers`, true);
                     return;
                 }
             }

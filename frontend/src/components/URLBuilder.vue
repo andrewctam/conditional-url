@@ -2,7 +2,7 @@
 import { computed, ref, inject } from 'vue'
 import type { Ref } from 'vue'
 import { accessTokenKey, Conditional, refreshTokensKey, updateMsgKey } from '../types'
-import ConditionalsEditor from './ConditionalsEditor/ConditionalsEditor.vue'
+import ConditionalsEditor from './ConditionalsEditor/ConditionalsEditor.vue';
 
 const short = ref("");
 const conditionals: Ref<Conditional[]> = ref([
@@ -29,7 +29,7 @@ const createConditionalURL = async (retry: boolean = true) => {
     for (let i = 0; i < conditionals.value.length; i++) {
         const c = conditionals.value[i];
         if (c.url == "") {
-            updateMsg(`Please enter a URL for block #${i + 1}`, true);
+            updateMsg(`Please enter a URL for redirect URL #${i + 1}`, true);
             return;
         }
         
@@ -44,23 +44,23 @@ const createConditionalURL = async (retry: boolean = true) => {
         }
         
         if (c.conditions.length == 0 && i != conditionals.value.length - 1) {
-            updateMsg(`Please enter at least one condition for block #${i + 1}`, true);
+            updateMsg(`Please enter at least one condition for redirect URL #${i + 1}`, true);
             return;
         }
 
         for (let j = 0; j < c.conditions.length; j++) {
             const condition = c.conditions[j];
             if (condition.value === "" && condition.variable !== "URL Parameter") { //url param value can be empty
-                updateMsg(`Please enter a value for condition #${j + 1} in block #${i + 1}`, true);
+                updateMsg(`Please enter a value for condition #${j + 1} in redirect URL #${i + 1}`, true);
                 return;
             } else if (condition.variable === "URL Parameter") {
                 if (!condition.param) {
-                    updateMsg(`Please enter a URL Parameter for condition #${j + 1} in block #${i + 1}`, true);
+                    updateMsg(`Please enter a URL Parameter for condition #${j + 1} in redirect URL #${i + 1}`, true);
                     return;
                 }
 
                 if (!/^[a-zA-Z0-9]*$/.test(condition.param)) {
-                    updateMsg(`URL Parameter for condition #${j + 1} in block #${i + 1} can only contain letters and numbers`, true);
+                    updateMsg(`URL Parameter for condition #${j + 1} in redirect URL #${i + 1} can only contain letters and numbers`, true);
                     return;
                 }
             }
@@ -190,7 +190,7 @@ const domain = computed(() => {
         />
 
 
-        <button @click = "createConditionalURL()" class = "w-full px-4 py-2 mt-6 rounded-b-xl bg-black/10 border-t border-t-black/10 text-white font-light mx-auto hover:bg-black/30 hover:text-green-100 select-none">
+        <button @click = "createConditionalURL()" class = "w-full px-4 py-2 mt-4 rounded-b-xl bg-black/10 border-t border-t-black/10 text-green-100 font-light mx-auto hover:bg-black/30 hover:text-green-300 select-none">
             Create Conditional URL
         </button>
         

@@ -124,7 +124,7 @@ const toggleAnd = (i: number) => {
 </script>
 
 <template>
-    <div class="relative pt-8">
+    <div class="relative pt-9">
         <draggable 
         handle=".handle"
         :model-value="props.conditionals" 
@@ -153,15 +153,15 @@ const toggleAnd = (i: number) => {
             </template>
         </draggable>
 
-        <div v-if="conditionals.length < 100" @click = "newConditional" class = "mx-2 p-2 cursor-pointer text-center rounded bg-white/5 border border-black/20 text-green-100 hover:text-green-200 text-sm font-light hover:bg-black/30 select-none">
-            Add Block
+        <div v-if="conditionals.length < 100" @click = "newConditional" class = "mx-2 p-2 cursor-pointer text-center rounded bg-white/5 border border-black/20 text-white hover:text-green-200 text-sm font-light hover:bg-black/30 select-none">
+            Add Redirect
         </div>
 
         <div class = "absolute top-0 right-2">
-            <button @click="undo" :disabled = "undoStack.length < 1" class="p-1 text-white text-2xl disabled:text-gray-500"> 
+            <button @click="undo" :disabled = "undoStack.length < 1" class="p-1 text-white text-2xl disabled:text-gray-500 select-none"> 
                 ⟲
             </button>
-            <button @click="redo" :disabled = "redoStack.length < 1" class="p-1 text-white text-2xl disabled:text-gray-500 ml-4 md:ml-1"> 
+            <button @click="redo" :disabled = "redoStack.length < 1" class="p-1 text-white text-2xl disabled:text-gray-500 ml-4 md:ml-1 select-none"> 
                 ⟳
             </button>
         </div>

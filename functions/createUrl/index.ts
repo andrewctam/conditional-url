@@ -14,7 +14,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     const short = req.body.short.toLowerCase();
     const conditionals = req.body.conditionals;
 
-    if (short === "" || !/^[a-zA-Z0-9]*$/.test(short) || short.startsWith("http")) {
+    if (short === "" || !/^[a-zA-Z0-9]*$/.test(short)) {
         context.res = {
             status: 400,
             body: JSON.stringify({"msg": "Short URL contains invalid characters"})
@@ -208,7 +208,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         }
     } else {
         //url doesn't exist, create it
-        const doc = {
+        const doc: ShortURL = {
             _id: short,
             uid: new ObjectId(),
             conditionals,

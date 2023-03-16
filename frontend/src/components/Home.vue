@@ -18,6 +18,7 @@ const accountAction: Ref<AccountAction> = ref(AccountAction.CreateURL);
 const username = ref('');
 const accessToken = ref('');
 
+const refreshingTokens = ref(false);
 //clicking on a nav text again rerenders the component
 const rerenderKey = ref(0);
 
@@ -113,6 +114,7 @@ const refreshTokens = async () => {
         url = `${import.meta.env.VITE_DEV_API_URL}/api/refreshTokens`;
     }
 
+    refreshingTokens.value = true
     const response = await fetch(url, {
         method: 'POST',
         headers: {
@@ -125,6 +127,8 @@ const refreshTokens = async () => {
     }).then(res => {
         return res.json();
     })
+
+    refreshingTokens.value = false
 
     if (response.msg) {
         updateUser('', '', '')
@@ -231,11 +235,17 @@ provide(updateMsgKey, updateMsg);
                 <span class="font-bold mx-1">•</span>
 
                 <span class = "cursor-pointer font-semibold m-0 relative text-blue-100 hover:text-red-200" @click="updateUser('', '', '')">
-                    {{"Sign Out"}}
+                    Sign Out
                 </span>
             </div>
         </div>
 
+        <div v-else-if="refreshingTokens">
+            <span class = "font-light text-gray-200 mt-2 select-none">
+                Logging in...
+            </span>
+        </div>
+        
         <div v-else>
             <p class = "font-light text-gray-200 mt-2 select-none">
                 Create a shortened URL that conditionally redirects visitors to different URLs

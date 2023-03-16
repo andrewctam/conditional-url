@@ -500,7 +500,7 @@ describe("Get requested analytics", () => {
             const pg: {
                 key: string,
                 count: string
-            }[] = JSON.parse(context.res.body).counts;
+            }[] = body.counts;
 
             expect(pg).toStrictEqual(expCounts[v].slice(page * 10, (page + 1) * 10));
         }
@@ -533,7 +533,7 @@ describe("Get requested analytics", () => {
             expect(context.res.status).toBe(200);
             const body = JSON.parse(context.res.body);
 
-            if (page === 0 || page === 5)
+            if (page === 0 || page === 9)
                 expect(body.fromCache).toBe(false);
             else
                 expect(body.fromCache).toBe(true);
@@ -541,7 +541,7 @@ describe("Get requested analytics", () => {
             const pg: {
                 key: string,
                 count: string
-            }[] = JSON.parse(context.res.body).counts;
+            }[] = body.counts;
 
             expect(pg).toStrictEqual(expCounts[v].slice(page * 10, (page + 1) * 10));
         }
@@ -1195,6 +1195,8 @@ describe("Get requested analytics", () => {
 
         expect(dataPoints).toStrictEqual(exp);
     });
+
+    disconnectDB();
 
 });
 

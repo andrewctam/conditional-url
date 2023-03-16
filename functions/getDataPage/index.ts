@@ -80,12 +80,20 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     
     const pageSize = 10;
-    // cache some adjacent pages in redis for faster access
+    const extraPages = 8;
+    const extendedPageStart = Math.max(0, page - extraPages / 2);
+    const extendedPageSize = pageSize + extraPages * pageSize; 
+    // cache adjacent pages in redis for faster access
+    //
     //                     4___
     // 0___ 1___ 2___ 3___ 4___ 5___ 6___ 7___ 8___
-    const extraPages = 4; //in one direction
-    const extendedPageStart = Math.max(0, page - extraPages);
-    const extendedPageSize = pageSize + 2 * extraPages * pageSize; 
+    //
+    //
+    // If the start/end is reached, then the extra pages are added to the other direction
+    //
+    // 0___
+    // 0___ 1___ 2___ 3___ 4___ 5___ 6___ 7___ 8___
+                          
     
     let pageCount = 0;
     let counts: { key: string, count: string }[];
@@ -230,7 +238,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
         if (usingRedis) { //cache extra pages for faster access
             try {
-                const lastCachedPage = Math.min(page + extraPages, pageCount);
+                const lastCachedPage = Math.min(extendedPageStart + extraPages, pageCount);
                 await redisClient.del(short + "_table");
                 await redisClient.rPush(short + "_table", [
                     JSON.stringify({

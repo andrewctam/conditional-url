@@ -339,7 +339,7 @@ describe("Setup", () => {
     
         await getDataPage(context, req);
     
-        expect(context.res.status).toBe(400);
+        expect(context.res.status).toBe(401);
         expect(JSON.parse(context.res.body).msg).toBe("You do not own this URL");
     })
     

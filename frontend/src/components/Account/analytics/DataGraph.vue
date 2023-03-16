@@ -222,9 +222,9 @@ const options = {
             ...
         </div>
 
-        <div class="bg-[#424242] rounded mx-4 mt-2 mb-6 p-2 pt-0 sm:flex sm:flex-wrap sm:justify-around">
-            <div class="mt-2">
-                <label  class="block text-sm">
+        <div class="bg-[#424242] rounded mx-4 mt-2 mb-6 px-2 py-4 sm:flex sm:flex-wrap sm:justify-around">
+            <div>
+                <label class="block text-sm">
                     <span @click="moveStartBySpan(-1)" class = "cursor-pointer">←</span>
                     Range Start
                     <span @click="moveStartBySpan(1)" class = "cursor-pointer">→</span>
@@ -235,7 +235,7 @@ const options = {
                     />
             </div>
 
-            <div class="mt-2">
+            <div>
                 <label class="block text-sm">Time Span</label>
                 <select v-model="span" id="span" class = "border border-black/50 p-1 m-1 rounded font-normal bg-gray-600/50">
                     <option class="bg-gray-600" :value = "Span.Minute"> 1 minute </option>
@@ -244,7 +244,7 @@ const options = {
                 </select>
             </div>
 
-            <div class="mt-2">
+            <div>
                 <label  class="block text-sm">Range Length</label>
                 <select v-model="limit" id="limit" class = "border border-black/50 p-1 m-1 rounded font-normal bg-gray-600/50">
                     <option class="bg-gray-600" v-for="n in 10" :value = "n * 10"> {{`${n * 10} ${span}s`}} </option>

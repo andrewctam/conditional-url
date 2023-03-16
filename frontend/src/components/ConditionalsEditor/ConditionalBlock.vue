@@ -55,12 +55,12 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <div class = "bg-white/5 hover:bg-black/5 border border-black/20 mb-4 mx-2 p-3 pt-6 sm:pt-3 relative rounded select-none text-sm md:text-base">
+    <div class = "bg-white/5 hover:bg-black/5 border border-black/20 mb-4 mx-2 p-3 relative rounded select-none text-sm md:text-base">
         <button tabindex="-1" v-if="!onlyOne" @click = "$emit('delete', props.i)" class = "absolute top-0 right-2 text-lg text-red-400 hover:text-red-500">
             × 
         </button>
 
-        <svg v-if="!onlyOne" xmlns="http://www.w3.org/2000/svg" class="handle cursor-grab z-50 absolute top-1 mx-auto left-0 right-0 text-white/20 hover:text-white/60" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
+        <svg v-if="!onlyOne" xmlns="http://www.w3.org/2000/svg" class="handle cursor-grab z-40 absolute top-1 mx-auto left-0 right-0 text-white/20 hover:text-white/60" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"></path> <path d="M5 9m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path> <path d="M5 15m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path> <path d="M12 9m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path> <path d="M12 15m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path> <path d="M19 9m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path> <path d="M19 15m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path>
         </svg>
 
@@ -100,8 +100,8 @@ const emit = defineEmits<{
             <div v-else-if="props.conditions.length > 0" class="text-white/25 italic"> Unused Conditions...</div>
         </div>
 
-        <div class="mt-1 relative flex items-center">
-            <p class = "my-auto mr-1 font-light text-white text-xs sm:text-sm md:text-base"> Redirect to</p>
+        <div class="mt-1 relative flex items-center text-xs sm:text-sm md:text-base">
+            <p class = "my-auto mr-1 font-light text-white"> Redirect to</p>
             <input 
                 :value="props.url" 
                 @input="handleUpdateURL" 

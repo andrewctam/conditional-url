@@ -115,25 +115,32 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         } else {
             redisClient.on('error', err => {throw new Error(err + " Fetch from DB")});
 
-            const info = await redisClient.lRange(short + "_table", 0, 6)
-            const owner = info[0];
-            const cachedSortDirection = parseInt(info[1]);
-            const cachedVariable = info[2];
-            const cachedselectedURL = parseInt(info[3]);
-            const cachedFirstPage = parseInt(info[4]);
-            const cachedLastPage = parseInt(info[5]);
-            pageCount = parseInt(info[6]);
+            const meta = await redisClient.lRange(short + "_table", 0, 1)
+            
+            if (meta.length === 0) {
+                throw new Error("No cached data. Fetch from DB");   
+            }
 
-            if (owner === undefined ||
+            const metadata = JSON.parse(meta[0]);
+
+            const cachedVariable =  metadata["cacheVariable"];
+            const cachedselectedURL =  metadata["cacheSelectedURL"];
+            const cachedFirstPage =  metadata["cacheFirstPage"];
+            const cachedLastPage =  metadata["cacheLastPage"];
+            const cachedSortDirection =  metadata["cacheSortDirection"];
+            const cacheOwner = metadata["cacheOwner"];
+            pageCount =  metadata["cachePageCount"];
+
+            if (cacheOwner === undefined ||
                 variable !== cachedVariable ||
                 selectedURL !== cachedselectedURL || 
                 sortDirection !== cachedSortDirection ||
                 page < cachedFirstPage ||
                 page > cachedLastPage) {
                 throw new Error("No data found. Fetch from DB");
-            } else if (owner !== payload.username) {
+            } else if (cacheOwner !== payload.username) {
                 context.res = {
-                    status: 400,
+                    status: 401,
                     body: JSON.stringify({"msg": "You do not own this URL"})
                 };
 
@@ -141,11 +148,10 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 return;
             }
             
-            const cachedData = await redisClient.lRange(short + "_table", 7, -1);
-
             const firstPage = Math.max(0, page - cachedFirstPage);
-            counts = cachedData.slice(firstPage * pageSize, (firstPage + 1) * pageSize)
-                               .map((d) => JSON.parse(d));
+            const cachedData = await redisClient.lRange(short + "_table", firstPage * pageSize + 1, (firstPage + 1) * pageSize);
+
+            counts = cachedData.map((d) => JSON.parse(d));
         }
 
     } catch (error) {
@@ -224,16 +230,18 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
         if (usingRedis) { //cache extra pages for faster access
             try {
-                const lastCachedPage = Math.min(extendedPageStart + 2 * extraPages, pageCount);
+                const lastCachedPage = Math.min(page + extraPages, pageCount);
                 await redisClient.del(short + "_table");
                 await redisClient.rPush(short + "_table", [
-                    url.owner,
-                    sortDirection.toString(),
-                    variable, //variable cached
-                    selectedURL.toString(), //selectedURL cached
-                    extendedPageStart.toString(), //first page cached
-                    lastCachedPage.toString(), //last page cached
-                    pageCount.toString(), 
+                    JSON.stringify({
+                        cacheVariable: variable,
+                        cacheSelectedURL: selectedURL,
+                        cacheFirstPage: extendedPageStart,
+                        cacheLastPage: lastCachedPage,
+                        cacheSortDirection: sortDirection,
+                        cacheOwner: url.owner,
+                        cachePageCount: pageCount, 
+                    }),
                     ...counts.map((d) =>  JSON.stringify(d))
                 ]);
 

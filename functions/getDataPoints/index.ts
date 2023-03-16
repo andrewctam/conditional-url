@@ -124,21 +124,21 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         } else {
             redisClient.on('error', err => {throw new Error(err + " Fetch from DB")});
 
-            const info = await redisClient.lRange(short + "_graph", 0, 5)
+            const meta = await redisClient.lRange(short + "_graph", 0, 1)
 
-            
-            if (info.length === 0) {
+            if (meta.length === 0) {
                 throw new Error("No cached data. Fetch from DB");   
             }
 
-            const cacheSpan = parseInt(info[0]);
-            const cacheStart = parseInt(info[1]);
-            const cacheEnd = parseInt(info[2]);
-            const cacheFirstPoint = parseInt(info[3])
-            const username = info[4];
-            const cacheselectedURL = parseInt(info[5]);
+            const metadata = JSON.parse(meta[0]);
+            const cacheSpan = metadata["cacheSpan"];
+            const cacheStart = metadata["cacheStart"];
+            const cacheEnd = metadata["cacheEnd"];
+            const cacheFirstPoint = metadata["cacheFirstPoint"];
+            const cacheOwner = metadata["cacheOwner"];
+            const cacheSelectedURL = metadata["cacheSelectedURL"];
 
-            if (username !== payload.username) {
+            if (cacheOwner !== payload.username) {
                 context.res = {
                     status: 400,
                     body: JSON.stringify({"msg": "You do not own this URL"})
@@ -148,13 +148,13 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
                 return;
             }
 
-            if (cacheSpan !== span || start < cacheStart || end > cacheEnd || selectedURL !== cacheselectedURL) {
+            if (cacheSpan !== span || start < cacheStart || end > cacheEnd || selectedURL !== cacheSelectedURL) {
                 throw new Error("Data outside cache requested. Fetch from DB");
             }
 
             earliestPoint = new Date(cacheFirstPoint * 60000).toISOString()
             
-            const i = (start - cacheStart) / span + 6
+            const i = (start - cacheStart) / span + 1 //offset by 1 for meta data
             points = await redisClient.lRange(short + "_graph", i, i + limit - 1);
         }
         
@@ -237,12 +237,14 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         if (usingRedis) { //cache extended range for faster access of nearby data
             try {
                 const cachedData: string[] = [
-                    span.toString(), //some meta data to verify cache should be used and user is correct
-                    extendedStart.toString(),
-                    extendedEnd.toString(),
-                    url.firstPoint.toString(),
-                    url.owner,
-                    selectedURL.toString(),
+                    JSON.stringify({//some meta data to verify cache should be used and user is correct
+                        cacheSpan: span, 
+                        cacheStart: extendedStart,
+                        cacheEnd: extendedEnd,
+                        cacheFirstPoint: url.firstPoint,
+                        cacheOwner: url.owner,
+                        cacheSelectedURL: selectedURL
+                    }),
                     ...points
                 ]
 

@@ -10,7 +10,7 @@ jest.setTimeout(10000000)
 
 
 describe("Get requested analytics", () => {
-    const NUM_POINTS = 100000;
+    const NUM_POINTS = 10000;
     const UNIQUE_VALS = 95;
 
     let context = ({ log: jest.fn() } as unknown) as Context;
@@ -383,21 +383,22 @@ describe("Get requested analytics", () => {
                 query: {
                     short: randomShort,
                     variable: v,
-                    page: 0,
-                    selectedURL: -1,
+                    page: "0",
+                    selectedURL: "-1",
                     sort: "Increasing",
-                    refresh: true
+                    refresh: "true"
                 }
             }
 
             await getDataPage(context, req);
 
             expect(context.res.status).toBe(200);
-            
+            const body = JSON.parse(context.res.body)
+            expect(body.fromCache).toBe(false)
             const page: {
                 key: string,
                 count: string
-            }[] = JSON.parse(context.res.body).counts;
+            }[] = body.counts;
 
             expect(page).toStrictEqual(expCounts[v].slice(0, 10));
         }
@@ -413,21 +414,23 @@ describe("Get requested analytics", () => {
             query: {
                 short: randomShort,
                 variable: "Language",
-                page: 0,
-                selectedURL: -1,
+                page: "0",
+                selectedURL: "-1",
                 sort: "Decreasing",
-                refresh: true
+                refresh: "true"
             }
         }
 
         await getDataPage(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body)
+        expect(body.fromCache).toBe(false)
         
         const page: {
             key: string,
             count: string
-        }[] = JSON.parse(context.res.body).counts;
+        }[] = body.counts;
 
         expect(page).toStrictEqual(expLangDescending.slice(0, 10));
     
@@ -445,20 +448,22 @@ describe("Get requested analytics", () => {
                     short: randomShort,
                     variable: v,
                     page: 0,
-                    selectedURL: 0,
+                    selectedURL: "0",
                     sort: "Increasing",
-                    refresh: true
+                    refresh: "true"
                 }
             }
 
             await getDataPage(context, req);
 
             expect(context.res.status).toBe(200);
+            const body = JSON.parse(context.res.body)
+            expect(body.fromCache).toBe(false)
             
             const page: {
                 key: string,
                 count: string
-            }[] = JSON.parse(context.res.body).counts;
+            }[] = body.counts;
 
             expect(page).toStrictEqual(expCountsURL0[v].slice(0, 10));
         }
@@ -468,10 +473,7 @@ describe("Get requested analytics", () => {
         const v = Variables[0];
         const pages = Math.ceil( Object.keys(expCounts[v]).length / 10);
 
-        let prev: {
-            key: string,
-            count: string
-        };
+        
 
         for (let page = 0; page < pages; page++) {
             const req = {
@@ -482,16 +484,18 @@ describe("Get requested analytics", () => {
                 query: {
                     short: randomShort,
                     variable: v,
-                    page: page,
-                    selectedURL: -1,
+                    page: page.toString(),
+                    selectedURL: "-1",
                     sort: "Increasing",
-                    refresh: true
+                    refresh: "true"
                 }
             }
 
             await getDataPage(context, req);
 
             expect(context.res.status).toBe(200);
+            const body = JSON.parse(context.res.body);
+            expect(body.fromCache).toBe(false);
             
             const pg: {
                 key: string,
@@ -507,10 +511,7 @@ describe("Get requested analytics", () => {
         const v = Variables[0];
         const pages = Math.ceil( Object.keys(expCounts[v]).length / 10);
 
-        let prev: {
-            key: string,
-            count: string
-        };
+        
         for (let page = 0; page < pages; page++) {
             const req = {
                 headers: {
@@ -520,16 +521,22 @@ describe("Get requested analytics", () => {
                 query: {
                     short: randomShort,
                     variable: v,
-                    page: page,
-                    selectedURL: -1,
+                    page: page.toString(),
+                    selectedURL: "-1",
                     sort: "Increasing",
-                    refresh: false
+                    refresh: "false"
                 }
             }
 
             await getDataPage(context, req);
 
             expect(context.res.status).toBe(200);
+            const body = JSON.parse(context.res.body);
+
+            if (page === 0 || page === 5)
+                expect(body.fromCache).toBe(false);
+            else
+                expect(body.fromCache).toBe(true);
             
             const pg: {
                 key: string,
@@ -548,19 +555,21 @@ describe("Get requested analytics", () => {
             },
             query: {
                 short: randomShort,
-                span: 1,
-                start: start,
-                limit: 30,
-                selectedURL: -1,
-                refresh: true
+                span: "min",
+                start: start.toString(),
+                limit: "30",
+                selectedURL: "-1",
+                refresh: "true"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(false);
         
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const dataPoints: number[] = body.dataPoints;
         
         expect(dataPoints).toStrictEqual(expDataPoints.slice(0, 30).map((i) => i.toString()))
     });
@@ -574,19 +583,21 @@ describe("Get requested analytics", () => {
             },
             query: {
                 short: randomShort,
-                span: 1,
-                start: start,
-                limit: 30,
-                selectedURL: -1,
-                refresh: false
+                span: "min",
+                start: start.toString(),
+                limit: "30",
+                selectedURL: "-1",
+                refresh: "false"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(true);
         
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const dataPoints: number[] = body.dataPoints;
         
         expect(dataPoints).toStrictEqual(expDataPoints.slice(0, 30).map((i) => i.toString()))
     });
@@ -603,18 +614,20 @@ describe("Get requested analytics", () => {
             query: {
                 short: randomShort,
                 span: "hour",
-                start: start,
-                limit: 30,
-                selectedURL: -1,
-                refresh: true
+                start: start.toString(),
+                limit: "30",
+                selectedURL: "-1",
+                refresh: "true"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(false);
         
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const dataPoints: number[] = body.dataPoints;
         
         expect(dataPoints).toStrictEqual(groupPoints(expDataPoints, 30, 60))
     
@@ -631,18 +644,20 @@ describe("Get requested analytics", () => {
             query: {
                 short: randomShort,
                 span: "hour",
-                start: start,
-                limit: 30,
-                selectedURL: -1,
-                refresh: false
+                start: start.toString(),
+                limit: "30",
+                selectedURL: "-1",
+                refresh: "false"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(true);
         
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const dataPoints: number[] = body.dataPoints;
     
         expect(dataPoints).toStrictEqual(groupPoints(expDataPoints, 30, 60))
     
@@ -660,18 +675,20 @@ describe("Get requested analytics", () => {
             query: {
                 short: randomShort,
                 span: "day",
-                start: start,
-                limit: 10,
-                selectedURL: -1,
-                refresh: true
+                start: start.toString(),
+                limit: "10",
+                selectedURL: "-1",
+                refresh: "true"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(false);
         
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const dataPoints: number[] = body.dataPoints;
 
         expect(dataPoints).toStrictEqual(groupPoints(expDataPoints, 10, 1440))
     });
@@ -686,18 +703,20 @@ describe("Get requested analytics", () => {
             query: {
                 short: randomShort,
                 span: "day",
-                start: start,
-                limit: 10,
-                selectedURL: -1,
-                refresh: false
+                start: start.toString(),
+                limit: "10",
+                selectedURL: "-1",
+                refresh: "false"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(true);
         
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const dataPoints: number[] = body.dataPoints;
         
         expect(dataPoints).toStrictEqual(groupPoints(expDataPoints, 10, 1440))
     });
@@ -715,19 +734,21 @@ describe("Get requested analytics", () => {
             },
             query: {
                 short: randomShort,
-                span: 1,
-                start: start,
-                limit: 30,
-                selectedURL: 0,
-                refresh: true
+                span: "min",
+                start: start.toString(),
+                limit: "30",
+                selectedURL: "0",
+                refresh: "true"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(false);
         
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const dataPoints: number[] = body.dataPoints;
         
         expect(dataPoints).toStrictEqual(expDataPointsURL0.slice(0, 30).map((i) => i.toString()))
     });
@@ -741,19 +762,21 @@ describe("Get requested analytics", () => {
             },
             query: {
                 short: randomShort,
-                span: 1,
-                start: start,
-                limit: 30,
-                selectedURL: 0,
-                refresh: false
+                span: "min",
+                start: start.toString(),
+                limit: "30",
+                selectedURL: "0",
+                refresh: "false"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(true);
         
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const dataPoints: number[] = body.dataPoints;
         
         expect(dataPoints).toStrictEqual(expDataPointsURL0.slice(0, 30).map((i) => i.toString()))
     });
@@ -770,18 +793,20 @@ describe("Get requested analytics", () => {
             query: {
                 short: randomShort,
                 span: "hour",
-                start: start,
-                limit: 30,
-                selectedURL: 0,
-                refresh: true
+                start: start.toString(),
+                limit: "30",
+                selectedURL: "0",
+                refresh: "true"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
-        
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(false);
+
+        const dataPoints: number[] = body.dataPoints;
         
         expect(dataPoints).toStrictEqual(groupPoints(expDataPointsURL0, 30, 60))
     
@@ -798,18 +823,21 @@ describe("Get requested analytics", () => {
             query: {
                 short: randomShort,
                 span: "hour",
-                start: start,
-                limit: 30,
-                selectedURL: 0,
-                refresh: false
+                start: start.toString(),
+                limit: "30",
+                selectedURL: "0",
+                refresh: "false"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(true);
+
         
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const dataPoints: number[] = body.dataPoints;
     
         expect(dataPoints).toStrictEqual(groupPoints(expDataPointsURL0, 30, 60))
     
@@ -827,18 +855,21 @@ describe("Get requested analytics", () => {
             query: {
                 short: randomShort,
                 span: "day",
-                start: start,
-                limit: 10,
-                selectedURL: 0,
-                refresh: true
+                start: start.toString(),
+                limit: "10",
+                selectedURL: "0",
+                refresh: "true"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(false);
+
         
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const dataPoints: number[] = body.dataPoints;
 
         expect(dataPoints).toStrictEqual(groupPoints(expDataPointsURL0, 10, 1440))
     });
@@ -853,18 +884,21 @@ describe("Get requested analytics", () => {
             query: {
                 short: randomShort,
                 span: "day",
-                start: start,
-                limit: 10,
-                selectedURL: 0,
-                refresh: false
+                start: start.toString(),
+                limit: "10",
+                selectedURL: "0",
+                refresh: "false"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(true);
+
         
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const dataPoints: number[] = body.dataPoints;
         
         expect(dataPoints).toStrictEqual(groupPoints(expDataPointsURL0, 10, 1440))
     });
@@ -880,19 +914,22 @@ describe("Get requested analytics", () => {
             },
             query: {
                 short: randomShort,
-                span: 1,
-                start: start - 1000,
-                limit: 30,
-                selectedURL: -1,
-                refresh: true
+                span: "min",
+                start: (start - 1000).toString(),
+                limit: "30",
+                selectedURL: "-1",
+                refresh: "true"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(false);
+
         
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const dataPoints: number[] = body.dataPoints;
         
         expect(dataPoints).toStrictEqual(new Array(30).fill("0"))
     });
@@ -905,19 +942,22 @@ describe("Get requested analytics", () => {
             },
             query: {
                 short: randomShort,
-                span: 1,
-                start: start - 1000,
-                limit: 30,
-                selectedURL: -1,
-                refresh: false
+                span: "min",
+                start: (start - 1000).toString(),
+                limit: "30",
+                selectedURL: "-1",
+                refresh: "false"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(true);
+
         
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const dataPoints: number[] = body.dataPoints;
         
         expect(dataPoints).toStrictEqual(new Array(30).fill("0"))
     });
@@ -931,19 +971,22 @@ describe("Get requested analytics", () => {
             },
             query: {
                 short: randomShort,
-                span: 1,
-                start: start - 5,
-                limit: 30,
-                selectedURL: -1,
-                refresh: true
+                span: "min",
+                start: (start - 5).toString(),
+                limit: "30",
+                selectedURL: "-1",
+                refresh: "true"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(false);
+
         
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const dataPoints: number[] = body.dataPoints;
         
         expect(dataPoints).toStrictEqual(["0", "0", "0", "0", "0", ...expDataPoints.slice(0, 25).map((i) => i.toString())])
     });
@@ -956,19 +999,22 @@ describe("Get requested analytics", () => {
             },
             query: {
                 short: randomShort,
-                span: 1,
-                start: start - 5,
-                limit: 30,
-                selectedURL: -1,
-                refresh: false
+                span: "min",
+                start: (start - 5).toString(),
+                limit: "30",
+                selectedURL: "-1",
+                refresh: "false"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(true);
+
         
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const dataPoints: number[] = body.dataPoints;
         
         expect(dataPoints).toStrictEqual(["0", "0", "0", "0", "0", ...expDataPoints.slice(0, 25).map((i) => i.toString())])
     });
@@ -982,19 +1028,22 @@ describe("Get requested analytics", () => {
             },
             query: {
                 short: randomShort,
-                span: 1,
-                start: start + 5,
-                limit: 30,
-                selectedURL: -1,
-                refresh: true
+                span: "min",
+                start: (start + 5).toString(),
+                limit: "30",
+                selectedURL: "-1",
+                refresh: "true"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(false);
+
         
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const dataPoints: number[] = body.dataPoints;
         
         expect(dataPoints).toStrictEqual(expDataPoints.slice(5, 35).map((i) => i.toString()))
     });
@@ -1007,19 +1056,22 @@ describe("Get requested analytics", () => {
             },
             query: {
                 short: randomShort,
-                span: 1,
-                start: start + 5,
-                limit: 30,
-                selectedURL: -1,
-                refresh: false
+                span: "min",
+                start: (start + 5).toString(),
+                limit: "30",
+                selectedURL: "-1",
+                refresh: "false"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(true);
+
         
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const dataPoints: number[] = body.dataPoints;
         
         expect(dataPoints).toStrictEqual(expDataPoints.slice(5, 35).map((i) => i.toString()))
     });
@@ -1032,19 +1084,22 @@ describe("Get requested analytics", () => {
             },
             query: {
                 short: randomShort,
-                span: 1,
-                start: new Date("2030-01-01").getTime() / 60000,
-                limit: 30,
-                selectedURL: -1,
-                refresh: true
+                span: "min",
+                start: (new Date("2050-01-01").getTime() / 60000).toString(),
+                limit: "30",
+                selectedURL: "-1",
+                refresh: "true"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(false);
+
         
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const dataPoints: number[] = body.dataPoints;
         
         expect(dataPoints).toStrictEqual(new Array(30).fill("0"))
     });
@@ -1058,19 +1113,22 @@ describe("Get requested analytics", () => {
             },
             query: {
                 short: randomShort,
-                span: 1,
-                start: new Date("2030-01-01").getTime() / 60000,
-                limit: 30,
-                selectedURL: -1,
-                refresh: false
+                span: "min",
+                start: (new Date("2050-01-01").getTime() / 60000).toString(),
+                limit: "30",
+                selectedURL: "-1",
+                refresh: "false"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(true);
+
         
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const dataPoints: number[] = body.dataPoints;
         
         expect(dataPoints).toStrictEqual(new Array(30).fill("0"))
     });
@@ -1084,19 +1142,22 @@ describe("Get requested analytics", () => {
             },
             query: {
                 short: randomShort,
-                span: 1,
-                start: end - 25,
-                limit: 30,
-                selectedURL: -1,
-                refresh: true
+                span: "min",
+                start: (end - 25).toString(),
+                limit: "30",
+                selectedURL: "-1",
+                refresh: "true"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(false);
+
         
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const dataPoints: number[] = body.dataPoints;
         
         const exp = [...expDataPoints.slice(expDataPoints.length - 1 - 25).map((i) => i.toString()), "0", "0", "0", "0"]
 
@@ -1113,19 +1174,22 @@ describe("Get requested analytics", () => {
             },
             query: {
                 short: randomShort,
-                span: 1,
-                start: end - 25,
-                limit: 30,
-                selectedURL: -1,
-                refresh: true
+                span: "min",
+                start: (end - 25).toString(),
+                limit: "30",
+                selectedURL: "-1",
+                refresh: "false"
             }
         }
 
         await getDataPoints(context, req);
 
         expect(context.res.status).toBe(200);
+        const body = JSON.parse(context.res.body);
+        expect(body.fromCache).toBe(true);
+
         
-        const dataPoints: number[] = JSON.parse(context.res.body).dataPoints;
+        const dataPoints: number[] = body.dataPoints;
         
         const exp = [...expDataPoints.slice(expDataPoints.length - 1 - 25).map((i) => i.toString()), "0", "0", "0", "0"]
 

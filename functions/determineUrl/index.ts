@@ -3,8 +3,7 @@ import { Condition, Conditional, DataDay, DataHour, DataMin, Variables, DataValu
 import { connectDB } from "../database"
 import * as dotenv from 'dotenv';
 import { ShortURL } from "../types";
-import { ObjectId } from "mongodb";
-
+import axios from "axios";
 
 const httpTrigger: AzureFunction = async function (context: Context, req: HttpRequest): Promise<void> {
     const short = req.body.short.toLowerCase();
@@ -17,7 +16,25 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         };  
         return;  
     } 
+
+    //when running Azure functions locally x-forwarded-for header is undefined, so this will be the fallback ip
+    let ip = "100.128.0.0";
     
+    try {
+        ip = req.headers["x-forwarded-for"].split(":")[0]; 
+    } catch (e) { }
+
+    try {
+        const locationData = await axios.get(`https://ipapi.co/${ip}/json`);
+        
+        if (locationData.data.country_name)
+            data["Country"] = locationData.data.country_name;
+        else
+            throw new Error("Failed to fetch")
+    } catch (e) {
+        data["Country"] = "Unknown"
+    }
+
     dotenv.config();
     const client = await connectDB();
     const db = client.db("conditionalurl");

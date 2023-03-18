@@ -157,7 +157,9 @@ describe("Delete account tests", () => {
                     data: JSON.stringify({
                         Language: "English",
                         "URL Parameter": JSON.stringify("")
-                    })
+                    }), headers: {
+                        "x-forwarded-for": "100.128.0.0:00000"
+                    }
                 }
             }
 

@@ -1,7 +1,7 @@
 import { ObjectId } from "mongodb"
 
 export const Operators = ["=", "≠", ">", "≥", "<", "≤", "Contains"]
-export const Variables = ["Language", "Time", "Time Zone", "Date", "OS", "Browser", "URL Parameter", "Screen Width", "Screen Height", "Has Touchscreen", "Using Ad Blocker"] as const
+export const Variables = ["Language", "Country", "Time", "Time Zone", "Date", "OS", "Browser", "URL Parameter", "Screen Width", "Screen Height", "Has Touchscreen", "Using Ad Blocker"] as const
 
 export type Data = {
     [key in typeof Variables[number]]: string

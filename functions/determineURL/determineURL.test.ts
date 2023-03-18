@@ -10,7 +10,9 @@ test("Nonexistent url", async () => {
             data: JSON.stringify({
                 Language: "English",
                 "URL Parameter": JSON.stringify("")
-            })
+            }), headers: {
+                "x-forwarded-for": "100.128.0.0:00000"
+            }
         }
     }
 
@@ -29,7 +31,9 @@ test("Invalid short", async () => {
             data: JSON.stringify({
                 Language: "English",
                 "URL Parameter": JSON.stringify("")
-            })
+            }), headers: {
+                "x-forwarded-for": "100.128.0.0:00000"
+            }
         }
     }
 
@@ -48,7 +52,31 @@ test("Invalid short 2", async () => {
             data: JSON.stringify({
                 Language: "English",
                 "URL Parameter": JSON.stringify("")
-            })
+            }), headers: {
+                "x-forwarded-for": "100.128.0.0:00000"
+            }
+        }
+    }
+
+    await determineURL(context, req);
+
+    expect(context.res.status).toBe(400);
+    expect(JSON.parse(context.res.body).msg).toBe("Short URL contains invalid characters");
+})
+
+
+
+test("Invalid short 2", async () => {
+    const context = ({ log: jest.fn() } as unknown) as Context;
+    const req = {
+        body: {
+            short: "&",
+            data: JSON.stringify({
+                Language: "English",
+                "URL Parameter": JSON.stringify("")
+            }), headers: {
+                "x-forwarded-for": "100.128.0.0:00000"
+            }
         }
     }
 

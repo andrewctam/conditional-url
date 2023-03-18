@@ -151,7 +151,9 @@ describe("Delete account tests", () => {
                 short: short,
                 data: JSON.stringify({
                     "URL Parameter": JSON.stringify("")
-                })
+                }), headers: {
+                    "x-forwarded-for": "100.128.0.0:00000"
+                }
             }
         }
 
@@ -284,7 +286,9 @@ describe("Delete account tests", () => {
                 short: short2,
                 data: JSON.stringify({
                     "URL Parameter": JSON.stringify("")
-                })
+                }), headers: {
+                    "x-forwarded-for": "100.128.0.0:00000"
+                }
             }
         }
 

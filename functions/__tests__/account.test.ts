@@ -317,7 +317,9 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
                 data: JSON.stringify({
                     Language: "English",
                     "URL Parameter": JSON.stringify("")
-                })
+                }), headers: {
+                    "x-forwarded-for": "100.128.0.0:00000"
+                }
             }
         }
     
@@ -390,7 +392,9 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
                 data: JSON.stringify({
                     Language: "English",
                     "URL Parameter": JSON.stringify("")
-                })
+                }), headers: {
+                    "x-forwarded-for": "100.128.0.0:00000"
+                }
             }
         }
     
@@ -547,7 +551,9 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
                 data: JSON.stringify({
                     Language: "English",
                     "URL Parameter": JSON.stringify("")
-                })
+                }), headers: {
+                    "x-forwarded-for": "100.128.0.0:00000"
+                }
             }
         }
     

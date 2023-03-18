@@ -104,6 +104,28 @@ describe("Create and determine", () => {
                     {
                         url: "https://example.com/8",
                         and: true,
+                        conditions: [
+                            {
+                                variable: "Country",
+                                operator: "=",
+                                value: "France",
+                            }
+                        ]
+                    },
+                    {
+                        url: "https://example.com/9",
+                        and: true,
+                        conditions: [
+                            {
+                                variable: "Country",
+                                operator: "=",
+                                value: "United States",
+                            }
+                        ]
+                    },
+                    {
+                        url: "https://example.com/10",
+                        and: true,
                         conditions: []
                     }
                 ])
@@ -155,6 +177,8 @@ describe("Create and determine", () => {
             body: {
                 short: randomShort,
                 data: JSON.stringify(data)
+            }, headers: {
+                "x-forwarded-for": "100.128.0.0:00000"
             }
         }
 
@@ -177,6 +201,8 @@ describe("Create and determine", () => {
             body: {
                 short: randomShort,
                 data: JSON.stringify(data)
+            }, headers: {
+                "x-forwarded-for": "100.128.0.0:00000"
             }
         }
 
@@ -199,6 +225,8 @@ describe("Create and determine", () => {
             body: {
                 short: randomShort,
                 data: JSON.stringify(data)
+            }, headers: {
+                "x-forwarded-for": "100.128.0.0:00000"
             }
         }
 
@@ -221,6 +249,8 @@ describe("Create and determine", () => {
             body: {
                 short: randomShort,
                 data: JSON.stringify(data)
+            }, headers: {
+                "x-forwarded-for": "100.128.0.0:00000"
             }
         }
 
@@ -244,6 +274,8 @@ describe("Create and determine", () => {
             body: {
                 short: randomShort,
                 data: JSON.stringify(data)
+            }, headers: {
+                "x-forwarded-for": "100.128.0.0:00000"
             }
         }
 
@@ -268,6 +300,8 @@ describe("Create and determine", () => {
             body: {
                 short: randomShort,
                 data: JSON.stringify(data)
+            }, headers: {
+                "x-forwarded-for": "100.128.0.0:00000"
             }
         }
 
@@ -292,6 +326,8 @@ describe("Create and determine", () => {
             body: {
                 short: randomShort,
                 data: JSON.stringify(data)
+            }, headers: {
+                "x-forwarded-for": "100.128.0.0:00000"
             }
         }
 
@@ -317,6 +353,8 @@ describe("Create and determine", () => {
             body: {
                 short: randomShort,
                 data: JSON.stringify(data)
+            }, headers: {
+                "x-forwarded-for": "100.128.0.0:00000"
             }
         }
 
@@ -342,6 +380,8 @@ describe("Create and determine", () => {
             body: {
                 short: randomShort,
                 data: JSON.stringify(data)
+            }, headers: {
+                "x-forwarded-for": "217.70.180.148:00000"
             }
         }
 
@@ -352,13 +392,74 @@ describe("Create and determine", () => {
     })
 
 
+
+    it("should be 9", async () => {
+        const data = {
+            Language: "Spanish",
+            Browser: "Safari",
+            Time: "01:00",
+            "URL Parameter": JSON.stringify(""),
+            OS: "MacOS",
+            Date: "2022-01-02",
+            "Screen Width": "999",
+            "Screen Height": 1000
+        }
+
+        const req = {
+            body: {
+                short: randomShort,
+                data: JSON.stringify(data)
+            }, 
+            /*
+            should default to 100.128.0.0 if not provided
+            headers: {
+                "x-forwarded-for": "100.128.0.0:00000"
+            }
+            */
+        }
+
+        await determineURL(context, req);
+
+        expect(context.res.status).toBe(200);
+        expect(JSON.parse(context.res.body)).toBe("https://example.com/9");
+    })
+
+
+    it("should be 10", async () => {
+        const data = {
+            Language: "Spanish",
+            Browser: "Safari",
+            Time: "01:00",
+            "URL Parameter": JSON.stringify(""),
+            OS: "MacOS",
+            Date: "2022-01-02",
+            "Screen Width": "999",
+            "Screen Height": 1000
+        }
+
+        const req = {
+            body: {
+                short: randomShort,
+                data: JSON.stringify(data)
+            }, headers: {
+                "x-forwarded-for": "203.0.178.191"
+            }
+        }
+
+        await determineURL(context, req);
+
+        expect(context.res.status).toBe(200);
+        expect(JSON.parse(context.res.body)).toBe("https://example.com/10");
+    })
+
+
     test("verify redirect nums", async () => {
         const client = await connectDB();
         const urlsCollection = client.db("conditionalurl").collection<ShortURL>("urls");
         const url = await urlsCollection.findOne({_id: randomShort});
         await disconnectDB();
 
-        expect(url.redirects).toStrictEqual([1, 2, 1, 1, 1, 1, 1, 1])
+        expect(url.redirects).toStrictEqual([1, 2, 1, 1, 1, 1, 1, 1, 1, 1])
     });
 
 })

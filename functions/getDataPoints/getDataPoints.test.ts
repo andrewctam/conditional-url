@@ -230,7 +230,9 @@ describe("Setup", () => {
                     Date: "2022-01-02",
                     "Screen Width": "999",
                     "Screen Height": "1000"
-                })
+                }), headers: {
+                    "x-forwarded-for": "100.128.0.0:00000"
+                }
             }
         }
 

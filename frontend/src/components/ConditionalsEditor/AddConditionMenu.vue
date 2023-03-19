@@ -37,7 +37,7 @@ const valueOptions = computed(() => {
     }
 });
 
-const opOptions = computed(() => {
+const operatorOptions = computed(() => {
     switch(selectedVariable.value) {
         case "Time":
         case "URL Parameter":
@@ -50,7 +50,7 @@ const opOptions = computed(() => {
         case "OS":
         case "Browser":
         case "Language":
-            return ["=", "!="];
+            return ["=", "≠"];
         case "Has Touchscreen":
         case "Using Ad Blocker":
             return ["="];
@@ -105,21 +105,46 @@ const checkAndCreate = () => {
                 <option class="bg-gray-600" v-for="variable in Variables">{{variable}}</option>
             </select>
 
-            <input v-if="selectedVariable === 'URL Parameter'" v-model="param" class = "bg-emerald-600/20 border w-20 border-black/50 h-8 mr-1 rounded font-light pl-1 text-white placeholder:text-white/50" type="text" placeholder="Param">
+            <input 
+                v-if="selectedVariable === 'URL Parameter'" 
+                v-model="param" 
+                class = "bg-emerald-600/20 border w-24 border-black/50 h-8 mr-1 rounded font-light pl-1 text-white placeholder:text-white/50" 
+                type="text" 
+                placeholder="Parameter">
             
             <select v-model="selectedOperator" class = "border h-8 mr-1 border-black/50 text-white rounded font-light bg-emerald-600/20">
-                <option class="bg-gray-600" v-for="op in opOptions">{{op}}</option>
+                <option class="bg-gray-600" v-for="op in operatorOptions">{{op}}</option>
             </select>
             
-            <input v-if="selectedVariable === 'Time'" v-model="value" class = "bg-emerald-600/20 border border-black/50 h-8 mr-1 rounded font-light pl-1 text-white placeholder:text-white/50" type="time">
-            <input v-else-if="selectedVariable === 'Date'" v-model="value" class = "bg-emerald-600/20 border border-black/50 h-8 mr-1 rounded font-light pl-1 text-white placeholder:text-white/50" type="date">
-            <input v-else-if="selectedVariable === 'Screen Width' || selectedVariable === 'Screen Height'" v-model="value" class = "bg-emerald-600/20 border border-black/50 h-8 mr-1 w-24 rounded font-light pl-1 text-white placeholder:text-white/50" type="number">
-            <input v-else-if="selectedVariable === 'URL Parameter'" v-model="value" class = "bg-emerald-600/20 border w-20 border-black/50 h-8 mr-1 rounded font-light pl-1 text-white placeholder:text-white/50" type="text" placeholder="Value">
+
+
+            <input v-if="selectedVariable === 'Time'" 
+                v-model="value" 
+                type="time" 
+                class = "bg-emerald-600/20 border border-black/50 h-8 mr-1 rounded font-light pl-1 text-white placeholder:text-white/50" >
+
+            <input v-else-if="selectedVariable === 'Date'" 
+                v-model="value" 
+                type="date" 
+                class = "bg-emerald-600/20 border border-black/50 h-8 mr-1 rounded font-light pl-1 text-white placeholder:text-white/50" >
+
+            <input v-else-if="selectedVariable === 'Screen Width' || selectedVariable === 'Screen Height'" 
+                v-model="value" 
+                type="number"
+                class = "bg-emerald-600/20 border border-black/50 h-8 mr-1 w-24 rounded font-light pl-1 text-white placeholder:text-white/50" >
+
+            <input v-else-if="selectedVariable === 'URL Parameter'" 
+                v-model="value" 
+                type="text" 
+                placeholder="Value" 
+                class = "bg-emerald-600/20 border w-24 border-black/50 h-8 mr-1 rounded font-light pl-1 text-white placeholder:text-white/50">
+
             <select v-else v-model="value" class = "border h-8 mr-1 border-black/50 text-white rounded font-light bg-emerald-600/20">
                 <option class="bg-gray-600" v-for="op in valueOptions">{{op}}</option>
             </select>
 
 
+            
             <button type="submit" class = "hover:bg-emerald-600/50 bg-emerald-600/20 text-white border border-black/50 rounded h-8 py-1 px-2 text-sm font-light">
                 Add
             </button>

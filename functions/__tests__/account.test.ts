@@ -205,7 +205,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
         expect(context.res.status).toBe(200);
 
         const body = JSON.parse(context.res.body);
-        expect(body.conditionals).toBe(conditionals1);
+        expect(body.conditionals).toStrictEqual(JSON.parse(conditionals1));
     })
 
     it("should successfully be edited", async () => {
@@ -242,7 +242,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
         expect(context.res.status).toBe(200);
 
         const body = JSON.parse(context.res.body);
-        expect(body.conditionals).toBe(conditionals2);
+        expect(body.conditionals).toStrictEqual(JSON.parse(conditionals2));
     })
 
     it("should successfully be renamed", async () => {
@@ -280,7 +280,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
         expect(context.res.status).toBe(200);
 
         const body = JSON.parse(context.res.body);
-        expect(body.conditionals).toBe(conditionals2);
+        expect(body.conditionals).toStrictEqual(JSON.parse(conditionals2));
     })
 
 

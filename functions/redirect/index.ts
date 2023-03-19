@@ -69,8 +69,8 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
     
-    const conditionals = JSON.parse(url.conditionals);
-    const [redirect, i] = determine(conditionals, data)
+
+    const [redirect, i] = determine(url.conditionals, data)
 
     let incrementCount;
     if (url.firstPoint === -1) {

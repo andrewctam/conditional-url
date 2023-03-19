@@ -33,9 +33,9 @@ export type User = {
 }
 
 export type ShortURL = {
-    _id: string, //short url, can change
-    uid: ObjectId, //never changes
-    conditionals: string,
+    _id: string, //short url
+    uid: ObjectId, //used to connect with data points. Changes if the analytics are cleared
+    conditionals: Conditional[],
     urlCount: number,
     owner: string,
     redirects: number[],

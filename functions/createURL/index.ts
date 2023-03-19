@@ -174,7 +174,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             const updateDoc = {
                 $set: { //reinitialize the deleted url
                     deleted: false,
-                    conditionals: conditionals,
+                    conditionals: parsedConditionals,
                     urlCount: parsedConditionals.length,
                     redirects: new Array(parsedConditionals.length).fill(0)
                 }
@@ -211,7 +211,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         const doc: ShortURL = {
             _id: short,
             uid: new ObjectId(),
-            conditionals,
+            conditionals: parsedConditionals,
             urlCount: parsedConditionals.length,
             owner: owner ?? "",
             redirects: new Array(parsedConditionals.length).fill(0),

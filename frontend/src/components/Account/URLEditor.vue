@@ -159,7 +159,7 @@ const getURL = async (updateConditionals: boolean = true, updateRedirects: boole
         notOwner.value = true;
     } else if (!response.msg) {
         if (updateConditionals)
-            conditionals.value = JSON.parse(response.conditionals);
+            conditionals.value = response.conditionals;
         
         if (updateRedirects)
             redirects.value = response.redirects;

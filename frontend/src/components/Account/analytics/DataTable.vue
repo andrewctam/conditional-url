@@ -142,7 +142,7 @@ const truncate = (str: string, maxLen: number = 50) => {
             <tbody class="px-6 py-4 whitespace-nowrap text-white select-text">
                 <tr v-for="(datum, index) in counts" 
                     :key="datum.key + index" 
-                    class="hover:bg-white/5" :class="index % 2 === 0 ? 'bg-black/30' : 'bg-black/40'">
+                    class="hover:bg-white/10" :class="index % 2 === 0 ? 'bg-black/30' : 'bg-black/40'">
 
                     <td class="p-2">{{datum.key}}</td>
                     <td class="p-2 select">{{datum.count}}</td>

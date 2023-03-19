@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, inject } from 'vue'
 import type { Ref } from 'vue'
-import { Condition, Operators, Variables, browsers, operatingSystems, timezones, languages, booleans, updateMsgKey, countries } from '../../types'
+import { Condition, Operators, Variables, browsers, operatingSystems, timezones, languages, booleans, updateMsgKey, countryCodes } from '../../types'
 import Guide from './Guide.vue'
 export type Operator = typeof Operators[number]
 export type Variable = typeof Variables[number]
@@ -20,7 +20,7 @@ const updateMsg = inject(updateMsgKey) as (msg: string, err?: boolean) => void;
 const valueOptions = computed(() => {
     switch(selectedVariable.value) {
         case "Country":
-            return countries;
+            return Object.values(countryCodes);
         case "OS":
             return operatingSystems;
         case "Browser":

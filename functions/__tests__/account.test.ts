@@ -8,7 +8,7 @@ import getUserURLs from "../getUserURLs/index";
 import updateURL from "../updateURL/index";
 import renameURL from "../renameURL/index";
 import deleteURL from "../deleteURL/index";
-import determineURL from "../determineURL/index";
+import redirect from "../redirect/index";
 import deleteAccount from "../deleteAccount/index";
 
 describe("Sign up, Login, and Create/Edit URLs", () => {
@@ -323,7 +323,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
             }
         }
     
-        await determineURL(context, req);
+        await redirect(context, req);
     
         expect(context.res.status).toBe(404);
         expect(JSON.parse(context.res.body).msg).toBe("Short URL not found");
@@ -398,7 +398,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
             }
         }
     
-        await determineURL(context, req);
+        await redirect(context, req);
     
         expect(context.res.status).toBe(404);
         expect(JSON.parse(context.res.body).msg).toBe("Short URL not found");
@@ -557,7 +557,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
             }
         }
     
-        await determineURL(context, req);
+        await redirect(context, req);
     
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/1");

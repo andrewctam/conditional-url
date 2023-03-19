@@ -2,7 +2,7 @@ import { connectDB, disconnectDB } from "../database";
 import { Context } from "@azure/functions";
 
 import createURL from "../createURL/index";
-import determineURL from "../determineURL/index";
+import redirect from "../redirect/index";
 import { ShortURL } from "../types";
 
 describe("Create and determine", () => {
@@ -182,7 +182,7 @@ describe("Create and determine", () => {
             }
         }
 
-        await determineURL(context, req);
+        await redirect(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/1");
@@ -206,7 +206,7 @@ describe("Create and determine", () => {
             }
         }
 
-        await determineURL(context, req);
+        await redirect(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/2");
@@ -230,7 +230,7 @@ describe("Create and determine", () => {
             }
         }
 
-        await determineURL(context, req);
+        await redirect(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/2");
@@ -254,7 +254,7 @@ describe("Create and determine", () => {
             }
         }
 
-        await determineURL(context, req);
+        await redirect(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/3");
@@ -279,7 +279,7 @@ describe("Create and determine", () => {
             }
         }
 
-        await determineURL(context, req);
+        await redirect(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/4");
@@ -305,7 +305,7 @@ describe("Create and determine", () => {
             }
         }
 
-        await determineURL(context, req);
+        await redirect(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/5");
@@ -331,7 +331,7 @@ describe("Create and determine", () => {
             }
         }
 
-        await determineURL(context, req);
+        await redirect(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/6");
@@ -358,7 +358,7 @@ describe("Create and determine", () => {
             }
         }
 
-        await determineURL(context, req);
+        await redirect(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/7");
@@ -385,7 +385,7 @@ describe("Create and determine", () => {
             }
         }
 
-        await determineURL(context, req);
+        await redirect(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/8");
@@ -418,7 +418,7 @@ describe("Create and determine", () => {
             */
         }
 
-        await determineURL(context, req);
+        await redirect(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/9");
@@ -446,7 +446,7 @@ describe("Create and determine", () => {
             }
         }
 
-        await determineURL(context, req);
+        await redirect(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com/10");

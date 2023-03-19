@@ -4,7 +4,7 @@ import signUp from "../signUp/index";
 import signIn from "../signIn/index";
 import deleteAccount from "./index";
 import createURL from "../createURL/index";
-import determineURL from "../determineURL/index";
+import redirect from "../redirect/index";
 import getURL from "../getURL/index";
 
 describe("Delete account tests", () => {
@@ -157,7 +157,7 @@ describe("Delete account tests", () => {
             }
         }
 
-        await determineURL(context, req);
+        await redirect(context, req);
 
         expect(context.res.status).toBe(200);
         expect(JSON.parse(context.res.body)).toBe("https://example.com");
@@ -292,7 +292,7 @@ describe("Delete account tests", () => {
             }
         }
 
-        await determineURL(context, req);
+        await redirect(context, req);
 
         expect(context.res.status).toBe(404);
         expect(JSON.parse(context.res.body).msg).toBe("Short URL not found");

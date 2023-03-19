@@ -3,7 +3,7 @@ import { Context } from "@azure/functions";
 import signUp from "../signUp/index";
 import createURL from "../createURL/index";
 import deleteAllURLs from "./index";
-import determineURL from "../determineURL/index";
+import redirect from "../redirect/index";
 import jwt from "jsonwebtoken";
 describe("Delete account tests", () => {
     const context = ({ log: jest.fn() } as unknown) as Context;
@@ -163,7 +163,7 @@ describe("Delete account tests", () => {
                 }
             }
 
-            await determineURL(context, req);
+            await redirect(context, req);
 
             expect(context.res.status).toBe(404);
             expect(JSON.parse(context.res.body).msg).toBe("Short URL not found");

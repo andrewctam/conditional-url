@@ -3,7 +3,7 @@
 import { Context } from "@azure/functions";
 
 import createURL from "../createURL/index";
-import determineURL from "./index";
+import redirect from "./index";
 
 describe("Redirect to countries correctly", () => {
     jest.setTimeout(20000)
@@ -84,7 +84,7 @@ describe("Redirect to countries correctly", () => {
                 }
             }
 
-            await determineURL(context, req);
+            await redirect(context, req);
 
             expect(context.res.status).toBe(200);
             expect(JSON.parse(context.res.body)).toBe(`https://example.com/${country}`);

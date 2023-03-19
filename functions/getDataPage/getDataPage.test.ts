@@ -2,7 +2,7 @@ import { Context } from "@azure/functions";
 import getDataPage from "./index"
 import signUp from "../signUp/index";
 import createURL from "../createURL/index";
-import determineURL from "../determineURL/index";
+import redirect from "../redirect/index";
 import jwt from "jsonwebtoken";
 
 test("No token", async () => {
@@ -290,7 +290,7 @@ describe("Setup", () => {
             }
         }
 
-        await determineURL(context, req);
+        await redirect(context, req);
         expect(context.res.status).toBe(200);
 
         const req2 = {

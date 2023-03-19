@@ -30,6 +30,8 @@ git clone https://github.com/tamandrew/conditional-url.git
     - In `/frontend`, rename `.env.template` to `.env` and change the URLs if desired.
     - In `/functions`, rename `.env.template` to `.env` and update the variables
         - `MONGO_CONNECTION_STRING` and `JWT_Secret` are mandatory.
+        - `AZURE_MAPS_KEY` is optional for use with [Azure Map's geolocation](https://learn.microsoft.com/en-us/azure/azure-maps/azure-maps-authentication#shared-key-authentication).
+            - If not provided, a free geolocation API will be used instead (limited to 1,000 calls per day).
         - `GOOGLE_API_KEY` is optional for scanning URLs with Google's Safe Browsing API. 
             - If not provided, URLs will not be scanned before creation.
         - `REDIS_HOST`, `REDIS_PORT`, and `REDIS_PASSWORD` are optional for caching data using Redis.

@@ -34,21 +34,20 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
     try {
         if (AZURE_MAPS_KEY) {
             const locationData = await axios.get(`https://atlas.microsoft.com/geolocation/ip/json?api-version=1.0&ip=${ip}&subscription-key=${AZURE_MAPS_KEY}`);
-
+            
             if (locationData.data.countryRegion.isoCode) {
                 const countries = { "AR": "Argentina", "AU": "Australia", "AT": "Austria", "BD": "Bangladesh", "BE": "Belgium", "BR": "Brazil", "CA": "Canada", "CL": "Chile", "CN": "China", "CO": "Colombia", "CZ": "Czechia", "DK": "Denmark", "EG": "Egypt", "FI": "Finland", "FR": "France", "DE": "Germany", "GR": "Greece", "HU": "Hungary", "IN": "India", "ID": "Indonesia", "IR": "Iran", "IQ": "Iraq", "IE": "Ireland", "IL": "Israel", "IT": "Italy", "JP": "Japan", "KZ": "Kazakhstan", "KE": "Kenya", "KW": "Kuwait", "MY": "Malaysia", "MX": "Mexico", "NL": "Netherlands", "NG": "Nigeria", "NO": "Norway", "PK": "Pakistan", "PE": "Peru", "PH": "Philippines", "PL": "Poland", "PT": "Portugal", "QA": "Qatar", "RO": "Romania", "RU": "Russia", "SA": "Saudi Arabia", "SG": "Singapore", "ZA": "South Africa", "KR": "South Korea", "ES": "Spain", "SE": "Sweden", "CH": "Switzerland", "TW": "Taiwan", "TH": "Thailand", "TR": "Turkey", "AE": "United Arab Emirates", "GB": "United Kingdom", "US": "United States", "VN": "Vietnam" };
-
+                
                 // if ip is from a not listed country, just set it to the iso code
                 data["Country"] = countries[locationData.data.countryRegion.isoCode] ?? locationData.data.countryRegion.isoCode;
             } else
                 throw new Error("Failed to fetch");
 
         } else {
-            //limited to 1,000 calls per day
-            const location = await axios.get(`https://ipapi.co/${ip}/country_name`);
+            const location = await axios.get(`http://ip-api.com/json/${ip}`);
 
-            if (location.data)
-                data["Country"] = location.data;
+            if (location.data.country)
+                data["Country"] = location.data.country;
             else
                 throw new Error("Failed to fetch");
         }

@@ -293,7 +293,7 @@ const analyticsNonZero = computed(() => {
 <template>
     <div class = "w-[95%] mx-auto relative" :class = "showAnalytics ? 'md:mx-10 md:grid md:grid-cols-2 md:gap-10' : 'xl:w-1/2 lg:w-2/3 md:w-5/6'" >
         <div class="w-full h-fit bg-[#3e3f41] my-8 pb-4 mx-auto border border-black/25 rounded-xl text-center"
-            :class = "showAnalytics ? 'z-50 max-h-[25vh] md:max-h-[95vh] overflow-y-auto sticky top-4' : ''"
+            :class = "showAnalytics ? 'z-40 max-h-[25vh] md:max-h-[95vh] overflow-y-auto sticky top-4' : ''"
             >
             
             <span @click="close" class="absolute top-1 left-2 text-xl text-white hover:text-red-200 cursor-pointer select-none">

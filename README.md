@@ -13,7 +13,7 @@
 
 ## Technologies
 - [Azure Functions](https://azure.microsoft.com/en-us/products/functions/)
-- [MongoDB](https://azure.microsoft.com/en-us/services/cosmos-db/)
+- [MongoDB](https://www.mongodb.com/)
 - [Redis](https://redis.com/redis-enterprise-cloud/overview/)
 - [TypeScript](https://www.typescriptlang.org/download)
 - [Vue 3](https://v3.vuejs.org/guide/introduction.html)

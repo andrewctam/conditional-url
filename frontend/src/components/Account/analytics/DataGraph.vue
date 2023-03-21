@@ -47,7 +47,7 @@ onMounted(async () => {
 })
 
 watch([span, limit, start, selectedURL], async () => {
-        await getDataPoints();
+    await getDataPoints();
 })
 
 const getDataPoints = async (retry: boolean = true, refreshData = false) => {
@@ -204,7 +204,7 @@ const options = {
         </p>
         <div class="mt-2">
             <span class="mr-1 font-light">From:</span>
-            <select v-model="selectedURL" id="selectedURL" class = "border border-black/50 p-1 m-1 rounded font-normal bg-gray-600/50">
+            <select v-model="selectedURL" id="selectedURL" class = "border border-black/50 p-1 m-1 w-[200px] rounded font-normal bg-gray-600/50">
                 <option class="bg-gray-600"  value = "-1"> All URLs </option>
                 <option class="bg-gray-600" v-for="url in props.urls" :value="url.id">
                     {{`(${url.id + 1}) ${truncate(url.url)}`}}

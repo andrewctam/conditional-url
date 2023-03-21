@@ -194,7 +194,7 @@ provide(updateMsgKey, updateMsg);
 
 <template>
     <div v-if = "msg" 
-        class = "fixed top-4 left-4 px-4 py-1 border border-black/25 rounded text-black text-center font-light"
+        class = "fixed top-4 left-4 px-4 py-1 border border-black/25 z-50 rounded text-black text-center font-light"
         :class="error ? 'bg-red-100' : 'bg-blue-100'">
         {{msg}}
     </div>

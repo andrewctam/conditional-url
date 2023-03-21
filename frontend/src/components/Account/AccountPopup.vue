@@ -137,9 +137,9 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <div class = "bg-black/80 border border-white/10 shadow-md rounded-lg sm:rounded-tr-none z-50 pt-6 p-10
+    <div class = "bg-black/80 border border-white/10 shadow-md rounded-lg sm:rounded-tr-none z-40 pt-6 p-10
                         sm:absolute sm:left-auto sm:right-2 sm:top-6 sm:w-fit sm:h-fit
-                        fixed w-[97.5%] left-[1.25%] right-[1.25%] top-[22vh] h-[50vh]">
+                        fixed w-[97.5%] left-[1.25%] right-[1.25%] top-[22vh]">
 
         <div class='text-center text-2xl text-white font-light'>
             {{ type }}

@@ -68,7 +68,7 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
             deleted: true,
             uid: new ObjectId(), //disassociate the data with this url
             redirects: [],
-            conditionals: "",
+            conditionals: [],
             firstPoint: -1,
             urlCount: 0,
         }

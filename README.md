@@ -1,7 +1,8 @@
 # Conditional URL
 
 ## Description
-[Conditional URL](https://conditionalurl.web.app) is a URL shortener app that allows you to create a shortened URL that conditionally redirects visitors to different URLs based on some specified conditions. The user can create URLs as a guest, or create an account to later edit/rename their URL and view detailed analytics. The RESTful API runs serverless using Microsoft Azure Functions.
+[Conditional URL](https://conditionalurl.web.app) is a URL shortener that creates a shortened URL that conditionally redirects visitors to different URLs based on specified conditions. The user can create URLs as a guest, or create an account to later edit/rename their URL and view detailed analytics. The RESTful API runs serverless using Microsoft Azure Functions.
+
 | ![Home Page](demo.png) | 
 |:--:| 
 | Home Page (Guest View) |
@@ -29,13 +30,13 @@ git clone https://github.com/tamandrew/conditional-url.git
 - Set up environmental variables:
     - In `/frontend`, rename `.env.template` to `.env` and change the URLs if desired.
     - In `/functions`, rename `.env.template` to `.env` and update the variables
-        - `MONGO_CONNECTION_STRING` and `JWT_Secret` are mandatory.
-        - `AZURE_MAPS_KEY` is optional for use with [Azure Map's geolocation](https://learn.microsoft.com/en-us/azure/azure-maps/azure-maps-authentication#shared-key-authentication).
+        - `MONGO_CONNECTION_STRING` and `JWT_SECRET` are mandatory.
+        - `AZURE_MAPS_KEY` is optional for use with [Azure Maps Geolocation API](https://learn.microsoft.com/en-us/azure/azure-maps/azure-maps-authentication#shared-key-authentication).
             - If not provided, a free geolocation API will be used instead (limited to 45 calls per minute).
         - `GOOGLE_API_KEY` is optional for scanning URLs with Google's Safe Browsing API. 
             - If not provided, URLs will not be scanned before creation.
         - `REDIS_HOST`, `REDIS_PORT`, and `REDIS_PASSWORD` are optional for caching data using Redis.
-            - If not provided, every query for analytics will have to make a database call and reprocess the data, which will be slower than using Redis.
+            - If not provided, every query for analytics will make a database call and reprocess the data instead of fetching from cached data.
 
 - To start the frontend, in `/frontend` install npm dependencies and run `npm run dev`.
 ```

@@ -126,6 +126,10 @@ const refreshTokens = async () => {
         })
     }).then(res => {
         return res.json();
+    }).catch(e => {
+        refreshingTokens.value = false;
+        updateMsg("Failed to refresh access token", true)
+        updateUser('', '', '')
     })
 
     refreshingTokens.value = false

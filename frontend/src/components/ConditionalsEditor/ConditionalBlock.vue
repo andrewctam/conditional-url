@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { Condition } from "../../types"
+import { computed, ref, inject } from 'vue'
+import { Condition, updateMsgKey } from "../../types"
 import AddConditionMenu from './AddConditionMenu.vue'
 import ConditionBubble from './ConditionBubble.vue';
 
@@ -17,6 +17,7 @@ const props = defineProps<{
 
 
 const showConditionMenu = ref(false)
+const updateMsg = inject(updateMsgKey) as (msg: string, err?: boolean) => void;
 
 const msg = computed(() => {
     if (props.first && props.last) {
@@ -39,6 +40,26 @@ const handleUpdateURL = (e: Event) => {
 
 
 const addCondition = (condition: Condition) => {
+    for (const c of props.conditions) {
+        if (c.variable === condition.variable && c.value === condition.value) {
+            if (c.operator === condition.operator) {
+                updateMsg("Duplicate condition!", true)
+                return;
+            }
+
+            if ((c.operator === "=" && condition.operator === "≠") ||
+                (c.operator === "≠" && condition.operator === "=") ||
+                (c.operator === ">" && condition.operator === "≤") ||
+                (c.operator === "≥" && condition.operator === "<") ||
+                (c.operator === "<" && condition.operator === "≥") ||
+                (c.operator === "≤" && condition.operator === ">")) {
+
+                updateMsg(`New condition is the negation of an existing condition! Will always evaluate to ${props.and ? "false": "true"}!`, true)
+                return;
+            }
+        }
+    }
+
     showConditionMenu.value = false;
     emit('addCondition', props.i, condition);
 }
@@ -81,15 +102,14 @@ const emit = defineEmits<{
                         @click="emit('toggleAnd', props.i)"
                         class = "font-light cursor-pointer text-sm"
                         :class = "props.and ? 'text-green-300' : 'text-purple-300'"
-                        > 
+                    > 
                         {{props.and ? " and" : " or"}}
                     </span>
                 </div>
 
-                <span @click="showConditionMenu = !showConditionMenu" class = "cursor-pointer my-auto relative text-green-200 hover:text-green-300">
+                <span @click="showConditionMenu = !showConditionMenu" class = "cursor-pointer my-auto text-green-200 hover:text-green-300">
                     {{showConditionMenu ? "×" : "+"}}
                 </span>
-
 
                 <AddConditionMenu 
                     v-if="showConditionMenu"
@@ -106,8 +126,8 @@ const emit = defineEmits<{
                 :value="props.url" 
                 @input="handleUpdateURL" 
                 type = "text" 
-                class = "flex-grow pl-1 pr-10 text-white font-light bg-white/10 focus:outline-none placeholder:text-white/50" 
-                placeholder="https://example.com"
+                class = "flex-grow pl-1 pr-14 text-white font-light bg-white/10 focus:outline-none placeholder:text-white/50" 
+                :placeholder="`https://example.com/URL${props.i + 1}`"
             />
 
             <div class="absolute right-1 text-gray-400 text-xs font-light">

@@ -7,6 +7,7 @@ import DataGraph from './analytics/DataGraph.vue';
 import DataTable from './analytics/DataTable.vue';
 import RedirectsChart from './analytics/RedirectsChart.vue';
 import router from '../../router';
+import LeftArrow from '../Icons/LeftArrow.vue';
 
 const props = defineProps<{
     short: string
@@ -297,7 +298,7 @@ const analyticsNonZero = computed(() => {
             >
             
             <span @click="close" class="absolute top-1 left-2 text-xl text-white hover:text-red-200 cursor-pointer select-none">
-                ←
+                <LeftArrow />
             </span>
         
             <div class="mt-6">

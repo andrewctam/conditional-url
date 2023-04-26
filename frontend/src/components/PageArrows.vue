@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import LeftArrow from './Icons/LeftArrow.vue';
+import RightArrow from './Icons/RightArrow.vue';
+
 const props = defineProps<{
     hasPrev: boolean,
     hasNext: boolean,
@@ -19,8 +22,8 @@ const emits = defineEmits<{
     <div class="flex justify-center">
         <span @click="() => props.hasPrev && props.canMove ? $emit('prev') : null" class = "font-light select-none mr-1"
             :class= "props.hasPrev ? 'text-white hover:text-red-200 cursor-pointer'
-                                   : 'text-gray-200/50'">
-            ←
+                                   : 'text-gray-500'">
+            <LeftArrow />
         </span>
 
         <span class = "text-white font-light mx-2">
@@ -29,8 +32,8 @@ const emits = defineEmits<{
         
         <span @click="() => props.hasNext && props.canMove ? $emit('next') : null" class = "font-light select-none ml-1"
             :class= "props.hasNext ? 'text-white hover:text-green-200 cursor-pointer'
-                                   : 'text-gray-200/50'">
-            →
+                                   : 'text-gray-500'">
+            <RightArrow />
         </span>
     </div>
 </template>

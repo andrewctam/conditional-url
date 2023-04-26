@@ -3,6 +3,9 @@ import { ref, watch, computed, inject, onMounted } from 'vue';
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from 'chart.js'
 import { Line } from 'vue-chartjs'
 import { accessTokenKey, refreshTokensKey } from '../../../types';
+import LeftArrow from '../../Icons/LeftArrow.vue';
+import RightArrow from '../../Icons/RightArrow.vue';
+import Refresh from '../../Icons/Reload.vue';
 
 ChartJS.register(
   CategoryScale,
@@ -212,12 +215,8 @@ const options = {
             </select>
         </div>
 
-        
-        <svg v-if="doneLoading" @click="getDataPoints(true, true)" class="absolute top-2 right-2 cursor-pointer" xmlns="http://www.w3.org/2000/svg"  width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-            <path d="M19.933 13.041a8 8 0 1 1 -9.925 -8.788c3.899 -1 7.935 1.007 9.425 4.747"></path>
-            <path d="M20 4v5h-5"></path>
-        </svg>
+
+        <Refresh v-if="doneLoading" @click="getDataPoints(true, true)" class="absolute top-2 right-2 cursor-pointer" />
         <div v-else class="absolute top-1 right-0 text-white font-light mx-2">
             ...
         </div>
@@ -225,14 +224,18 @@ const options = {
         <div class="bg-[#424242] rounded mx-4 mt-2 mb-6 px-2 py-4 sm:flex sm:flex-wrap sm:justify-around">
             <div>
                 <label class="block text-sm">
-                    <span @click="moveStartBySpan(-1)" class = "cursor-pointer">←</span>
-                    Range Start
-                    <span @click="moveStartBySpan(1)" class = "cursor-pointer">→</span>
+                    <LeftArrow @click="moveStartBySpan(-1)" class = "cursor-pointer inline"/>
+                    
+                    <div class = "inline">
+                        Start Date
+                    </div>
+                    
+                    <RightArrow @click="moveStartBySpan(1)" class = "cursor-pointer inline"/>
                 </label>
-                <input v-model = "start" 
-                    type = "datetime-local" id="start" class = "bg-gray-600/50 border border-black/50 p-1 m-1 rounded my-auto font-normal inline"
-                    :max="new Date().toISOString().slice(0, -8)"
-                    />
+                <input type = "datetime-local" id="start" 
+                    class = "bg-gray-600/50 border border-black/50 p-1 m-1 rounded my-auto font-normal inline"
+                    v-model = "start" 
+                    :max="new Date().toISOString().slice(0, -8)"/>
             </div>
 
             <div>

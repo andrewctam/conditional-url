@@ -3,6 +3,7 @@ import { computed, ref, inject } from 'vue'
 import { Condition, updateMsgKey } from "../../types"
 import AddConditionMenu from './AddConditionMenu.vue'
 import ConditionBubble from './ConditionBubble.vue';
+import DragHandle from '../Icons/DragHandle.vue';
 
 
 const props = defineProps<{
@@ -81,9 +82,10 @@ const emit = defineEmits<{
             × 
         </button>
 
-        <svg v-if="!onlyOne" xmlns="http://www.w3.org/2000/svg" class="handle cursor-grab z-30 absolute top-1 mx-auto left-0 right-0 text-white/20 hover:text-white/60" width="18" height="18" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
-            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path> <path d="M5 9m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path> <path d="M5 15m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path> <path d="M12 9m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path> <path d="M12 15m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path> <path d="M19 9m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path> <path d="M19 15m-1 0a1 1 0 1 0 2 0a1 1 0 1 0 -2 0"></path>
-        </svg>
+        <DragHandle
+            class="handle cursor-grab z-30 absolute top-1 mx-auto left-0 right-0 text-white/20 hover:text-white/60"
+            v-if="!onlyOne" 
+        />
 
         <div class = "flex">
             <span class = "font-light text-white mr-1 h-fit">{{msg}}</span>

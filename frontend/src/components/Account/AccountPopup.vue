@@ -146,7 +146,7 @@ const emit = defineEmits<{
         </div>
 
         <button tabindex="-1" @click = "$emit('close')" class = "absolute top-0 right-2 p-3 text-lg text-red-400 hover:text-red-500">
-            × 
+            ×
         </button>
 
         <form @submit.prevent="handleSubmit">

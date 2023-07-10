@@ -1,7 +1,7 @@
 import {createWebHistory, createRouter} from 'vue-router';
 
-import Home from "./components/Home.vue";
-import Redirect from "./components/Redirect.vue";
+const Home = () => import("./components/Home.vue");
+const Redirect = () => import("./components/Redirect.vue");
 
 const router = createRouter({
     history: createWebHistory(),

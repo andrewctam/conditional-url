@@ -23,7 +23,7 @@
 ## Installation
 - Clone this repository 
 ```
-git clone https://github.com/tamandrew/conditional-url.git
+git clone https://github.com/andrewctam/conditional-url.git
 ```
 - Set up [Azure Functions Core Tools](https://docs.microsoft.com/en-us/azure/azure-functions/functions-run-local?tabs=windows%2Ccsharp%2Cbash). 
 - Set up a MongoDB database, such as on [MongoDB Atlas](https://www.mongodb.com/atlas/database).

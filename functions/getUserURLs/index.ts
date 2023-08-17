@@ -53,6 +53,16 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
         return;
     }
 
+    if (user.urlCount === 0) {
+        context.res = {
+            status: 200,
+            body: JSON.stringify({
+                noURLs: true
+            })
+        };
+        return;
+    }
+
     const pageParam = req.query.page;
     let page = 0;
     if (pageParam !== undefined) {
@@ -66,21 +76,23 @@ const httpTrigger: AzureFunction = async function (context: Context, req: HttpRe
 
     if (sort === "Newest") {
         urls = urls.reverse();
-    }    
+    }
 
-    
+    const search = req.query.search;
+    if (search && search.length > 0) {
+        urls = urls.filter(url => url.includes(search));
+    }
+
     context.res = {
         status: 200,
         body: JSON.stringify({
             page: page,
             pageCount: Math.ceil(user.urls.length / 10),
-            paginatedURLs: urls.slice(page * 10, (page + 1) * 10)
+            searchedPageCount: Math.ceil(urls.length / 10),
+            paginatedURLs: urls.slice(page * 10, (page + 1) * 10),
+            noURLs: false
         })
     };
-
-      
-
-
 
 };
 

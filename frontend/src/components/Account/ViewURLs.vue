@@ -21,13 +21,15 @@ const enum Direction {
     "Next" = 1,
 }
 const sorting = ref(Sorting.Newest);
+const search = ref("");
+const noURLs = ref(false);
 const page = ref(0);
 const pageCount = ref(1);
+const searchedPageCount = ref(1);
 const doneLoading = ref(false);
 const shortURLs: Ref<string[]> = ref([]); 
 const refresh = inject(refreshTokensKey) as () => Promise<boolean>
 const accessToken = inject(accessTokenKey)
-
 
 const emit = defineEmits<{
     (event: 'close'): void
@@ -42,12 +44,13 @@ const fetchURLs = async (direction: Direction, retry: boolean = true) => {
     if (page.value + direction < 0 || page.value + direction >= pageCount.value)
         return;
     
+    const searchParam = search.value ? `?search=${search.value}&` : "";
     doneLoading.value = false;
     let url;
     if (import.meta.env.PROD) {
-        url = `${import.meta.env.VITE_PROD_API_URL}/api/getUserURLs?page=${page.value + direction}&sort=${sorting.value}`;
+        url = `${import.meta.env.VITE_PROD_API_URL}/api/getUserURLs${searchParam}?page=${page.value + direction}&sort=${sorting.value}`;
     } else {
-        url = `${import.meta.env.VITE_DEV_API_URL}/api/getUserURLs?page=${page.value + direction}&sort=${sorting.value}`;
+        url = `${import.meta.env.VITE_DEV_API_URL}/api/getUserURLs${searchParam}?page=${page.value + direction}&sort=${sorting.value}`;
     }
 
     const response = await fetch(url, {
@@ -66,8 +69,12 @@ const fetchURLs = async (direction: Direction, retry: boolean = true) => {
         }
         return;
     } else if (!response.msg) {
-        shortURLs.value = response.paginatedURLs;
-        pageCount.value = response.pageCount;
+        noURLs.value = response.noURLs;
+        if (!noURLs.value) {
+            shortURLs.value = response.paginatedURLs;
+            pageCount.value = response.pageCount;
+            searchedPageCount.value = response.searchedPageCount;
+        }
     }
 
     doneLoading.value = true;
@@ -92,9 +99,8 @@ onBeforeMount(async () => {
 
 })
 
-watch(sorting, async (oldSorting, newSorting) => {
-    if (oldSorting !== newSorting)
-        await fetchURLs(Direction.Same);
+watch([search, sorting], async () => {
+    await fetchURLs(Direction.Same);
 })
 
 watch(selected, () => {
@@ -113,44 +119,53 @@ watch(selected, () => {
             Your URLs
         </div>
 
-        <div v-if="doneLoading && shortURLs.length > 0" class="mt-1 mb-4">
-            <span @click="sorting=Sorting.Newest" class="cursor-pointer select-none" :class="sorting===Sorting.Newest ? 'text-blue-200' : 'text-white'" >
-                Newest
-            </span>
-            <span class="text-white text-xl select-none">
-                •
-            </span>
-            <span @click="sorting=Sorting.Oldest" class="cursor-pointer select-none" :class="sorting===Sorting.Oldest ? 'text-blue-200' : 'text-white'" >
-                Oldest
-            </span>
-        </div>
-
-        <p v-if="!doneLoading" class="text-white font-light mt-4">
-            Loading...
-        </p>
-        <p v-else-if="shortURLs.length === 0" class="text-white font-light my-4">
+        <p v-if="noURLs" class="text-white font-light my-4">
             No URLs created. 
             <span @click="$emit('close')" class="text-blue-200 hover:text-blue-300 font-light cursor-pointer">
                 Create your first!
             </span>
         </p>
-        <ul v-else v-for="short in shortURLs" :key="short" class="my-3">
-            <ShortBlock 
-                :short="short" 
-                @select="() => { selected = short }" 
-            />
-        </ul>
+        <div v-else>
+            <div class="mt-1 mb-4">
+                <div>
+                    <input 
+                        v-model="search"
+                        placeholder="Search"
+                        type="text" 
+                        class="text-white bg-black/25 rounded-xl px-2 py-1 my-2" 
+                    >
+                </div>
 
-        <PageArrows
-            v-if="pageCount > 0"
-            :hasNext="hasNext"
-            :hasPrev="hasPrev"
-            :canMove="doneLoading"
-            :page="page"
-            :pageCount="pageCount"
-            @prev="fetchURLs(Direction.Prev)"
-            @next="fetchURLs(Direction.Next)"
-        />
+                <span @click="sorting=Sorting.Newest" class="cursor-pointer select-none text-sm" :class="sorting===Sorting.Newest ? 'text-blue-200' : 'text-white'" >
+                    Newest
+                </span>
+                <span class="text-white text-xl select-none">
+                    •
+                </span>
+                <span @click="sorting=Sorting.Oldest" class="cursor-pointer select-none text-sm" :class="sorting===Sorting.Oldest ? 'text-blue-200' : 'text-white'" >
+                    Oldest
+                </span>
+            </div>
+
+            
+            <ul v-for="short in shortURLs" :key="short" class="my-3">
+                <ShortBlock 
+                    :short="short" 
+                    @select="() => { selected = short }" 
+                />
+            </ul>
+
+            <PageArrows
+                v-if="searchedPageCount > 1"
+                :hasNext="hasNext"
+                :hasPrev="hasPrev"
+                :canMove="doneLoading"
+                :page="page"
+                :pageCount="pageCount"
+                @prev="fetchURLs(Direction.Prev)"
+                @next="fetchURLs(Direction.Next)"
+            />
+        </div>
     </div>
 
     <URLEditor 

@@ -518,9 +518,7 @@ describe("Sign up, Login, and Create/Edit URLs", () => {
         expect(context.res.status).toBe(200);
 
         const body = JSON.parse(context.res.body);
-        expect(body.page).toBe(0);
-        expect(body.pageCount).toBe(0);
-        expect(body.paginatedURLs).toStrictEqual([]);
+        expect(body.noURLs).toBe(true);
     })
 
 

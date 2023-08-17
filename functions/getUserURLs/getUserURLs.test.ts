@@ -32,10 +32,34 @@ describe("Unit tests for getUserURLs", () => {
 
         accessToken = JSON.parse(context.res.body).accessToken;
         expect(accessToken).toBeDefined();
+    })
 
-        
+    test("No URLs yet", async () => {
+        let context = ({ log: jest.fn() } as unknown) as Context;
+
+        let req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                page: 0,
+                sort: "Oldest"
+            }
+        }
+
+        await getUserURLs(context, req);
+
+        expect(context.res.status).toBe(200);
+
+        let body = JSON.parse(context.res.body);
+        expect(body.noURLs).toBe(true);
+    });
+
+    test("Put URLs", async () => {
+        const context = ({ log: jest.fn() } as unknown) as Context;
+
         for (const short of shorts) {
-            
             const req = {
                 headers: {
                     "Content-Type": "application/json",
@@ -52,10 +76,9 @@ describe("Unit tests for getUserURLs", () => {
             }
     
             await createURL(context, req);
-    
+            expect(context.res.status).toBe(200);
         }
-
-    })
+    });
 
     test("Get user urls Oldest", async () => {
         let context = ({ log: jest.fn() } as unknown) as Context;
@@ -96,6 +119,7 @@ describe("Unit tests for getUserURLs", () => {
         expect(context.res.status).toBe(200);
 
         body = JSON.parse(context.res.body);
+        expect(body.noURLs).toBe(false);
         expect(body.page).toBe(1);
         expect(body.pageCount).toBe(2);
         expect(body.paginatedURLs).toStrictEqual(copy.splice(0, 1));
@@ -146,6 +170,34 @@ describe("Unit tests for getUserURLs", () => {
         expect(body.page).toBe(1);
         expect(body.pageCount).toBe(2);
         expect(body.paginatedURLs).toStrictEqual(reversed.splice(0, 1));
+    })
+
+    test("Get user urls seaching", async () => {
+        let context = ({ log: jest.fn() } as unknown) as Context;
+        const searchStr = shorts[0].substring(0, 2);
+        const filtered = shorts.filter(short => short.includes(searchStr));
+
+        let req = {
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": "Bearer " + accessToken
+            },
+            query: {
+                page: 0,
+                sort: "Oldest",
+                search: searchStr
+            }
+        }
+
+        await getUserURLs(context, req);
+
+        expect(context.res.status).toBe(200);
+
+        let body = JSON.parse(context.res.body);
+        expect(body.page).toBe(0);
+        expect(body.pageCount).toBe(2);
+        expect(body.searchedPageCount).toBe(1);
+        expect(body.paginatedURLs).toStrictEqual(filtered);
     })
     
 

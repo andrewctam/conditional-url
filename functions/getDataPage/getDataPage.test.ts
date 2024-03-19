@@ -280,7 +280,7 @@ describe("Setup", () => {
                     Browser: "Safari",
                     Time: "01:00",
                     "URL Parameter": JSON.stringify(""),
-                    OS: "MacOS",
+                    OS: "Mac",
                     Date: "2022-01-02",
                     "Screen Width": "999",
                     "Screen Height": "1000"

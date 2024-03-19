@@ -64,7 +64,7 @@ describe("Create and determine", () => {
                             {
                                 variable: "OS",
                                 operator: "≠",
-                                value: "MacOS",
+                                value: "Mac",
                             }
                         ]
                     },
@@ -291,7 +291,7 @@ describe("Create and determine", () => {
             Browser: "Safari",
             Time: "01:00",
             "URL Parameter": JSON.stringify(""),
-            OS: "MacOS",
+            OS: "Mac",
             Date: "2020-01-01"
         }
 
@@ -317,7 +317,7 @@ describe("Create and determine", () => {
             Browser: "Safari",
             Time: "01:00",
             "URL Parameter": JSON.stringify(""),
-            OS: "MacOS",
+            OS: "Mac",
             Date: "2022-01-02",
             "Screen Width": "1000"
         }
@@ -343,7 +343,7 @@ describe("Create and determine", () => {
             Browser: "Safari",
             Time: "01:00",
             "URL Parameter": JSON.stringify(""),
-            OS: "MacOS",
+            OS: "Mac",
             Date: "2022-01-02",
             "Screen Width": "999",
             "Screen Height": "999"
@@ -370,7 +370,7 @@ describe("Create and determine", () => {
             Browser: "Safari",
             Time: "01:00",
             "URL Parameter": JSON.stringify(""),
-            OS: "MacOS",
+            OS: "Mac",
             Date: "2022-01-02",
             "Screen Width": "999",
             "Screen Height": 1000
@@ -399,7 +399,7 @@ describe("Create and determine", () => {
             Browser: "Safari",
             Time: "01:00",
             "URL Parameter": JSON.stringify(""),
-            OS: "MacOS",
+            OS: "Mac",
             Date: "2022-01-02",
             "Screen Width": "999",
             "Screen Height": 1000
@@ -431,7 +431,7 @@ describe("Create and determine", () => {
             Browser: "Safari",
             Time: "01:00",
             "URL Parameter": JSON.stringify(""),
-            OS: "MacOS",
+            OS: "Mac",
             Date: "2022-01-02",
             "Screen Width": "999",
             "Screen Height": 1000

@@ -85,7 +85,7 @@ describe("Get requested analytics", () => {
                         conditions: [{
                             variable: "OS",
                             operator: "=",
-                            value: "MacOS"
+                            value: "Mac"
                         }]
                     },
                     {
